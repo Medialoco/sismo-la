@@ -1,0 +1,22 @@
+# Station : Los Angeles (validation uniquement ici pour ce projet).
+station:
+  lat: 34.0522
+  lon: -118.2437
+
+usgs:
+  radius_km: 160        # ~100 miles, comme l'outil quakes.html
+  min_magnitude: 3.0    # on se limite aux seismes >= M3
+  poll_interval_s: 60   # frequence d'interrogation du catalogue
+
+correlation:
+  match_window_s: 180   # fenetre temporelle locale <-> heure d'origine USGS
+
+source:
+  # "serial" pour l'UNO Q reel, "mock" pour le developpement sans materiel.
+  type: serial
+  serial_port: /dev/ttyACM0
+  baudrate: 115200
+
+calibration:
+  state_file: calibration_state.json
+  min_points: 8         # nb de points avant d'estimer une magnitude

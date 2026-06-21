@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Config & données locales
+app/config.yaml
+*.local.yaml
+data/
+*.db
+calibration_state.json
+events_log.jsonl
+
+# OS / éditeurs
+.DS_Store
+.vscode/
+.idea/
+
+# Arduino / App Lab build
+build/
+*.bin
+*.elf
+*.hex

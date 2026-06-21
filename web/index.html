@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sismo-LA — Tableau de bord</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: system-ui, sans-serif; background:#0b0f14; color:#e6edf3; }
+    header { padding: 16px 20px; border-bottom: 1px solid #1c2530; }
+    header h1 { margin: 0; font-size: 18px; }
+    header small { color:#8b98a5; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; padding:16px; }
+    .card { background:#11161d; border:1px solid #1c2530; border-radius:10px; padding:16px; }
+    .card h2 { margin:0 0 8px; font-size:14px; color:#8b98a5; text-transform:uppercase; letter-spacing:.04em; }
+    .big { font-size:28px; font-weight:600; }
+    .status { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#1f2a37; }
+    ul { margin:8px 0 0; padding-left:18px; }
+    li { margin:4px 0; }
+    .muted { color:#8b98a5; }
+    @media (max-width:720px){ .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sismo-LA</h1>
+    <small>Sismographe communautaire bas coût — Los Angeles — étalonné via USGS</small>
+  </header>
+  <main class="grid">
+    <section class="card">
+      <h2>État d'étalonnage</h2>
+      <div class="big" id="cal-status">—</div>
+      <p class="muted">Le placeholder ci-dessous sera alimenté par l'application
+      (brick web App Lab). Brancher une source de données (WebSocket / HTTP).</p>
+    </section>
+    <section class="card">
+      <h2>Dernière secousse locale</h2>
+      <div class="big" id="last-event">—</div>
+      <p class="muted">PGA, durée, fréquence dominante.</p>
+    </section>
+    <section class="card">
+      <h2>Séismes USGS récents (≥ M3, 160 km)</h2>
+      <ul id="usgs-list"><li class="muted">en attente de données…</li></ul>
+    </section>
+    <section class="card">
+      <h2>Statut système</h2>
+      <p>WiFi <span class="status" id="wifi">?</span>
+         &nbsp; MCU <span class="status" id="mcu">?</span></p>
+    </section>
+  </main>
+  <script>
+    // Placeholder : remplacer par le transport reel expose par main.py
+    // (par ex. un petit serveur HTTP/WebSocket ou la brick web d'App Lab).
+    document.getElementById('cal-status').textContent = 'non étalonné (0/8 points)';
+    document.getElementById('last-event').textContent = '—';
+  </script>
+</body>
+</html>
