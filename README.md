@@ -62,6 +62,7 @@ sismo-la/
 ├── README.md
 ├── app.yaml                  # App Lab manifest (skeleton, to adapt)
 ├── docs/
+│   ├── getting-started.md    # end-to-end checklist (mock → WiFi → flash → calibrate)
 │   ├── architecture.md
 │   ├── hardware.md           # parts to buy + wiring
 │   ├── calibration.md        # the core idea: USGS calibration
