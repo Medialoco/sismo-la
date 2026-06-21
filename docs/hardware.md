@@ -5,12 +5,12 @@ This project is deliberately **low-cost**: the value comes from the software
 
 ## Bill of materials (BOM)
 
-| # | Part | Qty | Why | Approx. price |
-|---|------|-----|-----|---------------|
-| 1 | **Arduino UNO Q (4 GB)** | 1 | The board (Dragonwing MPU + STM32 MCU, WiFi) | provided by the contest, or ~$45–55 |
-| 2 | **IMU / accelerometer over I²C** — see options below | 1 | Senses ground motion | ~$8–17 |
-| 3 | **Qwiic cable** (JST-SH 4-pin) | 1 | Plug-and-play I²C to the UNO Q | ~$1.5 (often included) |
-| 4 | **USB-C cable + power supply** | 1 | Powers the board (PD recommended) | ~$10 |
+| # | Part | Qty | Why |
+|---|------|-----|-----|
+| 1 | **Arduino UNO Q (4 GB)** | 1 | The board (Dragonwing MPU + STM32 MCU, WiFi) |
+| 2 | **IMU / accelerometer over I²C** — see options below | 1 | Senses ground motion |
+| 3 | **Qwiic cable** (JST-SH 4-pin) | 1 | Plug-and-play I²C to the UNO Q |
+| 4 | **USB-C cable + power supply** | 1 | Powers the board (PD recommended) |
 
 Optional (nice for the demo / dashboard):
 
