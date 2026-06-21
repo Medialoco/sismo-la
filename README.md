@@ -53,6 +53,8 @@ expensive hardware.
 - USB-C power.
 - Optional: HDMI display for the local dashboard.
 
+Full bill of materials and wiring: [`docs/hardware.md`](docs/hardware.md).
+
 ## Repository layout
 
 ```
@@ -61,6 +63,7 @@ sismo-la/
 ├── app.yaml                  # App Lab manifest (skeleton, to adapt)
 ├── docs/
 │   ├── architecture.md
+│   ├── hardware.md           # parts to buy + wiring
 │   ├── calibration.md        # the core idea: USGS calibration
 │   └── hackster-submission.md # checklist to follow the contest guidelines
 ├── firmware/seismo_mcu/
