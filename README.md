@@ -1,105 +1,106 @@
-# Sismo-LA — Sismographe communautaire bas coût pour Los Angeles
+# Sismo-LA — Low-cost community seismograph for Los Angeles
 
-Nœud sismique **bas coût** basé sur l'**Arduino UNO Q**, rendu crédible par un
-**auto-étalonnage continu sur le catalogue USGS**.
+A **low-cost** seismic node built on the **Arduino UNO Q**, made credible by
+**continuous self-calibration against the USGS catalog**.
 
-Projet pour le concours
-[Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab).
-Catégorie visée : **Best Social Impact** (alternative : Industrial IoT).
+Project for the
+[Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab)
+contest. Target category: **Best Social Impact** (alternative: Industrial IoT).
 
-## Idée en une phrase
+## Idea in one sentence
 
-Un capteur MEMS seul n'est pas un sismomètre. Mais à Los Angeles, le catalogue
-USGS fournit une vérité-terrain permanente (heure, magnitude, distance). En
-**corrélant** les secousses mesurées localement avec les vrais séismes **≥ M3**,
-l'appareil **apprend sa propre fonction de réponse** : il devient un sismographe
-utile sans matériel coûteux.
+A cheap MEMS sensor is not a seismometer. But in Los Angeles, the USGS catalog
+provides a permanent ground truth (time, magnitude, distance). By **correlating**
+locally measured shaking with confirmed earthquakes **≥ M3**, the device
+**learns its own response function**: it becomes a useful seismograph without
+expensive hardware.
 
-## Pourquoi c'est réaliste (et ses limites)
+## Why it is realistic (and its limits)
 
-- **Réaliste** : détecter un séisme **M3–M4 proche** (quelques dizaines de km) avec
-  un IMU type LSM6DSOX, car le pic d'accélération (PGA) local dépasse le bruit.
-- **Réaliste** : étalonner amplitude ↔ magnitude/distance par régression sur les
-  événements confirmés par USGS.
-- **Limite assumée** : pas de détection télésismique (séismes lointains) — cela
-  exige un géophone. C'est un **détecteur de mouvement fort local**, pas un
-  sismomètre de recherche.
-- **Précédents** : MyShake (UC Berkeley), Quake-Catcher Network, Raspberry Shake.
+- **Realistic**: detecting a **nearby M3–M4 earthquake** (a few tens of km) with
+  an LSM6DSOX-class IMU, because the local peak ground acceleration (PGA) rises
+  above the sensor noise floor.
+- **Realistic**: calibrating amplitude ↔ magnitude/distance by regression on
+  USGS-confirmed events.
+- **Acknowledged limit**: no teleseismic detection (distant earthquakes) — that
+  requires a geophone. This is a **local strong-motion detector**, not a research
+  seismometer.
+- **Prior art**: MyShake (UC Berkeley), Quake-Catcher Network, Raspberry Shake.
 
-## Architecture des deux cerveaux
+## Dual-brain architecture
 
 ```
                 Arduino UNO Q
  ┌───────────────────────────┬───────────────────────────┐
  │   STM32U585 (MCU)         │   Dragonwing QRB2210 (MPU) │
- │   temps réel              │   Debian Linux             │
+ │   real time               │   Debian Linux             │
  ├───────────────────────────┼───────────────────────────┤
- │ - lit l'IMU (LSM6DSOX)    │ - WiFi                     │
- │   ~100-200 Hz             │ - flux USGS (≥ M3, 160 km) │
- │ - détection STA/LTA       │ - corrélation temporelle   │
- │ - capture fenêtre + PGA   │ - étalonnage (régression)  │
- │ - émet l'événement ───────┼─► - classif. Edge Impulse  │
- │   (Bridge / Serial)       │ - dashboard web App Lab    │
+ │ - reads the IMU (LSM6DSOX)│ - WiFi                     │
+ │   ~100-200 Hz             │ - USGS feed (≥ M3, 160 km) │
+ │ - STA/LTA detection       │ - temporal correlation     │
+ │ - captures window + PGA   │ - calibration (regression) │
+ │ - emits the event ────────┼─► - Edge Impulse classifier│
+ │   (Bridge / Serial)       │ - App Lab web dashboard    │
  └───────────────────────────┴───────────────────────────┘
-                          USGS : https://earthquake.usgs.gov/fdsnws/event/1/
+                          USGS: https://earthquake.usgs.gov/fdsnws/event/1/
 ```
 
-## Matériel
+## Hardware
 
-- **Arduino UNO Q** (WiFi intégré).
-- **IMU** : Modulino Movement (LSM6DSOX) via Qwiic, ou tout accéléromètre I²C
-  compatible. *(À adapter selon la connectique réellement disponible.)*
-- Alimentation USB-C.
-- Optionnel : écran HDMI pour le dashboard en local.
+- **Arduino UNO Q** (built-in WiFi).
+- **IMU**: Modulino Movement (LSM6DSOX) over Qwiic, or any compatible I²C
+  accelerometer. *(To be adapted to the connectivity actually available.)*
+- USB-C power.
+- Optional: HDMI display for the local dashboard.
 
-## Structure du dépôt
+## Repository layout
 
 ```
 sismo-la/
 ├── README.md
-├── app.yaml                  # manifeste App Lab (squelette à adapter)
+├── app.yaml                  # App Lab manifest (skeleton, to adapt)
 ├── docs/
 │   ├── architecture.md
-│   ├── calibration.md        # le coeur de l'idée : l'étalonnage USGS
-│   └── hackster-submission.md # checklist pour rester dans les clous du concours
+│   ├── calibration.md        # the core idea: USGS calibration
+│   └── hackster-submission.md # checklist to follow the contest guidelines
 ├── firmware/seismo_mcu/
-│   └── seismo_mcu.ino        # MCU : STA/LTA + émission d'événements
+│   └── seismo_mcu.ino        # MCU: STA/LTA + event emission
 ├── app/
-│   ├── main.py               # orchestration (lit MCU, corrèle, étalonne)
-│   ├── usgs.py               # client catalogue USGS (LA, ≥ M3)
-│   ├── calibration.py        # modèle d'étalonnage persistant
+│   ├── main.py               # orchestration (reads MCU, correlates, calibrates)
+│   ├── usgs.py               # USGS catalog client (LA, ≥ M3)
+│   ├── calibration.py        # persistent calibration model
 │   ├── requirements.txt
 │   └── config.example.yaml
 └── web/index.html            # dashboard placeholder
 ```
 
-## Démarrage rapide (développement sur PC, sans matériel)
+## Quick start (PC development, no hardware)
 
 ```bash
 cd app
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp config.example.yaml config.yaml
-python main.py --mock        # simule des événements MCU + interroge USGS
+python main.py --mock        # simulates MCU events + queries USGS
 ```
 
-Le mode `--mock` génère de fausses secousses pour tester la chaîne (corrélation,
-étalonnage, affichage) sans l'UNO Q.
+The `--mock` mode generates fake shakes to test the full chain (correlation,
+calibration, display) without the UNO Q.
 
-## Feuille de route
+## Roadmap
 
-- [x] Squelette du projet + analyse de faisabilité.
-- [ ] Sketch MCU STA/LTA validé sur table (tape sur la table = déclenchement).
-- [ ] Pont MCU → Linux via Bridge App Lab (remplace le Serial du prototype).
-- [ ] Corrélation temporelle robuste (horloge, fenêtre P/S, dérive).
-- [ ] Étalonnage : accumuler des événements M3+ réels sur LA pendant quelques semaines.
-- [ ] Modèle Edge Impulse séisme vs bruit (camion, porte, pas).
-- [ ] Dashboard App Lab + alertes.
+- [x] Project scaffold + feasibility analysis.
+- [ ] MCU STA/LTA sketch validated on a desk (tapping the desk triggers it).
+- [ ] MCU → Linux bridge via App Lab Bridge (replaces the prototype's Serial).
+- [ ] Robust temporal correlation (clock, P/S window, drift).
+- [ ] Calibration: accumulate real M3+ events over LA for a few weeks.
+- [ ] Edge Impulse model: earthquake vs noise (truck, door, footsteps).
+- [ ] App Lab dashboard + alerts.
 
-## Étalonnage en bref
+## Calibration in brief
 
-À chaque secousse locale, on cherche un séisme USGS confirmé dans une fenêtre de
-temps. Si correspondance, on ajoute le couple `(log10(PGA), magnitude, distance)`
-au jeu d'étalonnage et on ré-ajuste la régression
-`Mw ≈ a·log10(PGA) + b·log10(distance) + c`. Détails dans
+For each local shake, we look for a USGS-confirmed earthquake within a time
+window. On a match, we add the triple `(log10(PGA), magnitude, distance)` to the
+calibration set and re-fit the regression
+`Mw ≈ a·log10(PGA) + b·log10(distance) + c`. Details in
 [`docs/calibration.md`](docs/calibration.md).

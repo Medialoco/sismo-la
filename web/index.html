@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sismo-LA — Tableau de bord</title>
+  <title>Sismo-LA — Dashboard</title>
   <style>
     :root { color-scheme: dark; }
     body { margin: 0; font-family: system-ui, sans-serif; background:#0b0f14; color:#e6edf3; }
@@ -24,34 +24,34 @@
 <body>
   <header>
     <h1>Sismo-LA</h1>
-    <small>Sismographe communautaire bas coût — Los Angeles — étalonné via USGS</small>
+    <small>Low-cost community seismograph — Los Angeles — calibrated via USGS</small>
   </header>
   <main class="grid">
     <section class="card">
-      <h2>État d'étalonnage</h2>
+      <h2>Calibration state</h2>
       <div class="big" id="cal-status">—</div>
-      <p class="muted">Le placeholder ci-dessous sera alimenté par l'application
-      (brick web App Lab). Brancher une source de données (WebSocket / HTTP).</p>
+      <p class="muted">The placeholder below will be fed by the application
+      (App Lab web brick). Wire a data source (WebSocket / HTTP).</p>
     </section>
     <section class="card">
-      <h2>Dernière secousse locale</h2>
+      <h2>Last local shake</h2>
       <div class="big" id="last-event">—</div>
-      <p class="muted">PGA, durée, fréquence dominante.</p>
+      <p class="muted">PGA, duration, dominant frequency.</p>
     </section>
     <section class="card">
-      <h2>Séismes USGS récents (≥ M3, 160 km)</h2>
-      <ul id="usgs-list"><li class="muted">en attente de données…</li></ul>
+      <h2>Recent USGS earthquakes (≥ M3, 160 km)</h2>
+      <ul id="usgs-list"><li class="muted">waiting for data…</li></ul>
     </section>
     <section class="card">
-      <h2>Statut système</h2>
+      <h2>System status</h2>
       <p>WiFi <span class="status" id="wifi">?</span>
          &nbsp; MCU <span class="status" id="mcu">?</span></p>
     </section>
   </main>
   <script>
-    // Placeholder : remplacer par le transport reel expose par main.py
-    // (par ex. un petit serveur HTTP/WebSocket ou la brick web d'App Lab).
-    document.getElementById('cal-status').textContent = 'non étalonné (0/8 points)';
+    // Placeholder: replace with the real transport exposed by main.py
+    // (e.g. a small HTTP/WebSocket server or the App Lab web brick).
+    document.getElementById('cal-status').textContent = 'not calibrated (0/8 points)';
     document.getElementById('last-event').textContent = '—';
   </script>
 </body>

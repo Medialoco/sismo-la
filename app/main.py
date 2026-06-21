@@ -1,14 +1,14 @@
-"""Sismo-LA - application Linux (MPU Dragonwing).
+"""Sismo-LA - Linux application (Dragonwing MPU).
 
-Orchestre :
-  - la lecture des evenements venant du MCU (port serie, ou mock pour le dev),
-  - l'interrogation periodique du catalogue USGS (LA, >= M3),
-  - la correlation temporelle local <-> USGS,
-  - la mise a jour du modele d'etalonnage.
+Orchestrates:
+  - reading events coming from the MCU (serial port, or mock for development),
+  - periodically querying the USGS catalog (LA, >= M3),
+  - temporal correlation local <-> USGS,
+  - updating the calibration model.
 
-Usage :
-    python main.py                 # source = config.yaml (serial par defaut)
-    python main.py --mock          # genere de fausses secousses, sans materiel
+Usage:
+    python main.py                 # source = config.yaml (serial by default)
+    python main.py --mock          # generates fake shakes, no hardware
     python main.py --config c.yaml
 """
 
@@ -32,11 +32,11 @@ def load_config(path: str) -> dict:
 
 
 def iter_serial_events(port: str, baudrate: int):
-    """Generateur d'evenements depuis le MCU via port serie (lignes JSON)."""
-    import serial  # import tardif : inutile en mode mock
+    """Generator of events from the MCU over the serial port (JSON lines)."""
+    import serial  # lazy import: not needed in mock mode
 
     ser = serial.Serial(port, baudrate, timeout=1)
-    buf = ser.readline()  # purge premiere ligne potentiellement partielle
+    _ = ser.readline()  # discard a possibly partial first line
     while True:
         line = ser.readline().decode("utf-8", errors="ignore").strip()
         if not line:
@@ -50,7 +50,7 @@ def iter_serial_events(port: str, baudrate: int):
 
 
 def iter_mock_events(min_seconds=8, max_seconds=20):
-    """Genere de fausses secousses pour tester la chaine sans UNO Q."""
+    """Generate fake shakes to test the chain without the UNO Q."""
     while True:
         time.sleep(random.uniform(min_seconds, max_seconds))
         pga = round(random.uniform(0.002, 0.08), 5)
@@ -64,8 +64,8 @@ def iter_mock_events(min_seconds=8, max_seconds=20):
 
 
 def find_match(evt_time, quakes, window_s):
-    """Cherche un seisme USGS dont l'heure d'origine precede la reception
-    locale dans la fenetre autorisee."""
+    """Find a USGS earthquake whose origin time precedes the local reception
+    within the allowed window."""
     best = None
     for q in quakes:
         dt = (evt_time - q.time).total_seconds()
@@ -76,9 +76,9 @@ def find_match(evt_time, quakes, window_s):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Sismo-LA (application Linux)")
+    parser = argparse.ArgumentParser(description="Sismo-LA (Linux application)")
     parser.add_argument("--config", default="config.yaml")
-    parser.add_argument("--mock", action="store_true", help="source simulee")
+    parser.add_argument("--mock", action="store_true", help="simulated source")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -93,8 +93,8 @@ def main() -> None:
     model.load()
 
     print(f"[Sismo-LA] station=({st['lat']},{st['lon']}) "
-          f"rayon={us['radius_km']}km min_mag={us['min_magnitude']}")
-    print(f"[Sismo-LA] etalonnage : {model.status()}")
+          f"radius={us['radius_km']}km min_mag={us['min_magnitude']}")
+    print(f"[Sismo-LA] calibration: {model.status()}")
 
     if args.mock or cfg["source"]["type"] == "mock":
         events = iter_mock_events()
@@ -102,7 +102,7 @@ def main() -> None:
     else:
         s = cfg["source"]
         events = iter_serial_events(s["serial_port"], s["baudrate"])
-        print(f"[Sismo-LA] source = serie {s['serial_port']}")
+        print(f"[Sismo-LA] source = serial {s['serial_port']}")
 
     last_poll = 0.0
     quakes: list[usgs.Quake] = []
@@ -115,8 +115,8 @@ def main() -> None:
                     st["lat"], st["lon"], us["radius_km"], us["min_magnitude"]
                 )
                 last_poll = now
-            except Exception as e:  # reseau capricieux : on continue
-                print(f"[USGS] erreur de requete : {e}")
+            except Exception as e:  # flaky network: keep going
+                print(f"[USGS] request error: {e}")
 
         match = find_match(evt["recv_time"], quakes, corr["match_window_s"])
         ts = evt["recv_time"].strftime("%H:%M:%S")
@@ -128,13 +128,13 @@ def main() -> None:
                 magnitude=match.magnitude,
                 event_id=match.event_id,
             )
-            print(f"[{ts}] secousse PGA={evt['pga_g']}g  <->  USGS M{match.magnitude} "
+            print(f"[{ts}] shake PGA={evt['pga_g']}g  <->  USGS M{match.magnitude} "
                   f"@ {match.distance_km:.0f}km ({match.place}) | {model.status()}")
         else:
             est = model.estimate_magnitude(evt["pga_g"], distance_km=30.0)
-            est_txt = f"~M{est:.1f} (estime @30km)" if est is not None else "non classe"
-            print(f"[{ts}] secousse PGA={evt['pga_g']}g  sans correspondance USGS "
-                  f"-> {est_txt} [candidat bruit ?]")
+            est_txt = f"~M{est:.1f} (estimated @30km)" if est is not None else "unclassified"
+            print(f"[{ts}] shake PGA={evt['pga_g']}g  no USGS match "
+                  f"-> {est_txt} [noise candidate?]")
 
 
 if __name__ == "__main__":

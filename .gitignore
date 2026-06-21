@@ -5,7 +5,7 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Config & données locales
+# Local config & data
 app/config.yaml
 *.local.yaml
 data/
@@ -13,7 +13,7 @@ data/
 calibration_state.json
 events_log.jsonl
 
-# OS / éditeurs
+# OS / editors
 .DS_Store
 .vscode/
 .idea/

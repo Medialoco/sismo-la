@@ -1,45 +1,45 @@
 /*
- * Sismo-LA - Firmware MCU (STM32U585 sur Arduino UNO Q)
+ * Sismo-LA - MCU firmware (STM32U585 on the Arduino UNO Q)
  *
- * Role : echantillonner l'IMU en continu, detecter une secousse par algorithme
- * STA/LTA, caracteriser l'evenement (PGA, duree, frequence dominante approx) et
- * l'emettre.
+ * Role: continuously sample the IMU, detect a shake with the STA/LTA algorithm,
+ * characterize the event (PGA, duration, approximate dominant frequency) and
+ * emit it.
  *
- * Transport : pour le prototype, on emet une ligne JSON sur le port serie. En
- * production App Lab, remplacer emitEvent() par un appel Bridge (RPC) vers
- * l'application Python cote Linux.
+ * Transport: for the prototype we emit a JSON line over the serial port. In an
+ * App Lab production build, replace emitEvent() with a Bridge (RPC) call to the
+ * Python application on the Linux side.
  *
- * Capteur : Modulino Movement (LSM6DSOX) via Qwiic. Adapter si autre IMU.
+ * Sensor: Modulino Movement (LSM6DSOX) over Qwiic. Adapt for a different IMU.
  */
 
 #include <Modulino.h>
 
 ModulinoMovement imu;
 
-// --- Parametres d'echantillonnage ---
+// --- Sampling parameters ---
 const float SAMPLE_HZ = 100.0f;
 const unsigned long SAMPLE_PERIOD_US = (unsigned long)(1000000.0f / SAMPLE_HZ);
 
-// --- Parametres STA/LTA ---
+// --- STA/LTA parameters ---
 const float STA_SEC = 0.5f;
 const float LTA_SEC = 10.0f;
-const float TRIGGER_ON = 4.0f;   // ratio STA/LTA de declenchement
-const float TRIGGER_OFF = 1.5f;  // ratio de fin d'evenement
-const float GRAVITY_ALPHA = 0.995f; // suivi lent de la composante gravite
+const float TRIGGER_ON = 4.0f;   // STA/LTA trigger ratio
+const float TRIGGER_OFF = 1.5f;  // end-of-event ratio
+const float GRAVITY_ALPHA = 0.995f; // slow tracking of the gravity component
 
 const int STA_N = (int)(STA_SEC * SAMPLE_HZ);
 const int LTA_N = (int)(LTA_SEC * SAMPLE_HZ);
 
-// Moyennes glissantes exponentielles (evite de stocker de longs buffers).
+// Exponential moving averages (avoids storing long buffers).
 float sta = 0.0f;
-float lta = 1e-6f; // evite division par zero au demarrage
+float lta = 1e-6f; // avoids division by zero at startup
 const float STA_W = 2.0f / (STA_N + 1);
 const float LTA_W = 2.0f / (LTA_N + 1);
 
-// Estimation de la gravite par axe (filtre passe-bas).
+// Per-axis gravity estimate (low-pass filter).
 float gx = 0, gy = 0, gz = 1.0f;
 
-// Etat de l'evenement courant.
+// Current event state.
 bool inEvent = false;
 float eventPeakG = 0.0f;
 unsigned long eventStartMs = 0;
@@ -51,7 +51,7 @@ void setup() {
   Serial.begin(115200);
   Modulino.begin();
   imu.begin();
-  // Amorcage du LTA pendant ~1 s pour stabiliser le bruit de fond.
+  // Warm up the LTA for ~1 s to stabilize the background noise estimate.
   unsigned long t0 = millis();
   while (millis() - t0 < 1000) {
     float d = readDynamicMagnitude();
@@ -61,7 +61,7 @@ void setup() {
   }
 }
 
-// Norme de l'acceleration dynamique (gravite retiree), en g.
+// Magnitude of the dynamic acceleration (gravity removed), in g.
 float readDynamicMagnitude() {
   imu.update();
   float ax = imu.getX();
@@ -83,8 +83,8 @@ void loop() {
 
   float dyn = readDynamicMagnitude();
 
-  // Mise a jour des moyennes (le LTA est gele pendant un evenement pour ne pas
-  // s'auto-contaminer par le signal sismique).
+  // Update the averages (the LTA is frozen during an event so it does not get
+  // self-contaminated by the seismic signal).
   sta = sta + STA_W * (dyn - sta);
   if (!inEvent) {
     lta = lta + LTA_W * (dyn - lta);
@@ -99,7 +99,7 @@ void loop() {
     zeroCrossings = 0;
   } else if (inEvent) {
     if (dyn > eventPeakG) eventPeakG = dyn;
-    if ((prevDyn < 0) != (dyn < 0)) zeroCrossings++; // approx freq dominante
+    if ((prevDyn < 0) != (dyn < 0)) zeroCrossings++; // dominant freq approx.
     if (ratio < TRIGGER_OFF) {
       unsigned long durMs = millis() - eventStartMs;
       float domHz = (durMs > 0) ? (zeroCrossings * 1000.0f) / (2.0f * durMs) : 0;
@@ -107,10 +107,10 @@ void loop() {
       inEvent = false;
     }
   }
-  prevDyn = dyn - sta; // signal centre pour le comptage de passages a zero
+  prevDyn = dyn - sta; // centered signal for zero-crossing counting
 }
 
-// Prototype : JSON sur le port serie. En production App Lab -> Bridge RPC.
+// Prototype: JSON over the serial port. In App Lab production -> Bridge RPC.
 void emitEvent(unsigned long tMs, float pgaG, unsigned long durMs, float domHz) {
   Serial.print("{\"t_ms\":");
   Serial.print(tMs);

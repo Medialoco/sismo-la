@@ -1,69 +1,70 @@
-# Gabarit de soumission Hackster (pour rester dans les clous)
+# Hackster submission checklist (to stay within the rules)
 
-Synthese des regles a respecter, d'apres
-[Content Guidelines](https://www.hackster.io/guidelines) et
+Summary of the rules to follow, based on the
+[Content Guidelines](https://www.hackster.io/guidelines) and
 [How to Create a High-Quality Project Tutorial](https://www.hackster.io/AlexWulff/how-to-create-a-high-quality-project-tutorial-e25feb).
-On remplit cette page au fur et a mesure du projet.
+We fill this page in as the project progresses.
 
-## Conditions du concours (rappel)
+## Contest requirements (reminder)
 
-- Doit utiliser l'**Arduino UNO Q** et **App Lab**.
-- Catégorie visée : **Best Social Impact** (alt. Industrial IoT).
-- Date limite de soumission : **30 août 2026**.
-- Bonus appréciés : durabilité, expérience utilisateur, scalabilité, IA edge
-  (Edge Impulse), intégration cloud (Arduino Cloud / AWS).
+- Must use the **Arduino UNO Q** and **App Lab**.
+- Target category: **Best Social Impact** (alt. Industrial IoT).
+- Submission deadline: **August 30, 2026**.
+- Appreciated bonuses: sustainability, user experience, scalability, edge AI
+  (Edge Impulse), cloud integration (Arduino Cloud / AWS).
 
-## Checklist qualité (Content Guidelines)
+## Quality checklist (Content Guidelines)
 
-- [ ] **Nom** : phrase complète, descriptive de *ce que ça fait*, accrocheuse,
-      sans URL. (Pas « Projet Arduino UNO Q » mais p.ex. « Un sismographe de
-      quartier qui apprend des vrais séismes de Los Angeles ».)
-- [ ] **Pitch** : une seule phrase, ne répète pas le nom, sans URL.
-- [ ] **Cover image** : haute résolution, bonne lumière, **sans texte**, montre
-      le résultat final (pas un plat de breadboard). Format 4:3.
-- [ ] **Difficulté** : exacte.
-- [ ] **Catégories** : max 3, décrivant ce que ça *accomplit* — éviter « Arduino »,
-      mettre p.ex. « Monitoring », « Data collection », « Social impact ».
-- [ ] **Things** : lister TOUS les composants réellement utilisés (UNO Q, IMU…),
-      avec lien boutique quand possible. Logiciels/outils dans leurs sections.
-- [ ] **Story** : structurée en étapes avec titres (pas un mur de texte), URLs
-      cliquables, vidéos embarquées, **code en snippets** (pas en texte brut),
-      images nettes.
-- [ ] **Schematics** : section réservée aux schémas (Fritzing ou autre).
-- [ ] **Code** : fichiers dans la section Code, bon langage sélectionné. Pas de
-      placeholders pour gonfler la checklist.
-- [ ] **Langue** : anglais correct, orthographe/ponctuation soignées.
+- [ ] **Name**: a complete sentence, describing *what it does*, catchy, no URL.
+      (Not "Arduino UNO Q project" but e.g. "A neighborhood seismograph that
+      learns from real Los Angeles earthquakes".)
+- [ ] **Pitch**: a single sentence, does not duplicate the name, no URL.
+- [ ] **Cover image**: high resolution, good lighting, **no text**, shows the end
+      result (not a tangle of breadboard wires). 4:3 format.
+- [ ] **Difficulty**: accurate.
+- [ ] **Categories**: max 3, describing what it *achieves* — avoid "Arduino",
+      use e.g. "Monitoring", "Data collection", "Social impact".
+- [ ] **Things**: list ALL components actually used (UNO Q, IMU…), with a store
+      link when possible. Software/tools go in their own sections.
+- [ ] **Story**: structured in steps with headings (not a wall of text),
+      clickable URLs, embedded videos, **code as snippets** (not plain text),
+      crisp images.
+- [ ] **Schematics**: section reserved for schematics (Fritzing or other).
+- [ ] **Code**: files in the Code section, correct language selected. No
+      placeholders to inflate the checklist.
+- [ ] **Language**: correct English, careful spelling/punctuation.
 
-## Structure recommandée de la Story (étapes)
+## Recommended Story structure (steps)
 
-1. **Le problème** — LA est sismique ; les vrais sismographes coûtent cher ; idée
-   d'un nœud citoyen bas coût (cf. MyShake, Raspberry Shake).
-2. **L'idée clé : l'étalonnage par USGS** — pourquoi un capteur pas cher devient
-   utile quand on a une vérité-terrain gratuite.
-3. **Matériel & branchements** — UNO Q + IMU (photo + schéma Fritzing).
-4. **Le MCU temps réel** — STA/LTA expliqué simplement (snippet du `.ino`).
-5. **Le Linux (Dragonwing)** — WiFi, flux USGS, corrélation (snippets Python).
-6. **L'IA edge (Edge Impulse)** — séisme vs bruit, comment les données ont été
-   collectées et le modèle entraîné.
-7. **Le dashboard App Lab** — captures d'écran.
-8. **Résultats & validation à LA** — courbe d'étalonnage, exemples de séismes
-   réels correctement corrélés (preuves).
-9. **Limites & suite** — honnêteté : détecteur local, pas télésismique.
+1. **The problem** — LA is seismic; real seismographs are expensive; idea of a
+   low-cost citizen node (cf. MyShake, Raspberry Shake).
+2. **The key idea: USGS calibration** — why a cheap sensor becomes useful when you
+   have a free ground truth.
+3. **Hardware & wiring** — UNO Q + IMU (photo + Fritzing schematic).
+4. **The real-time MCU** — STA/LTA explained simply (snippet from the `.ino`).
+5. **The Linux side (Dragonwing)** — WiFi, USGS feed, correlation (Python
+   snippets).
+6. **Edge AI (Edge Impulse)** — earthquake vs noise, how the data was collected
+   and the model trained.
+7. **The App Lab dashboard** — screenshots.
+8. **Results & validation in LA** — calibration curve, examples of real
+   earthquakes correctly correlated (evidence).
+9. **Limits & next steps** — honesty: local detector, not teleseismic.
 
-## Conseils de rédaction & photos (tutoriel Wulff)
+## Writing & photo tips (Wulff tutorial)
 
-- Beaucoup de **photos** (gros plans, lumière abondante, angle constant).
-- Prendre **plus de photos que nécessaire** pendant le build.
-- Schémas via **Fritzing / CAD**, pas de croquis griffonné.
-- Code **commenté**, valeurs nommées (pas de magic numbers), whitespace cohérent.
-- Phrases **courtes et variées** ; mélange technique / accessible ; zéro faute.
-- GIF possible en cover (mouvement = clics), mais résolution réduite.
+- Lots of **photos** (close-ups, plenty of light, consistent angle).
+- Take **more photos than you think you need** during the build.
+- Schematics via **Fritzing / CAD**, no napkin sketch.
+- **Commented** code, named values (no magic numbers), consistent whitespace.
+- **Short, varied** sentences; mix technical / accessible; zero typos.
+- A GIF works as a cover (motion = clicks), but at reduced resolution.
 
-## Médias à produire (à cocher)
+## Media to produce (to check)
 
-- [ ] Photo de couverture (résultat final, soignée).
-- [ ] Photo macro du montage UNO Q + IMU.
-- [ ] Schéma Fritzing.
-- [ ] GIF/vidéo d'une détection (tape sur la table -> déclenchement).
-- [ ] Capture du dashboard.
-- [ ] Capture d'une corrélation USGS réussie.
+- [ ] Cover photo (final result, polished).
+- [ ] Macro photo of the UNO Q + IMU assembly.
+- [ ] Fritzing schematic.
+- [ ] GIF/video of a detection (tap the desk -> trigger).
+- [ ] Dashboard screenshot.
+- [ ] Screenshot of a successful USGS correlation.

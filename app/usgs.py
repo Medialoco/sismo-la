@@ -1,6 +1,6 @@
-"""Client minimal du catalogue USGS (FDSN event), centre sur Los Angeles.
+"""Minimal USGS catalog client (FDSN event), centered on Los Angeles.
 
-Reference API : https://earthquake.usgs.gov/fdsnws/event/1/
+API reference: https://earthquake.usgs.gov/fdsnws/event/1/
 """
 
 from __future__ import annotations
@@ -17,13 +17,13 @@ USGS_ENDPOINT = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 @dataclass
 class Quake:
     event_id: str
-    time: datetime          # heure d'origine (UTC)
+    time: datetime          # origin time (UTC)
     magnitude: float
     place: str
     lat: float
     lon: float
     depth_km: float
-    distance_km: float      # distance a la station
+    distance_km: float      # distance to the station
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -43,7 +43,7 @@ def fetch_recent(
     lookback_minutes: int = 120,
     timeout: float = 15.0,
 ) -> list[Quake]:
-    """Renvoie les seismes recents autour de la station, tries par date desc."""
+    """Return recent earthquakes around the station, sorted by time desc."""
     start = datetime.now(timezone.utc) - timedelta(minutes=lookback_minutes)
     params = {
         "format": "geojson",

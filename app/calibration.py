@@ -1,11 +1,11 @@
-"""Modele d'etalonnage : amplitude mesuree -> magnitude.
+"""Calibration model: measured amplitude -> magnitude.
 
-On ajuste, par moindres carres, la relation lineaire :
+We fit, by least squares, the linear relation:
 
     Mw ~= a * log10(PGA_g) + b * log10(distance_km) + c
 
-a partir des couples (secousse locale, seisme USGS confirme). Le modele est
-persiste sur disque pour survivre aux redemarrages.
+from the pairs (local shake, confirmed USGS earthquake). The model is persisted
+to disk so it survives restarts.
 """
 
 from __future__ import annotations
@@ -88,5 +88,5 @@ class CalibrationModel:
     def status(self) -> str:
         n = len(self.points)
         if not self.ready:
-            return f"non etalonne ({n}/{self.min_points} points)"
-        return f"etalonne ({n} points, RMSE={self.rmse:.2f} Mw)"
+            return f"not calibrated ({n}/{self.min_points} points)"
+        return f"calibrated ({n} points, RMSE={self.rmse:.2f} Mw)"

@@ -1,59 +1,58 @@
-# Étalonnage par le catalogue USGS
+# Calibration via the USGS catalog
 
-C'est le cœur du projet : transformer un capteur bon marché en instrument utile
-en s'appuyant sur une vérité-terrain gratuite et permanente.
+This is the heart of the project: turning a cheap sensor into a useful instrument
+by leaning on a free, permanent ground truth.
 
-## Principe
+## Principle
 
-Un séisme produit, à une station donnée, un pic d'accélération du sol (PGA) qui
-décroît avec la distance et croît avec la magnitude. En première approximation
-(loi d'atténuation simplifiée) :
+At a given station, an earthquake produces a peak ground acceleration (PGA) that
+decreases with distance and increases with magnitude. As a first approximation
+(simplified attenuation law):
 
 ```
 log10(PGA) ≈ a·Mw + b·log10(distance) + c
 ```
 
-On ne connaît pas `a, b, c` pour ce capteur particulier dans son environnement.
-Mais USGS nous donne `Mw` et la position (donc la `distance` à LA) de chaque
-séisme. À chaque correspondance « secousse mesurée ↔ séisme catalogué », on
-obtient un triplet `(PGA_mesuré, Mw, distance)`. Avec assez de triplets, on
-inverse la relation pour **estimer la magnitude** à partir du PGA mesuré :
+We do not know `a, b, c` for this particular sensor in its environment. But USGS
+gives us `Mw` and the location (hence the `distance` to LA) of every earthquake.
+Each "measured shake ↔ cataloged earthquake" match yields a triple
+`(PGA_measured, Mw, distance)`. With enough triples, we invert the relation to
+**estimate the magnitude** from a measured PGA:
 
 ```
-Mw_estimée ≈ a'·log10(PGA) + b'·log10(distance) + c'
+Mw_estimated ≈ a'·log10(PGA) + b'·log10(distance) + c'
 ```
 
-## Procédure
+## Procedure
 
-1. **Phase d'amorçage (au lancement)** — l'appareil interroge USGS pour les
-   séismes récents ≥ M3 autour de LA et affiche l'état « non étalonné ». Tant
-   qu'on n'a pas assez de points, on ne fournit qu'une magnitude indicative.
+1. **Bootstrap phase (at launch)** — the device queries USGS for recent
+   earthquakes ≥ M3 around LA and shows the "not calibrated" state. Until we have
+   enough points, it only provides an indicative magnitude.
 
-2. **Accumulation** — chaque secousse locale corrélée à un séisme USGS ajoute un
-   point d'étalonnage (persisté en JSON).
+2. **Accumulation** — every local shake correlated with a USGS earthquake adds a
+   calibration point (persisted to JSON).
 
-3. **Ajustement** — régression linéaire (moindres carrés) sur les points
-   accumulés. On garde des métriques de qualité (RMSE, nombre de points).
+3. **Fitting** — least-squares linear regression over the accumulated points. We
+   keep quality metrics (RMSE, number of points).
 
-4. **Estimation** — une fois `N ≥ N_min` points (ex. 8–10), l'appareil estime la
-   magnitude des secousses non encore présentes dans le catalogue (alerte
-   précoce), puis se corrige quand USGS confirme.
+4. **Estimation** — once `N ≥ N_min` points (e.g. 8–10), the device estimates the
+   magnitude of shakes not yet present in the catalog (early alert), then corrects
+   itself when USGS confirms.
 
-## Fenêtre de corrélation
+## Correlation window
 
-Une secousse locale est associée à un séisme USGS si :
+A local shake is associated with a USGS earthquake if:
 
-- le séisme est **≤ 160 km** de LA et **≥ M3** ;
-- l'écart temporel entre l'horodatage local et l'heure d'origine USGS est dans une
-  fenêtre `[0, match_window_s]` tenant compte du temps de trajet des ondes et de
-  la dérive d'horloge.
+- the earthquake is **≤ 160 km** from LA and **≥ M3**;
+- the time gap between the local timestamp and the USGS origin time is within a
+  window `[0, match_window_s]` accounting for wave travel time and clock drift.
 
-Les déclenchements locaux **sans** séisme USGS correspondant sont des candidats
-« bruit » → jeu d'entraînement pour le modèle Edge Impulse.
+Local triggers **without** a matching USGS earthquake are "noise" candidates →
+training set for the Edge Impulse model.
 
-## Robustesse
+## Robustness
 
-- Distance basée sur les coordonnées USGS et celles de la station (LA fixe).
-- Rejet des points aberrants (résidu > k·RMSE).
-- L'étalonnage est **propre au site** : déménager la station invalide l'historique
-  (volontairement : on valide uniquement à Los Angeles dans ce projet).
+- Distance computed from the USGS coordinates and the (fixed) station ones.
+- Outlier rejection (residual > k·RMSE).
+- Calibration is **site-specific**: moving the station invalidates the history
+  (intentionally: this project is validated only in Los Angeles).

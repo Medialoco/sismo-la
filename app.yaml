@@ -1,19 +1,19 @@
-# Manifeste App Lab (SQUELETTE A ADAPTER selon le schema reel d'App Lab).
-# But : declarer l'app Python (MPU), le sketch MCU et les bricks utilises.
+# App Lab manifest (SKELETON TO ADAPT to the real App Lab schema).
+# Goal: declare the Python app (MPU), the MCU sketch and the bricks used.
 name: sismo-la
-description: Sismographe communautaire bas cout pour Los Angeles, etalonne via USGS.
+description: Low-cost community seismograph for Los Angeles, calibrated via USGS.
 version: 0.1.0
 
-# Application Python executee sous Debian Linux (Dragonwing QRB2210).
+# Python application running under Debian Linux (Dragonwing QRB2210).
 python:
   entrypoint: app/main.py
   requirements: app/requirements.txt
 
-# Sketch execute sur le MCU temps reel (STM32U585).
+# Sketch running on the real-time MCU (STM32U585).
 sketch:
   path: firmware/seismo_mcu/seismo_mcu.ino
 
-# Bricks App Lab a brancher (a confirmer dans l'IDE App Lab).
+# App Lab bricks to wire in (to confirm in the App Lab IDE).
 bricks:
   - web        # dashboard (web/index.html)
-  - ai         # modele Edge Impulse : seisme vs bruit
+  - ai         # Edge Impulse model: earthquake vs noise
