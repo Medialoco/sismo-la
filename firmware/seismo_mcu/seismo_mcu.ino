@@ -49,6 +49,9 @@ float prevDyn = 0.0f;
 
 void setup() {
   Serial.begin(115200);
+  // On the UNO Q the Qwiic connector is on the I2C bus Wire1 (not Wire).
+  // If Modulino.begin() does not find the node, pass the bus explicitly:
+  //   Modulino.begin(Wire1);
   Modulino.begin();
   imu.begin();
   // Warm up the LTA for ~1 s to stabilize the background noise estimate.
