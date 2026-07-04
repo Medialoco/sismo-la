@@ -1,110 +1,150 @@
-# Sismo-LA — Low-cost community seismograph for Los Angeles
+# Sismo-LA — a $25 seismograph that learns from real Los Angeles earthquakes
 
-A **low-cost** seismic node built on the **Arduino UNO Q**, made credible by
-**continuous self-calibration against the USGS catalog**.
+A **low-cost seismic node** built on the **Arduino UNO Q**, made credible by
+**continuous self-calibration against the USGS catalog**: every confirmed
+earthquake teaches the device its own, site-specific response function.
 
-Project for the
+Entry for the
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab)
-contest. Target category: **Best Social Impact** (alternative: Industrial IoT).
+contest — target category: **Best Social Impact**. The submission story draft
+lives in [`docs/hackster-story.md`](docs/hackster-story.md).
 
-## Idea in one sentence
+![Sismo-LA dashboard — device estimates (red) vs USGS ground truth](docs/images/dashboard-replay.png)
 
-A cheap MEMS sensor is not a seismometer. But in Los Angeles, the USGS catalog
-provides a permanent ground truth (time, magnitude, distance). By **correlating**
-locally measured shaking with confirmed earthquakes **≥ M3**, the device
-**learns its own response function**: it becomes a useful seismograph without
-expensive hardware.
+*The dashboard in replay mode: USGS earthquakes (colored circles, the ground
+truth) vs what the device alone estimates (red circles + error vectors), with
+the self-calibration and AI-filter status live in the side panel.*
 
-## Why it is realistic (and its limits)
+## The idea in one paragraph
 
-- **Realistic**: detecting a **nearby M3–M4 earthquake** (a few tens of km) with
-  an LSM6DSOX-class IMU, because the local peak ground acceleration (PGA) rises
-  above the sensor noise floor.
-- **Realistic**: calibrating amplitude ↔ magnitude/distance by regression on
-  USGS-confirmed events.
-- **Acknowledged limit**: no teleseismic detection (distant earthquakes) — that
-  requires a geophone. This is a **local strong-motion detector**, not a research
-  seismometer.
-- **Prior art**: MyShake (UC Berkeley), Quake-Catcher Network, Raspberry Shake.
+A cheap MEMS sensor is not a seismometer: it feels shakes but cannot tell you
+magnitude or distance — it is uncalibrated. In Los Angeles, however, the
+ground truth is free and always on: the **USGS catalog** publishes magnitude,
+location and depth for dozens of earthquakes around the city every week. So
+the device calibrates itself in place: each local detection that matches a
+cataloged quake (≥ M2, 160 km radius) becomes one calibration point, and a
+regression turns raw accelerations into magnitude estimates. Every earthquake
+makes it better. The same loop labels data for an **AI noise filter**
+(earthquake vs passing truck) — no offline training set required.
+
+## What the device learns (three models, all persisted)
+
+| Model | Input → output | Learned from |
+|---|---|---|
+| Amplitude calibration | log10(PGA), log10(distance) → magnitude | USGS-confirmed matches |
+| Distance model | duration, dominant frequency → epicentral distance | USGS-confirmed matches |
+| AI noise filter | PGA, duration, frequency → P(real earthquake) | matches = quake, unmatched = noise |
+
+With distance + magnitude, a single station produces a full standalone
+estimate — the red circles on the map. One station knows distance but not
+direction (it draws a ring, not a pin); three neighboring nodes could
+triangulate. That is the scalability story.
 
 ## Dual-brain architecture
 
 ```
-                Arduino UNO Q
- ┌───────────────────────────┬───────────────────────────┐
- │   STM32U585 (MCU)         │   Dragonwing QRB2210 (MPU) │
- │   real time               │   Debian Linux             │
- ├───────────────────────────┼───────────────────────────┤
- │ - reads the IMU (LSM6DSOX)│ - WiFi                     │
- │   ~100-200 Hz             │ - USGS feed (≥ M3, 160 km) │
- │ - STA/LTA detection       │ - temporal correlation     │
- │ - captures window + PGA   │ - calibration (regression) │
- │ - emits the event ────────┼─► - Edge Impulse classifier│
- │   (Bridge / Serial)       │ - App Lab web dashboard    │
- └───────────────────────────┴───────────────────────────┘
-                          USGS: https://earthquake.usgs.gov/fdsnws/event/1/
+                     Arduino UNO Q
+ ┌───────────────────────────┬────────────────────────────────┐
+ │   STM32U585 (MCU)         │   Dragonwing QRB2210 (MPU)     │
+ │   Zephyr RTOS, real time  │   Debian Linux                 │
+ ├───────────────────────────┼────────────────────────────────┤
+ │ - reads the IMU at 100 Hz │ - WiFi + USGS FDSN feed        │
+ │   (LSM6DSOX via Qwiic,    │   (context ≥ M0.5, calibration │
+ │    bus Wire1)             │    matches ≥ M2, 160 km)       │
+ │ - STA/LTA trigger         │ - temporal correlation         │
+ │ - PGA, duration, dominant │ - calibration + distance model │
+ │   frequency per event     │ - AI noise filter (online      │
+ │ - one JSON event ─────────┼─►  logistic regression)        │
+ │   via Bridge Monitor      │ - Leaflet web dashboard        │
+ └───────────────────────────┴────────────────────────────────┘
+                    USGS: https://earthquake.usgs.gov/fdsnws/event/1/
 ```
+
+UNO Q gotchas we learned the hard way (details in
+[`docs/getting-started.md`](docs/getting-started.md)):
+
+- the Qwiic connector is on **`Wire1`**, not `Wire`;
+- the MCU's `Serial` goes to the **D0/D1 pins, not USB** — events must go
+  through the **Bridge Monitor** (the USB-C port belongs to the Linux side);
+- the MCU↔Linux Bridge requires the board's `arduino-router` and the
+  `Arduino_RouterBridge` library to be **version-matched** — update the board
+  OS before flashing.
 
 ## Hardware
 
-- **Arduino UNO Q** (built-in WiFi).
-- **IMU**: Modulino Movement (LSM6DSOX) over Qwiic, or any compatible I²C
-  accelerometer. *(To be adapted to the connectivity actually available.)*
-- USB-C power.
-- Optional: HDMI display for the local dashboard.
+- **Arduino UNO Q** (4 GB) — WiFi on board.
+- **Arduino Modulino Movement** (ABX00101, LSM6DSOX) + its bundled Qwiic
+  cable. Plug-and-play, zero soldering.
+- USB-C data cable (development) or USB-C power supply (standalone).
 
-Full bill of materials and wiring: [`docs/hardware.md`](docs/hardware.md).
+Bill of materials and wiring: [`docs/hardware.md`](docs/hardware.md).
 
-## Repository layout
-
-```
-sismo-la/
-├── README.md
-├── app.yaml                  # App Lab manifest (skeleton, to adapt)
-├── docs/
-│   ├── getting-started.md    # end-to-end checklist (mock → WiFi → flash → calibrate)
-│   ├── architecture.md
-│   ├── hardware.md           # parts to buy + wiring
-│   ├── calibration.md        # the core idea: USGS calibration
-│   └── hackster-submission.md # checklist to follow the contest guidelines
-├── firmware/seismo_mcu/
-│   └── seismo_mcu.ino        # MCU: STA/LTA + event emission
-├── app/
-│   ├── main.py               # orchestration (reads MCU, correlates, calibrates)
-│   ├── usgs.py               # USGS catalog client (LA, ≥ M3)
-│   ├── calibration.py        # persistent calibration model
-│   ├── requirements.txt
-│   └── config.example.yaml
-└── web/index.html            # dashboard placeholder
-```
-
-## Quick start (PC development, no hardware)
+## Quick start (no hardware needed)
 
 ```bash
 cd app
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp config.example.yaml config.yaml
-python main.py --mock        # simulates MCU events + queries USGS
+
+python server.py --replay    # DEMO: replays the last 24 h of real USGS quakes
+                             # as live detections -> http://localhost:8000
+python server.py --mock      # synthetic shakes, same pipeline
+python main.py --mock        # headless CLI variant
 ```
 
-The `--mock` mode generates fake shakes to test the full chain (correlation,
-calibration, display) without the UNO Q.
+`--replay` fills the map within minutes using the real catalog — calibration
+converges (RMSE ≈ 0.2 Mw in our validation) and the AI filter starts
+separating quakes from injected truck noise, live on screen. On the board,
+run `python server.py` (no flag) to consume real sensor events.
 
-## Roadmap
+## Repository layout
 
-- [x] Project scaffold + feasibility analysis.
-- [ ] MCU STA/LTA sketch validated on a desk (tapping the desk triggers it).
-- [ ] MCU → Linux bridge via App Lab Bridge (replaces the prototype's Serial).
-- [ ] Robust temporal correlation (clock, P/S window, drift).
-- [ ] Calibration: accumulate real M3+ events over LA for a few weeks.
-- [ ] Edge Impulse model: earthquake vs noise (truck, door, footsteps).
-- [ ] App Lab dashboard + alerts.
+```
+sismo-la/
+├── README.md
+├── app.yaml                   # App Lab manifest (skeleton)
+├── docs/
+│   ├── getting-started.md     # end-to-end checklist (mock → WiFi → flash → live)
+│   ├── architecture.md        # pipeline & design decisions
+│   ├── calibration.md         # the core idea: USGS self-calibration
+│   ├── hardware.md            # parts + wiring
+│   ├── hackster-story.md      # contest submission draft (English)
+│   ├── hackster-submission.md # contest rules checklist
+│   └── images/                # screenshots for docs & submission
+├── firmware/seismo_mcu/
+│   └── seismo_mcu.ino         # MCU: STA/LTA + events via Bridge Monitor
+└── app/
+    ├── server.py              # detection loop + web dashboard (main entrypoint)
+    ├── main.py                # headless CLI variant
+    ├── usgs.py                # USGS FDSN client (LA-centered)
+    ├── calibration.py         # amplitude model + distance model (persisted)
+    ├── classifier.py          # online quake-vs-noise logistic regression
+    ├── dashboard/index.html   # Leaflet map: USGS vs device, self-calib status
+    ├── requirements.txt
+    └── config.example.yaml
+```
+
+## Status
+
+- [x] Full software chain validated end-to-end (replay mode, live USGS data):
+      correlation → calibration (RMSE ≈ 0.2 Mw) → distance model → AI filter.
+- [x] Web dashboard: USGS vs device overlay, error vectors, mode badge.
+- [x] Firmware compiles and flashes on the UNO Q (`arduino-cli`, FQBN
+      `arduino:zephyr:unoq`); sensor connected (Modulino on Qwiic).
+- [x] Board on WiFi, USGS reachable from the board.
+- [ ] MCU→Linux Bridge link (board OS update in progress to match library
+      versions), then first live tap test.
+- [ ] Accumulate real M2+ correlations over LA; produce the calibration curve.
+- [ ] Optional: Edge Impulse classifier to replace the built-in filter.
+- [ ] Hackster submission (deadline **August 30, 2026**) — media checklist in
+      [`docs/hackster-story.md`](docs/hackster-story.md).
 
 ## Calibration in brief
 
-For each local shake, we look for a USGS-confirmed earthquake within a time
-window. On a match, we add the triple `(log10(PGA), magnitude, distance)` to the
-calibration set and re-fit the regression
-`Mw ≈ a·log10(PGA) + b·log10(distance) + c`. Details in
+For each local shake we search the USGS catalog for a confirmed earthquake
+within a time window that absorbs wave propagation and publication delay. On
+a match we add `(log10(PGA), log10(distance), magnitude)` to the calibration
+set and refit `Mw ≈ a·log10(PGA) + b·log10(distance) + c`; the coda duration
+and dominant frequency feed the distance model the same way. Details:
 [`docs/calibration.md`](docs/calibration.md).
