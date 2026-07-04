@@ -5,14 +5,18 @@
  * characterize the event (PGA, duration, approximate dominant frequency) and
  * emit it.
  *
- * Transport: for the prototype we emit a JSON line over the serial port. In an
- * App Lab production build, replace emitEvent() with a Bridge (RPC) call to the
- * Python application on the Linux side.
+ * Transport: JSON lines over the Bridge Monitor stream. On the UNO Q the MCU's
+ * `Serial` goes to the D0/D1 UART pins (NOT USB): the USB-C port belongs to the
+ * Linux MPU. `Monitor` routes through the Arduino Router (Bridge) to the Linux
+ * side, where it is visible from App Lab, `arduino-cli monitor`, or any client
+ * of the router — that is the stream `app/main.py` consumes.
  *
- * Sensor: Modulino Movement (LSM6DSOX) over Qwiic. Adapt for a different IMU.
+ * Sensor: Modulino Movement (LSM6DSOX) over Qwiic (bus Wire1). Adapt for a
+ * different IMU.
  */
 
-#include <Modulino.h>
+#include <Arduino_Modulino.h>
+#include <Arduino_RouterBridge.h>
 
 ModulinoMovement imu;
 
@@ -48,12 +52,13 @@ long zeroCrossings = 0;
 float prevDyn = 0.0f;
 
 void setup() {
-  Serial.begin(115200);
-  // On the UNO Q the Qwiic connector is on the I2C bus Wire1 (not Wire).
-  // If Modulino.begin() does not find the node, pass the bus explicitly:
-  //   Modulino.begin(Wire1);
-  Modulino.begin();
+  Bridge.begin();
+  Monitor.begin(115200);
+  // On the UNO Q the Qwiic connector is on the I2C bus Wire1 (not Wire),
+  // so we pass the bus explicitly (known gotcha on this board).
+  Modulino.begin(Wire1);
   imu.begin();
+  Monitor.println("{\"status\":\"seismo_mcu ready\"}");
   // Warm up the LTA for ~1 s to stabilize the background noise estimate.
   unsigned long t0 = millis();
   while (millis() - t0 < 1000) {
@@ -113,15 +118,15 @@ void loop() {
   prevDyn = dyn - sta; // centered signal for zero-crossing counting
 }
 
-// Prototype: JSON over the serial port. In App Lab production -> Bridge RPC.
+// JSON line over the Bridge Monitor stream (reaches the Linux MPU / USB host).
 void emitEvent(unsigned long tMs, float pgaG, unsigned long durMs, float domHz) {
-  Serial.print("{\"t_ms\":");
-  Serial.print(tMs);
-  Serial.print(",\"pga_g\":");
-  Serial.print(pgaG, 5);
-  Serial.print(",\"dur_ms\":");
-  Serial.print(durMs);
-  Serial.print(",\"dom_hz\":");
-  Serial.print(domHz, 2);
-  Serial.println("}");
+  Monitor.print("{\"t_ms\":");
+  Monitor.print(tMs);
+  Monitor.print(",\"pga_g\":");
+  Monitor.print(pgaG, 5);
+  Monitor.print(",\"dur_ms\":");
+  Monitor.print(durMs);
+  Monitor.print(",\"dom_hz\":");
+  Monitor.print(domHz, 2);
+  Monitor.println("}");
 }

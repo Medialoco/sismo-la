@@ -4,9 +4,11 @@ station:
   lon: -118.2437
 
 usgs:
-  radius_km: 160        # ~100 miles, like the quakes.html tool
-  min_magnitude: 3.0    # we restrict to earthquakes >= M3
-  poll_interval_s: 60   # how often we query the catalog
+  radius_km: 160               # ~100 miles, like the quakes.html tool
+  min_magnitude: 2.0           # threshold for correlation / calibration (>= M2)
+  display_min_magnitude: 0.5   # threshold for the dashboard map (full context)
+  poll_interval_s: 60          # how often we query the catalog
+  lookback_minutes: 1440       # history window fetched for display/correlation
 
 correlation:
   match_window_s: 180   # local timestamp <-> USGS origin time window
@@ -19,4 +21,6 @@ source:
 
 calibration:
   state_file: calibration_state.json
+  classifier_state_file: classifier_state.json
+  distance_state_file: distance_state.json
   min_points: 8         # number of points before estimating a magnitude

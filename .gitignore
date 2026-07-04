@@ -11,6 +11,8 @@ app/config.yaml
 data/
 *.db
 calibration_state.json
+classifier_state.json
+distance_state.json
 events_log.jsonl
 
 # OS / editors

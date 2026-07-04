@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sismo-LA — a $25 sensor vs the USGS</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #161c24;
+      --card: #11161d;
+      --line: #232c38;
+      --txt: #e6edf3;
+      --muted: #8b98a5;
+      --blue: #4aa3ff;
+      --red: #ff4d4d;
+      --green: #6fcf7a;
+      --orange: #ffb04a;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--txt);
+    }
+
+    /* ---- Top bar ---- */
+    header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 16px; background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    header .logo { font-size: 18px; font-weight: 700; }
+    header .tagline { color: var(--muted); font-size: 13px; flex: 1; }
+    .mode-badge {
+      padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .mode-live   { background: rgba(111,207,122,.15); color: var(--green); }
+    .mode-replay { background: rgba(255,176,74,.15);  color: var(--orange); }
+    .mode-mock   { background: rgba(139,152,165,.2);  color: var(--muted); }
+
+    /* ---- Layout ---- */
+    #content { display: flex; flex: 1; min-height: 0; }
+    #map { flex: 1; height: 100%; background: #0b0f14; }
+    #panel {
+      width: 380px; height: 100%; overflow-y: auto;
+      background: var(--panel); border-left: 1px solid var(--line); padding: 14px;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 10px; padding: 12px; margin-bottom: 12px;
+    }
+    .card h2 {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--muted); margin: 0 0 8px;
+    }
+
+    /* ---- How to read ---- */
+    .how .row { display: flex; gap: 10px; align-items: flex-start; margin: 7px 0; font-size: 12.5px; }
+    .how .swatch { flex: none; width: 16px; height: 16px; border-radius: 50%; margin-top: 1px; }
+    .how b { font-weight: 600; }
+
+    /* ---- Status ---- */
+    .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin: 4px 0; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill.ok { background: rgba(111,207,122,.15); color: var(--green); }
+    .pill.wait { background: rgba(255,176,74,.15); color: var(--orange); }
+    .progress { height: 5px; border-radius: 3px; background: #202834; margin-top: 6px; overflow: hidden; }
+    .progress > div { height: 100%; border-radius: 3px; background: var(--blue); transition: width .5s; }
+
+    /* ---- Detections ---- */
+    .det {
+      border: 1px solid var(--line); border-radius: 9px;
+      padding: 9px 10px; margin: 8px 0; font-size: 12.5px; cursor: default;
+    }
+    .det.quake { border-left: 3px solid var(--green); }
+    .det.noise { border-left: 3px solid var(--muted); }
+    .det.pending { border-left: 3px solid var(--orange); }
+    .det:hover { background: #1b222c; }
+    .det .verdict { font-weight: 700; font-size: 13px; }
+    .det.quake .verdict { color: var(--green); }
+    .det.noise .verdict { color: var(--muted); }
+    .det.pending .verdict { color: var(--orange); }
+    .det .time { float: right; color: var(--muted); font-size: 11px; font-weight: 400; }
+    .det .compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px;
+      margin-top: 6px; padding: 6px 8px; background: #0d1218; border-radius: 6px;
+    }
+    .det .compare .h { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
+    .det .compare .dev { color: var(--red); font-weight: 600; }
+    .det .compare .ref { color: var(--txt); font-weight: 600; }
+    .det .place { color: var(--muted); margin-top: 5px; }
+    .det .raw { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .empty { color: var(--muted); font-size: 12.5px; padding: 6px 2px; }
+    .foot { color: var(--muted); font-size: 11px; margin-top: 6px; text-align: right; }
+    .leaflet-popup-content { font-size: 12.5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="logo">Sismo-LA</span>
+    <span class="tagline">A $25 MEMS sensor + open USGS data = a self-calibrating seismograph.
+      Red = what the device thinks. Colors = what really happened.</span>
+    <span id="mode-badge" class="mode-badge mode-mock">…</span>
+  </header>
+
+  <div id="content">
+    <div id="map"></div>
+    <aside id="panel">
+
+      <div class="card how">
+        <h2>How to read the map</h2>
+        <div class="row">
+          <span class="swatch" style="background:#ff9800"></span>
+          <span><b>USGS earthquakes</b> (official catalog) — circle at the true
+          epicenter, color/size = magnitude:
+          <span style="color:#4caf50">&lt;2</span> ·
+          <span style="color:#cddc39">2-3</span> ·
+          <span style="color:#ff9800">3-4</span> ·
+          <span style="color:#f44336">4-5</span> ·
+          <span style="color:#9c27b0">5+</span></span>
+        </div>
+        <div class="row">
+          <span class="swatch" style="background:rgba(255,77,77,.4);border:2px solid #ff4d4d"></span>
+          <span><b style="color:var(--red)">Device estimates</b> — where and how big
+          <i>our sensor alone</i> thinks the quake was. The dashed line to the true
+          epicenter is its error. Watch it shrink as calibration improves.</span>
+        </div>
+        <div class="row">
+          <span class="swatch" style="background:transparent;border:2px dashed #ff4d4d"></span>
+          <span><b>Distance ring</b> — no USGS match yet: the quake is somewhere
+          on this circle (a single station knows distance, not direction).</span>
+        </div>
+        <div class="row">
+          <span class="swatch" style="background:rgba(74,163,255,.3);border:2px dashed #4aa3ff"></span>
+          <span><b>Station</b> — the Sismo-LA device (UNO Q + IMU), downtown LA.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Self-calibration status</h2>
+        <div class="stat-row">
+          <span>Amplitude → magnitude</span><span id="calib-pill" class="pill wait">--</span>
+        </div>
+        <div class="progress"><div id="calib-bar" style="width:0%"></div></div>
+        <div class="stat-row" style="margin-top:8px">
+          <span>Accuracy (RMSE)</span><span id="calib-rmse">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Distance model</span><span id="calib-dist">--</span>
+        </div>
+        <div class="stat-row">
+          <span>AI noise filter</span><span id="ai-status">--</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sensor detections (<span id="det-count">0</span>)</h2>
+        <div id="det-list"><div class="empty">Waiting for the ground to shake…</div></div>
+      </div>
+
+      <div class="foot" id="updated">--</div>
+    </aside>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script>
+    const map = L.map("map", { zoomControl: true }).setView([34.0522, -118.2437], 8);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+      maxZoom: 19,
+    }).addTo(map);
+
+    const usgsLayer = L.layerGroup().addTo(map);
+    const deviceLayer = L.layerGroup().addTo(map);
+    L.control.layers(null, {
+      "USGS (official)": usgsLayer,
+      "Sismo-LA device": deviceLayer,
+    }, { collapsed: false }).addTo(map);
+
+    let stationSet = false;
+
+    function magColor(m) {
+      if (m == null) return "#7f8c8d";
+      if (m < 2.0) return "#4caf50";
+      if (m < 3.0) return "#cddc39";
+      if (m < 4.0) return "#ff9800";
+      if (m < 5.0) return "#f44336";
+      return "#9c27b0";
+    }
+    function magRadius(m) {
+      if (m == null) return 5;
+      return 4 + Math.pow(Math.max(m, 0.1), 1.7);
+    }
+    function fmtTime(iso) {
+      try { return new Date(iso).toLocaleTimeString(); } catch (e) { return iso; }
+    }
+
+    function renderQuakes(quakes) {
+      usgsLayer.clearLayers();
+      quakes.forEach((q) => {
+        L.circleMarker([q.lat, q.lon], {
+          radius: magRadius(q.magnitude),
+          color: magColor(q.magnitude),
+          weight: 1.5,
+          fillColor: magColor(q.magnitude),
+          fillOpacity: 0.55,
+        })
+          .bindPopup(
+            `<b>USGS — official record</b>` +
+            `<br>M${q.magnitude.toFixed(1)} · ${q.place || ""}` +
+            `<br>${q.distance_km} km from the device · depth ${q.depth_km} km` +
+            `<br><span style="color:#888">${fmtTime(q.time)}</span>`
+          )
+          .addTo(usgsLayer);
+      });
+    }
+
+    function renderDevice(station, detections) {
+      deviceLayer.clearLayers();
+
+      L.circle([station.lat, station.lon], {
+        radius: 1200, color: "#4aa3ff", weight: 2, dashArray: "5,5",
+        fillColor: "#4aa3ff", fillOpacity: 0.15,
+      }).addTo(deviceLayer);
+      L.marker([station.lat, station.lon])
+        .bindPopup("<b>Sismo-LA device</b><br>Arduino UNO Q + Modulino Movement<br>downtown Los Angeles")
+        .addTo(deviceLayer);
+
+      detections.forEach((d) => {
+        if (!d.device_est) return;
+        const e = d.device_est;
+        const popup =
+          `<b style="color:#ff4d4d">Device estimate (sensor only)</b>` +
+          `<br>~M${e.mag} at ~${e.distance_km} km` +
+          (d.p_quake != null ? `<br>AI: ${(d.p_quake * 100).toFixed(0)}% real earthquake` : "") +
+          (d.match
+            ? `<br><span style="color:#888">Truth (USGS): M${d.match.magnitude.toFixed(1)}` +
+              ` at ${d.match.distance_km} km</span>`
+            : "<br><span style='color:#888'>no USGS confirmation yet</span>");
+
+        if (e.kind === "point") {
+          L.circleMarker([e.lat, e.lon], {
+            radius: magRadius(e.mag),
+            color: "#ff4d4d", weight: 2,
+            fillColor: "#ff4d4d", fillOpacity: 0.35,
+          }).bindPopup(popup).addTo(deviceLayer);
+          if (d.match) {
+            L.polyline(
+              [[e.lat, e.lon], [d.match.lat, d.match.lon]],
+              { color: "#ff4d4d", weight: 1.5, opacity: 0.6, dashArray: "3,6" }
+            ).bindPopup(popup).addTo(deviceLayer);
+          }
+        } else {
+          L.circle([station.lat, station.lon], {
+            radius: e.distance_km * 1000,
+            color: "#ff4d4d", weight: 1.5, dashArray: "6,8",
+            fill: false, opacity: 0.5,
+          }).bindPopup(popup).addTo(deviceLayer);
+        }
+      });
+    }
+
+    function detCard(d) {
+      const el = document.createElement("div");
+      let cls, verdict;
+      if (d.match) {
+        cls = "quake";
+        verdict = `✓ Earthquake — confirmed by USGS`;
+      } else if (d.p_quake != null && d.p_quake < 0.5) {
+        cls = "noise";
+        verdict = `✗ Local noise (AI: ${(d.p_quake * 100).toFixed(0)}% quake)`;
+      } else {
+        cls = "pending";
+        verdict = d.p_quake != null
+          ? `? Possible quake (AI: ${(d.p_quake * 100).toFixed(0)}%) — awaiting USGS`
+          : `? Unclassified — AI still learning`;
+      }
+      el.className = `det ${cls}`;
+
+      let compare = "";
+      if (d.match) {
+        const dm = d.est_mag != null ? `~M${d.est_mag}` : "—";
+        const dd = d.device_est ? `~${d.device_est.distance_km} km` : "—";
+        compare =
+          `<div class="compare">` +
+          `<span class="h">Device says</span><span class="h">USGS says</span>` +
+          `<span class="dev">${dm} · ${dd}</span>` +
+          `<span class="ref">M${d.match.magnitude.toFixed(1)} · ${d.match.distance_km} km</span>` +
+          `</div>` +
+          `<div class="place">${d.match.place || ""}</div>`;
+      } else if (d.device_est) {
+        compare = `<div class="place">Device guess: ~M${d.device_est.mag} at ~${d.device_est.distance_km} km</div>`;
+      }
+
+      el.innerHTML =
+        `<div class="verdict">${verdict}<span class="time">${fmtTime(d.recv_time)}</span></div>` +
+        compare +
+        `<div class="raw">PGA ${d.pga_g} g · ${d.dur_ms ?? "?"} ms · ${d.dom_hz ?? "?"} Hz</div>`;
+      return el;
+    }
+
+    function renderPanel(s) {
+      const badge = document.getElementById("mode-badge");
+      const modes = {
+        live:   ["LIVE SENSOR", "mode-live"],
+        replay: ["DEMO — replaying real USGS quakes", "mode-replay"],
+        mock:   ["MOCK — synthetic shakes", "mode-mock"],
+      };
+      const [label, mcls] = modes[s.mode] || modes.mock;
+      badge.textContent = label;
+      badge.className = `mode-badge ${mcls}`;
+
+      const c = s.calibration;
+      const pill = document.getElementById("calib-pill");
+      if (c.ready) { pill.textContent = "calibrated"; pill.className = "pill ok"; }
+      else { pill.textContent = `learning ${c.n_points}/${c.min_points}`; pill.className = "pill wait"; }
+      document.getElementById("calib-bar").style.width =
+        `${Math.min(100, (c.n_points / c.min_points) * 100)}%`;
+      document.getElementById("calib-rmse").textContent =
+        c.rmse != null ? `±${c.rmse.toFixed(2)} magnitude` : "—";
+      document.getElementById("calib-dist").textContent =
+        c.distance_ready ? `ready (${c.distance_points} pts)` : `learning (${c.distance_points} pts)`;
+      if (s.ai) {
+        document.getElementById("ai-status").textContent = s.ai.ready
+          ? `active — knows ${s.ai.n_quakes} quakes, ${s.ai.n_noise} noises`
+          : `learning (${s.ai.n_quakes} quakes / ${s.ai.n_noise} noises)`;
+      }
+
+      document.getElementById("det-count").textContent = s.detections.length;
+      const list = document.getElementById("det-list");
+      list.innerHTML = "";
+      if (!s.detections.length) {
+        list.innerHTML = '<div class="empty">Waiting for the ground to shake…</div>';
+      } else {
+        s.detections.forEach((d) => list.appendChild(detCard(d)));
+      }
+      document.getElementById("updated").textContent = "updated " + fmtTime(s.updated);
+    }
+
+    async function refresh() {
+      try {
+        const r = await fetch("/api/state", { cache: "no-store" });
+        const s = await r.json();
+        if (!stationSet) {
+          map.setView([s.station.lat, s.station.lon], 8);
+          stationSet = true;
+        }
+        renderQuakes(s.quakes);
+        renderDevice(s.station, s.detections);
+        renderPanel(s);
+      } catch (e) {
+        console.error("state fetch failed", e);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

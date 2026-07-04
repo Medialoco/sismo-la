@@ -13,6 +13,35 @@ source .venv/bin/activate
 python main.py --mock
 ```
 
+### Web dashboard (device vs USGS map)
+A Leaflet dashboard overlays the USGS catalog (circles at epicenters, colored by
+magnitude — same legend as the `quakes.html` tool) with the device's own
+detections (intensity circle at the station location, linked to the matched USGS
+event for side-by-side comparison).
+
+```bash
+cd app
+source .venv/bin/activate
+python server.py --mock            # then open http://localhost:8000
+python server.py --replay          # DEMO/VIDEO mode: replays the last 24h of
+                                   # real USGS quakes as if the sensor were
+                                   # detecting them live (~1 event / 12 s)
+```
+
+In `--replay` mode the map fills up within 2-3 minutes: USGS circles (ground
+truth, colored by magnitude) and the device's own estimates in **red** —
+estimated epicenter and estimated magnitude, deliberately imperfect (offset
+center, over/under-sized circle), with a dashed red error vector between the
+two. The side panel shows the live comparison (`device ~M1.4 vs USGS M1.5,
+dist ~84 vs 83 km`), the calibration converging, and the AI filter rejecting
+noise events (`AI 0% quake`) while confirming real ones (`AI 95%+`). This is
+the shot for the contest video.
+
+On the board, run the same command without `--mock` (serial/Bridge source). The
+map needs WiFi (Leaflet + tiles + USGS). Display vs correlation thresholds are
+split in `config.yaml`: `usgs.display_min_magnitude` controls the map, while
+`usgs.min_magnitude` (M3) gates calibration matches.
+
 ## 1. App Lab — Network setup (GUI, you do it)
 - [ ] Select your WiFi SSID and enter the password (2.4 or 5 GHz).
 - [ ] Wait for "Connected" + an IP.

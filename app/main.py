@@ -24,6 +24,7 @@ import yaml
 
 import usgs
 from calibration import CalibrationModel
+from classifier import QuakeNoiseClassifier
 
 
 def load_config(path: str) -> dict:
@@ -91,10 +92,34 @@ def main() -> None:
         state_file=calcfg["state_file"], min_points=calcfg["min_points"]
     )
     model.load()
+    clf = QuakeNoiseClassifier(
+        state_file=calcfg.get("classifier_state_file", "classifier_state.json")
+    )
+    clf.load()
 
     print(f"[Sismo-LA] station=({st['lat']},{st['lon']}) "
           f"radius={us['radius_km']}km min_mag={us['min_magnitude']}")
     print(f"[Sismo-LA] calibration: {model.status()}")
+    print(f"[Sismo-LA] {clf.status()}")
+
+    # --- Startup calibration check: query USGS right away so the device knows
+    # the current local seismic context before the first shake arrives.
+    quakes: list[usgs.Quake] = []
+    last_poll = 0.0
+    try:
+        quakes = usgs.fetch_recent(
+            st["lat"], st["lon"], us["radius_km"],
+            us.get("display_min_magnitude", us["min_magnitude"]),
+            lookback_minutes=us.get("lookback_minutes", 120),
+        )
+        last_poll = time.monotonic()
+        n_cal = sum(1 for q in quakes if q.magnitude >= us["min_magnitude"])
+        print(f"[Sismo-LA] startup USGS check: {len(quakes)} recent quakes "
+              f"({n_cal} usable for calibration >= M{us['min_magnitude']})")
+        for q in quakes[:3]:
+            print(f"           M{q.magnitude:.1f} @ {q.distance_km:.0f}km  {q.place}")
+    except Exception as e:
+        print(f"[USGS] startup check failed (will retry): {e}")
 
     if args.mock or cfg["source"]["type"] == "mock":
         events = iter_mock_events()
@@ -104,22 +129,27 @@ def main() -> None:
         events = iter_serial_events(s["serial_port"], s["baudrate"])
         print(f"[Sismo-LA] source = serial {s['serial_port']}")
 
-    last_poll = 0.0
-    quakes: list[usgs.Quake] = []
-
     for evt in events:
         now = time.monotonic()
         if now - last_poll > us["poll_interval_s"]:
             try:
                 quakes = usgs.fetch_recent(
-                    st["lat"], st["lon"], us["radius_km"], us["min_magnitude"]
+                    st["lat"], st["lon"], us["radius_km"],
+                    us.get("display_min_magnitude", us["min_magnitude"]),
+                    lookback_minutes=us.get("lookback_minutes", 120),
                 )
                 last_poll = now
             except Exception as e:  # flaky network: keep going
                 print(f"[USGS] request error: {e}")
 
-        match = find_match(evt["recv_time"], quakes, corr["match_window_s"])
+        # Correlation/calibration only trusts confirmed events >= min_magnitude.
+        match_pool = [q for q in quakes if q.magnitude >= us["min_magnitude"]]
+        match = find_match(evt["recv_time"], match_pool, corr["match_window_s"])
         ts = evt["recv_time"].strftime("%H:%M:%S")
+
+        # AI filter: predict before learning from this event.
+        p_quake = clf.predict_proba(evt["pga_g"], evt.get("dur_ms"), evt.get("dom_hz"))
+        ai_txt = f"AI p(quake)={p_quake:.2f}" if p_quake is not None else "AI warming up"
 
         if match:
             model.add_point(
@@ -128,13 +158,17 @@ def main() -> None:
                 magnitude=match.magnitude,
                 event_id=match.event_id,
             )
+            clf.add_sample(evt["pga_g"], evt.get("dur_ms"), evt.get("dom_hz"), label=1)
             print(f"[{ts}] shake PGA={evt['pga_g']}g  <->  USGS M{match.magnitude} "
-                  f"@ {match.distance_km:.0f}km ({match.place}) | {model.status()}")
+                  f"@ {match.distance_km:.0f}km ({match.place}) | {ai_txt} "
+                  f"| {model.status()}")
         else:
+            clf.add_sample(evt["pga_g"], evt.get("dur_ms"), evt.get("dom_hz"), label=0)
             est = model.estimate_magnitude(evt["pga_g"], distance_km=30.0)
             est_txt = f"~M{est:.1f} (estimated @30km)" if est is not None else "unclassified"
+            verdict = "noise" if (p_quake is not None and p_quake < 0.5) else "unconfirmed"
             print(f"[{ts}] shake PGA={evt['pga_g']}g  no USGS match "
-                  f"-> {est_txt} [noise candidate?]")
+                  f"-> {est_txt} | {ai_txt} [{verdict}]")
 
 
 if __name__ == "__main__":
