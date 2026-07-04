@@ -32,6 +32,13 @@ from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import os
+import shlex
+import subprocess
+import tempfile
+
+import requests
+
 import usgs
 from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
@@ -341,6 +348,57 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
             print(f"[{ts}] shake PGA={evt['pga_g']}g no USGS match | {ai_txt} | {model.status()}")
 
 
+def publisher_loop(pub_cfg: dict, state: SharedState) -> None:
+    """Periodically publish the station snapshot to a remote site, so the
+    device is fully autonomous and a public web page can display its data.
+
+    Methods:
+      - "post":    HTTP POST the JSON to ``url`` (with optional bearer token).
+      - "file":    write JSON to ``path`` (atomic), e.g. a synced folder.
+      - "command": write JSON to a temp file, then run ``command`` with the
+                   file path appended — e.g. an scp/rsync/curl upload to
+                   static hosting like benoit-prieur.fr.
+    """
+    method = pub_cfg.get("method", "post")
+    interval = float(pub_cfg.get("interval_s", 60))
+    while True:
+        time.sleep(interval)
+        snapshot = state.snapshot()
+        payload = json.dumps(snapshot).encode("utf-8")
+        try:
+            if method == "post":
+                headers = {"Content-Type": "application/json"}
+                if pub_cfg.get("token"):
+                    headers["Authorization"] = f"Bearer {pub_cfg['token']}"
+                requests.post(pub_cfg["url"], data=payload, headers=headers,
+                              timeout=15).raise_for_status()
+            elif method == "file":
+                path = pub_cfg["path"]
+                tmp = path + ".tmp"
+                with open(tmp, "wb") as f:
+                    f.write(payload)
+                os.replace(tmp, path)
+            elif method == "command":
+                with tempfile.NamedTemporaryFile(
+                    mode="wb", suffix=".json", delete=False,
+                    prefix="station_"
+                ) as f:
+                    f.write(payload)
+                    tmp_path = f.name
+                try:
+                    argv = shlex.split(pub_cfg["command"])
+                    if any("{file}" in a for a in argv):
+                        argv = [a.replace("{file}", tmp_path) for a in argv]
+                    else:
+                        argv.append(tmp_path)
+                    subprocess.run(argv, check=True, timeout=60,
+                                   capture_output=True)
+                finally:
+                    os.unlink(tmp_path)
+        except Exception as e:  # publishing must never kill the pipeline
+            print(f"[publish] {method} failed: {e}")
+
+
 class DashboardHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, state: SharedState, **kwargs):
         self._state = state
@@ -411,6 +469,15 @@ def main() -> None:
         daemon=True,
     )
     worker.start()
+
+    pub_cfg = cfg.get("publish") or {}
+    if pub_cfg.get("enabled"):
+        pub = threading.Thread(
+            target=publisher_loop, args=(pub_cfg, state), daemon=True
+        )
+        pub.start()
+        print(f"[Sismo-LA] publisher on ({pub_cfg.get('method', 'post')}, "
+              f"every {pub_cfg.get('interval_s', 60)}s)")
 
     handler = partial(DashboardHandler, state=state)
     httpd = ThreadingHTTPServer((args.host, args.port), handler)

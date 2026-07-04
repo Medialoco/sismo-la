@@ -40,7 +40,30 @@ the shot for the contest video.
 On the board, run the same command without `--mock` (serial/Bridge source). The
 map needs WiFi (Leaflet + tiles + USGS). Display vs correlation thresholds are
 split in `config.yaml`: `usgs.display_min_magnitude` controls the map, while
-`usgs.min_magnitude` (M3) gates calibration matches.
+`usgs.min_magnitude` (M2) gates calibration matches.
+
+### Autonomous mode: publish to a remote site
+The device can run headless (WiFi + USB-C power only) and push its snapshot to
+a public website every minute. Enable the `publish:` block in `config.yaml`:
+
+```yaml
+publish:
+  enabled: true
+  method: command          # post | file | command
+  interval_s: 60
+  command: "scp -q {file} user@host:/var/www/tools/station.json"
+```
+
+- `post` — HTTP POST the JSON to an endpoint you control.
+- `file` — atomic write to a local path (synced or served folder).
+- `command` — run any upload command (`scp`, `rsync`, `curl -T` for FTP…);
+  `{file}` is replaced by the JSON temp-file path.
+
+Then upload `web-remote/sismo.html` next to `station.json` on the site: it is a
+fully static page (works on any host, e.g. next to `tools/quakes.html` on
+benoit-prieur.fr) that fetches USGS live from the browser and overlays the
+station's red estimates from `station.json`. If the station stops publishing,
+the page degrades gracefully to a USGS-only map.
 
 ## 1. App Lab — Network setup (GUI, you do it)
 - [ ] Select your WiFi SSID and enter the password (2.4 or 5 GHz).

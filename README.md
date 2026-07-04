@@ -114,8 +114,11 @@ sismo-la/
 │   └── images/                # screenshots for docs & submission
 ├── firmware/seismo_mcu/
 │   └── seismo_mcu.ino         # MCU: STA/LTA + events via Bridge Monitor
+├── web-remote/
+│   └── sismo.html             # static public page for any web host: reads the
+│                              #   station.json the device uploads + live USGS
 └── app/
-    ├── server.py              # detection loop + web dashboard (main entrypoint)
+    ├── server.py              # detection loop + web dashboard + publisher
     ├── main.py                # headless CLI variant
     ├── usgs.py                # USGS FDSN client (LA-centered)
     ├── calibration.py         # amplitude model + distance model (persisted)
@@ -125,6 +128,17 @@ sismo-la/
     └── config.example.yaml
 ```
 
+## Autonomous operation
+
+The station needs only **WiFi and USB-C power** — no attached computer. Beyond
+serving its local dashboard, `server.py` can push a JSON snapshot of the
+station (detections, estimates, calibration state) to a remote site every
+minute (`publish:` block in `config.yaml`: HTTP POST, file write, or any
+upload command such as `scp`/`curl -T`). The static page
+[`web-remote/sismo.html`](web-remote/sismo.html) — hostable anywhere, no
+backend — overlays that snapshot on the live USGS map, so anyone can watch
+the device's red estimates against the official record from the open web.
+
 ## Status
 
 - [x] Full software chain validated end-to-end (replay mode, live USGS data):
@@ -133,6 +147,8 @@ sismo-la/
 - [x] Firmware compiles and flashes on the UNO Q (`arduino-cli`, FQBN
       `arduino:zephyr:unoq`); sensor connected (Modulino on Qwiic).
 - [x] Board on WiFi, USGS reachable from the board.
+- [x] Autonomous publishing: snapshot upload to a remote site + static public
+      page (`web-remote/sismo.html`), verified locally end-to-end.
 - [ ] MCU→Linux Bridge link (board OS update in progress to match library
       versions), then first live tap test.
 - [ ] Accumulate real M2+ correlations over LA; produce the calibration curve.
