@@ -45,6 +45,7 @@ from classifier import QuakeNoiseClassifier
 from main import (
     find_match,
     iter_mock_events,
+    iter_monitor_events,
     iter_serial_events,
     load_config,
 )
@@ -278,6 +279,10 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
     elif mode == "mock" or cfg["source"]["type"] == "mock":
         events = iter_mock_events()
         print("[Sismo-LA] source = MOCK")
+    elif cfg["source"]["type"] == "monitor":
+        cmd = cfg["source"].get("monitor_command", "arduino-app-cli monitor")
+        events = iter_monitor_events(cmd)
+        print(f"[Sismo-LA] source = Bridge Monitor ({cmd})")
     else:
         s = cfg["source"]
         events = iter_serial_events(s["serial_port"], s["baudrate"])

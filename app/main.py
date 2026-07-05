@@ -50,6 +50,42 @@ def iter_serial_events(port: str, baudrate: int):
         yield evt
 
 
+def iter_monitor_events(command: str):
+    """Generator of events from the MCU via the Bridge Monitor stream.
+
+    On the UNO Q the MCU's Monitor is exposed by the arduino-router, not by a
+    tty. ``command`` is whatever attaches to it and prints JSON lines:
+      - on the board:   arduino-app-cli monitor
+      - from a dev Mac: adb shell arduino-app-cli monitor
+    Heartbeats ({"status": "alive", ...}) prove the link but are not shakes,
+    so anything without a ``pga_g`` field is skipped.
+    """
+    import shlex
+    import subprocess
+
+    while True:
+        proc = subprocess.Popen(
+            shlex.split(command), stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL, text=True,
+        )
+        print(f"[monitor] attached via: {command}")
+        for line in proc.stdout:
+            line = line.strip()
+            if not line or not line.startswith("{"):
+                continue
+            try:
+                evt = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if "pga_g" not in evt:
+                continue  # heartbeat / status line
+            evt["recv_time"] = datetime.now(timezone.utc)
+            yield evt
+        proc.wait()
+        print("[monitor] stream ended, re-attaching in 3s...")
+        time.sleep(3)
+
+
 def iter_mock_events(min_seconds=8, max_seconds=20):
     """Generate fake shakes to test the chain without the UNO Q."""
     while True:
@@ -124,6 +160,10 @@ def main() -> None:
     if args.mock or cfg["source"]["type"] == "mock":
         events = iter_mock_events()
         print("[Sismo-LA] source = MOCK")
+    elif cfg["source"]["type"] == "monitor":
+        cmd = cfg["source"].get("monitor_command", "arduino-app-cli monitor")
+        events = iter_monitor_events(cmd)
+        print(f"[Sismo-LA] source = Bridge Monitor ({cmd})")
     else:
         s = cfg["source"]
         events = iter_serial_events(s["serial_port"], s["baudrate"])

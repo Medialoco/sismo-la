@@ -51,6 +51,10 @@ unsigned long lastSampleUs = 0;
 long zeroCrossings = 0;
 float prevDyn = 0.0f;
 
+// Heartbeat: proves the MCU->Linux Monitor link is alive even with no shakes.
+const unsigned long HEARTBEAT_MS = 10000;
+unsigned long lastHeartbeatMs = 0;
+
 void setup() {
   Bridge.begin();
   Monitor.begin(115200);
@@ -116,6 +120,16 @@ void loop() {
     }
   }
   prevDyn = dyn - sta; // centered signal for zero-crossing counting
+
+  unsigned long ms = millis();
+  if (ms - lastHeartbeatMs >= HEARTBEAT_MS) {
+    lastHeartbeatMs = ms;
+    Monitor.print("{\"status\":\"alive\",\"t_ms\":");
+    Monitor.print(ms);
+    Monitor.print(",\"sta_lta\":");
+    Monitor.print(ratio, 3);
+    Monitor.println("}");
+  }
 }
 
 // JSON line over the Bridge Monitor stream (reaches the Linux MPU / USB host).

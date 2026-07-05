@@ -14,6 +14,9 @@ correlation:
   match_window_s: 180   # local timestamp <-> USGS origin time window
 
 source:
+  # "monitor" = real UNO Q via the Bridge Monitor stream (recommended on the
+  # board: type: monitor + monitor_command: arduino-app-cli monitor);
+  # "serial" = raw tty; "mock" = hardware-free development.
   # "serial" for the real UNO Q, "mock" for hardware-free development.
   type: serial
   serial_port: /dev/ttyACM0
