@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Live map of the last 5 earthquakes near Los Angeles, with the last 3 shakes recorded by the Sismo-LA station" />
+  <title>Last 5 Earthquakes in Los Angeles</title>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q8WHXGDDWG"></script>
+  <script src="../js/site-head.js?v=20260310a"></script>
+  <link rel="stylesheet" href="../css/style.css?v=20260307g" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    main {
+      overflow: hidden;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .controls {
+      position: fixed;
+      top: 70px;
+      right: 10px;
+      z-index: 9999;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+
+    .leaflet-container,
+    .leaflet-control,
+    .leaflet-popup-content,
+    .leaflet-tooltip,
+    .leaflet-control-attribution {
+      font-family: inherit;
+    }
+
+    .legend {
+      position: absolute;
+      z-index: 1000;
+      bottom: 50px;
+      left: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.m0 {
+      background: #fff7bc;
+    }
+
+    .dot.m2 {
+      background: #fee391;
+    }
+
+    .dot.m3 {
+      background: #fec44f;
+    }
+
+    .dot.m4 {
+      background: #fe9929;
+    }
+
+    .dot.m5 {
+      background: #cc4c02;
+    }
+
+    .dot.dev {
+      background: rgba(230, 57, 70, 0.35);
+      border: 1.5px solid #e63946;
+    }
+
+    .dot.ring {
+      background: transparent;
+      border: 1.5px dashed #e63946;
+    }
+
+    .legend-sep {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dotted var(--border);
+    }
+
+    .station-badge {
+      display: inline-block;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .station-badge.on {
+      border-color: #e63946;
+      color: #e63946;
+    }
+
+    .quakes-footer {
+      border-top: 1px dotted;
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .quakes-footer a {
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .quakes-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Popup - theme-adapted */
+    .quakes-popup .leaflet-popup-content-wrapper {
+      background: var(--bg-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px var(--shadow-card);
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .quakes-popup .leaflet-popup-content {
+      margin: 0;
+      min-width: 200px;
+    }
+
+    .quakes-popup .leaflet-popup-tip {
+      background: var(--bg-soft);
+    }
+
+    .quakes-popup-content {
+      padding: 0;
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .quakes-popup-header {
+      padding: 0.65rem 0.9rem 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quakes-popup-mag-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.1rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* Mw badge - nomenclature YlOrRd (same as legend/markers) */
+    .quakes-popup-content.quakes-popup-mag-m0 .quakes-popup-mag-badge { background: #fff7bc; color: #6b5a0a; }
+    .quakes-popup-content.quakes-popup-mag-m2 .quakes-popup-mag-badge { background: #fee391; color: #6b5a0a; }
+    .quakes-popup-content.quakes-popup-mag-m3 .quakes-popup-mag-badge { background: #fec44f; color: #5c3d0a; }
+    .quakes-popup-content.quakes-popup-mag-m4 .quakes-popup-mag-badge { background: #fe9929; color: #2a1a06; }
+    .quakes-popup-content.quakes-popup-mag-m5 .quakes-popup-mag-badge { background: #cc4c02; color: #fff; }
+    .quakes-popup-content.quakes-popup-device .quakes-popup-mag-badge { background: #e63946; color: #fff; }
+
+    .quakes-popup-note {
+      padding: 0 0.9rem 0.65rem;
+      font-size: 0.65rem;
+      line-height: 1.35;
+      color: var(--text-muted);
+    }
+
+    .quakes-popup-body {
+      padding: 0 0.9rem 0.65rem;
+    }
+
+    .quakes-popup-dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 4em 1fr;
+      gap: 0.2rem 1rem;
+    }
+
+    .quakes-popup-dl dt {
+      margin: 0;
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .quakes-popup-dl dd {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+
+    .quakes-popup-tz {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .quakes-popup-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      margin: 0.6rem 0.9rem 0.75rem;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s, border-color 0.2s;
+    }
+
+    .quakes-popup-link:hover {
+      color: var(--text);
+      background: var(--bg-soft-start);
+      border-color: var(--text-muted);
+    }
+
+    [data-theme="dark"] .quakes-popup-link {
+      color: var(--text-muted-alt);
+      border-color: var(--border);
+    }
+
+    [data-theme="dark"] .quakes-popup-link:hover {
+      color: var(--text);
+      border-color: var(--text-muted-alt);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-inner">
+      <nav>
+        <a href="../index.html">Home</a>
+        <a href="../tech_books.html">Tech Books</a>
+        <a href="../tech_articles.html">Tech Articles/Chapters</a>
+        <a href="../tech_videos.html">Tech Videos</a>
+      </nav>
+      <button type="button" id="theme-toggle" class="theme-toggle" data-icon-sun="../images/ui/theme-sun.svg" data-icon-moon="../images/ui/theme-moon.svg" aria-label="Toggle dark/light mode">
+        <img id="theme-icon" src="../images/ui/theme-moon.svg" alt="" width="18" height="18" aria-hidden="true">
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div id="map"></div>
+
+    <div class="controls">
+      <strong>Last 5 earthquakes around LA (~100 miles), source: USGS</strong>
+      <button id="refreshBtn">↻ Refresh</button>
+      <span id="updated">—</span>
+      <div>Sismo-LA station <span id="stationBadge" class="station-badge">offline</span></div>
+    </div>
+
+    <div class="legend">
+      <div><strong>Magnitude (Mw)</strong></div>
+      <div><span class="dot m0"></span> &lt; 2.0</div>
+      <div><span class="dot m2"></span> 2.0–2.9</div>
+      <div><span class="dot m3"></span> 3.0–3.9</div>
+      <div><span class="dot m4"></span> 4.0–4.9</div>
+      <div><span class="dot m5"></span> ≥ 5.0</div>
+      <div class="legend-sep"><strong>Sismo-LA station</strong></div>
+      <div><span class="dot dev"></span> Last shakes recorded</div>
+      <div><span class="dot ring"></span> Distance only, direction unknown</div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const LA = { lat: 34.0092, lon: -118.4976 };
+    const R_MILES = 100;
+    const R_KM = Math.round(R_MILES * 1.60934);
+    const USGS_URL = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&limit=5&latitude=${LA.lat}&longitude=${LA.lon}&maxradiuskm=${R_KM}&eventtype=earthquake`;
+
+    // Snapshot published by the Sismo-LA station (Arduino UNO Q). Absent or
+    // stale is a normal state: the page then shows the USGS layer alone.
+    const STATION_URL = 'station.json';
+    const STATION_SHOWN = 3;
+    const DEVICE_COLOR = '#e63946';
+
+    const map = L.map('map', { attributionControl: true }).setView([LA.lat, LA.lon], 8);
+    map.attributionControl.setPrefix(false);
+
+    // Keyless, deliberately muted basemap: the data has to be the only thing
+    // with colour on this map. Carto's anonymous tiles now come stamped with
+    // an "API KEY REQUIRED" watermark, hence Esri here.
+    const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
+    const ESRI_ATTR = 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ';
+    const baseOpts = { maxZoom: 19, maxNativeZoom: 16, attribution: ESRI_ATTR };
+    let baseLayer = null, labelLayer = null;
+
+    // Place names ride above the basemap but below the data, so a circle is
+    // never hidden by a label. Carto baked labels into the base tile; Esri
+    // serves them separately, hence this pane.
+    map.createPane('labels');
+    map.getPane('labels').style.zIndex = 250;
+    map.getPane('labels').style.pointerEvents = 'none';
+
+    function applyBasemap() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const tone = dark ? 'Dark' : 'Light';
+      if (baseLayer) map.removeLayer(baseLayer);
+      if (labelLayer) map.removeLayer(labelLayer);
+      baseLayer = L.tileLayer(`${ESRI}/World_${tone}_Gray_Base/MapServer/tile/{z}/{y}/{x}`, baseOpts).addTo(map);
+      labelLayer = L.tileLayer(`${ESRI}/World_${tone}_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
+        Object.assign({ pane: 'labels', attribution: '' }, baseOpts)).addTo(map);
+    }
+    applyBasemap();
+    new MutationObserver(applyBasemap).observe(document.documentElement,
+      { attributes: true, attributeFilter: ['data-theme'] });
+
+    let markersLayer = L.layerGroup().addTo(map);
+    let stationLayer = L.layerGroup().addTo(map);
+
+    function magClass(m) {
+      if (m >= 5) return 'm5';
+      if (m >= 4) return 'm4';
+      if (m >= 3) return 'm3';
+      if (m >= 2) return 'm2';
+      return 'm0';
+    }
+    function circleStyle(mag) {
+      const base = 1200;
+      const r = Math.max(200, base * Math.pow(Math.max(mag, 0.1), 1.5));
+      return { radius: r / (map.getZoom() * 2.5), color: '#222', weight: 0.8, fillOpacity: 0.65 };
+    }
+    function formatPopup(props, coords) {
+      const tz = 'America/Los_Angeles';
+      const dt = new Date(props.time);
+      const local = dt.toLocaleString('en-US', { timeZone: tz, hour12: false });
+      const depthKm = (coords[2] || 0).toFixed(1);
+      const mag = (props.mag ?? '—');
+      const place = props.place || '—';
+      const url = props.url || props.detail || '#';
+      const mClass = magClass(props.mag ?? 0);
+      return `
+      <div class="quakes-popup-content quakes-popup-mag-${mClass}">
+        <div class="quakes-popup-header">
+          <span class="quakes-popup-mag-badge">Mw ${mag}</span>
+        </div>
+        <div class="quakes-popup-body">
+          <dl class="quakes-popup-dl">
+            <dt>When</dt>
+            <dd>${local} <span class="quakes-popup-tz">(LA time)</span></dd>
+            <dt>Depth</dt>
+            <dd>${depthKm} km</dd>
+            <dt>Location</dt>
+            <dd>${place}</dd>
+          </dl>
+        </div>
+        <a href="${url}" target="_blank" rel="noopener noreferrer" class="quakes-popup-link">USGS Details →</a>
+      </div>`;
+    }
+    async function loadQuakes() {
+      try {
+        document.getElementById('updated').textContent = 'loading…';
+        const res = await fetch(USGS_URL, { cache: 'no-store' });
+        const data = await res.json();
+        markersLayer.clearLayers();
+        const bounds = [];
+        (data.features || []).forEach(f => {
+          const props = f.properties || {};
+          const [lon, lat, depth] = f.geometry.coordinates;
+          const mag = props.mag ?? 0;
+          const marker = L.circleMarker([lat, lon], circleStyle(mag));
+          const colorMap = {
+            m0: '#fff7bc',
+            m2: '#fee391',
+            m3: '#fec44f',
+            m4: '#fe9929',
+            m5: '#cc4c02'
+          };
+          marker.setStyle({ fillColor: colorMap[magClass(mag)] });
+          marker.bindPopup(formatPopup(props, [lon, lat, depth]), { className: 'quakes-popup' });
+          marker.addTo(markersLayer);
+          bounds.push([lat, lon]);
+        });
+        if (bounds.length) map.fitBounds(L.latLngBounds(bounds).pad(0.2));
+        document.getElementById('updated').textContent = `Updated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}`;
+      } catch {
+        document.getElementById('updated').textContent = 'error loading';
+      }
+    }
+
+    function devicePopup(d, station) {
+      const e = d.device_est;
+      const tz = 'America/Los_Angeles';
+      let when = '—';
+      try { when = new Date(d.recv_time).toLocaleString('en-US', { timeZone: tz, hour12: false }); } catch (err) { }
+      const truth = d.match
+        ? `M${d.match.magnitude.toFixed(1)} at ${d.match.distance_km} km — ${d.match.place}`
+        : 'no cataloged quake matched this shake';
+      // The station has a single sensor, so it cannot measure a direction. A
+      // "point" marker only reaches a point because the bearing is taken from
+      // the matched USGS event; only the distance and magnitude are the
+      // device's own. Saying otherwise would overstate what it measures.
+      const note = e.kind === 'point'
+        ? 'Distance and magnitude are the device\'s own estimates. The direction is borrowed from the matched USGS event — a single station cannot measure a bearing.'
+        : 'A single station cannot measure a direction, so the epicenter lies somewhere on this ring.';
+      return `
+      <div class="quakes-popup-content quakes-popup-device">
+        <div class="quakes-popup-header">
+          <span class="quakes-popup-mag-badge">~Mw ${e.mag}</span>
+          <span class="quakes-popup-tz">Sismo-LA estimate</span>
+        </div>
+        <div class="quakes-popup-body">
+          <dl class="quakes-popup-dl">
+            <dt>When</dt>
+            <dd>${when} <span class="quakes-popup-tz">(LA time)</span></dd>
+            <dt>Distance</dt>
+            <dd>~${e.distance_km} km from the station</dd>
+            <dt>Peak</dt>
+            <dd>${d.pga_g} g${d.dom_hz ? ` · ${d.dom_hz} Hz` : ''}</dd>
+            <dt>USGS</dt>
+            <dd>${truth}</dd>
+          </dl>
+        </div>
+        <div class="quakes-popup-note">${note}</div>
+        <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener noreferrer" class="quakes-popup-link">How this is measured →</a>
+      </div>`;
+    }
+
+    function renderStation(s) {
+      const badge = document.getElementById('stationBadge');
+      stationLayer.clearLayers();
+      const st = s.station || {};
+      if (st.lat == null || st.lon == null) { badge.textContent = 'offline'; badge.className = 'station-badge'; return; }
+
+      L.circleMarker([st.lat, st.lon], {
+        radius: 5, color: DEVICE_COLOR, weight: 2, fillColor: DEVICE_COLOR, fillOpacity: 1
+      }).bindPopup('<div class="quakes-popup-content"><div class="quakes-popup-body">' +
+        '<b>Sismo-LA station</b><br>Arduino UNO Q + MEMS accelerometer</div></div>',
+        { className: 'quakes-popup' }).addTo(stationLayer);
+
+      const shown = (s.detections || []).filter(d => d.device_est).slice(0, STATION_SHOWN);
+      shown.forEach(d => {
+        const e = d.device_est;
+        const popup = devicePopup(d, st);
+        if (e.kind === 'point') {
+          const style = circleStyle(e.mag);
+          L.circleMarker([e.lat, e.lon], Object.assign({}, style, {
+            color: DEVICE_COLOR, weight: 1.5, dashArray: '3,3',
+            fillColor: DEVICE_COLOR, fillOpacity: 0.15
+          })).bindPopup(popup, { className: 'quakes-popup' }).addTo(stationLayer);
+        } else {
+          L.circle([st.lat, st.lon], {
+            radius: e.distance_km * 1000, color: DEVICE_COLOR, weight: 1.5,
+            dashArray: '6,8', fill: false, opacity: 0.7
+          }).bindPopup(popup, { className: 'quakes-popup' }).addTo(stationLayer);
+        }
+      });
+
+      badge.textContent = shown.length ? `live · ${shown.length} recent` : 'live · no shake yet';
+      badge.className = 'station-badge on';
+    }
+
+    async function loadStation() {
+      const badge = document.getElementById('stationBadge');
+      try {
+        const res = await fetch(STATION_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error(res.status);
+        renderStation(await res.json());
+      } catch {
+        stationLayer.clearLayers();
+        badge.textContent = 'offline';
+        badge.className = 'station-badge';
+      }
+    }
+
+    function refresh() { loadQuakes(); loadStation(); }
+    document.getElementById('refreshBtn').addEventListener('click', refresh);
+    refresh();
+    setInterval(refresh, 60000);
+  </script>
+
+  <footer>
+  </footer>
+  <script src="../js/theme.js?v=20260307b" defer></script>
+</body>
+</html>

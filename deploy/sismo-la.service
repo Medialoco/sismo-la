@@ -1,0 +1,46 @@
+# Restart the Sismo-LA station when the board boots.
+#
+# App Lab has no autostart of its own: `arduino-app-cli app start` brings an
+# app up, but the generated compose file carries no restart policy, so the
+# container comes back with RestartPolicy=no. Without this unit the station
+# stops for good at the first reboot or power cut — which is exactly what an
+# unattended seismic station must not do.
+#
+# Install (from the board, or over adb):
+#   sudo cp deploy/sismo-la.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now sismo-la.service
+#
+# Check:  systemctl status sismo-la.service
+#         arduino-app-cli app list | grep sismo-la
+
+[Unit]
+Description=Sismo-LA seismic station (Arduino App Lab)
+Documentation=https://github.com/Medialoco/sismo-la
+After=arduino-app-cli.service arduino-router.service docker.service network-online.target
+Wants=arduino-app-cli.service arduino-router.service docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=1000
+Group=arduino
+Environment="HOME=/home/arduino"
+Environment="ARDUINO_ROUTER_SOCKET=/var/run/arduino-router.sock"
+
+# The app-cli daemon accepts connections a moment after its unit is active;
+# starting the app too early fails with a bare connection error.
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do /usr/bin/arduino-app-cli app list >/dev/null 2>&1 && exit 0; sleep 2; done; echo "app-cli daemon never became ready" >&2; exit 1'
+
+# `restart` covers both cases: it starts a stopped app and re-starts a running
+# one, so the unit stays idempotent if it is triggered by hand.
+ExecStart=/usr/bin/arduino-app-cli app restart /home/arduino/ArduinoApps/sismo-la
+ExecStop=/usr/bin/arduino-app-cli app stop /home/arduino/ArduinoApps/sismo-la
+
+# First start after a change recompiles the sketch and provisions the venv.
+TimeoutStartSec=900
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
