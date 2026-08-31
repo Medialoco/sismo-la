@@ -1,0 +1,20 @@
+# Build profile for the MCU half of the App (STM32U585, Zephyr).
+#
+# The arduino:zephyr platform requires a NAMED profile: with only a bare
+# `default_fqbn`, `arduino-app-cli app start` fails with "sketch has no default
+# profile".
+#
+# Arduino_RouterBridge is pinned on purpose. The board's `arduino-router`
+# service and this library must be version-matched; a board image shipping
+# router 0.1.x against a 0.4.x library produces a silent "invalid packet" link
+# that never delivers events. Run `apt full-upgrade` on the board before
+# flashing, then keep these two in step.
+profiles:
+  default:
+    platforms:
+      - platform: arduino:zephyr
+    libraries:
+      - Arduino_RouterBridge (0.4.3)
+      - Arduino_Modulino (0.9.0)
+
+default_profile: default

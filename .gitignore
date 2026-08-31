@@ -6,7 +6,7 @@ venv/
 *.egg-info/
 
 # Local config & data
-app/config.yaml
+python/config.yaml
 *.local.yaml
 data/
 *.db
@@ -22,6 +22,7 @@ events_log.jsonl
 
 # Arduino / App Lab build
 build/
+.cache/
 *.bin
 *.elf
 *.hex

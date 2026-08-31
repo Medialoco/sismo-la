@@ -9,7 +9,7 @@
  * `Serial` goes to the D0/D1 UART pins (NOT USB): the USB-C port belongs to the
  * Linux MPU. `Monitor` routes through the Arduino Router (Bridge) to the Linux
  * side, where it is visible from App Lab, `arduino-cli monitor`, or any client
- * of the router — that is the stream `app/main.py` consumes.
+ * of the router — that is the stream `python/main.py` consumes.
  *
  * Sensor: Modulino Movement (LSM6DSOX) over Qwiic (bus Wire1). Adapt for a
  * different IMU.
@@ -65,7 +65,7 @@ void setup() {
   // so we pass the bus explicitly (known gotcha on this board).
   Modulino.begin(Wire1);
   imu.begin();
-  Monitor.println("{\"status\":\"seismo_mcu ready\"}");
+  Monitor.println("{\"status\":\"sismo-la mcu ready\"}");
 
   // Seed both averages with the first reading instead of letting the LTA climb
   // from ~0: a 10 s EMA started at zero stays far from the true noise floor for

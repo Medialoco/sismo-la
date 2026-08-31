@@ -1,22 +1,22 @@
-# App Lab manifest (SKELETON TO ADAPT to the real App Lab schema).
-# Goal: declare the Python app (MPU), the MCU sketch and the bricks used.
+# Arduino App Lab manifest.
+#
+# An App is this folder: app.yaml + python/ (runs on the Dragonwing MPU under
+# Debian) + sketch/ (runs on the STM32U585 MCU under Zephyr). `arduino-app-cli
+# app start .` builds the sketch, flashes the MCU, installs python/requirements
+# and launches python/main.py, wiring the two halves over the Bridge.
 name: sismo-la
-description: Low-cost community seismograph for Los Angeles, calibrated via USGS.
-version: 0.2.0
+icon: 🌎
+description: >-
+  A seismograph that calibrates itself against the live USGS catalog: every
+  confirmed Los Angeles earthquake teaches the device its own site-specific
+  magnitude and distance model.
 
-# Python application running under Debian Linux (Dragonwing QRB2210).
-# server.py runs the detection/correlation/calibration loop AND serves the
-# web dashboard; use main.py for the headless CLI variant.
-python:
-  entrypoint: app/server.py
-  requirements: app/requirements.txt
+# The dashboard served by python/main.py.
+ports:
+  - 8000
 
-# Sketch running on the real-time MCU (STM32U585).
-sketch:
-  path: firmware/seismo_mcu/seismo_mcu.ino
-
-# App Lab bricks to wire in (to confirm in the App Lab IDE).
-bricks:
-  - web        # dashboard (app/dashboard/index.html)
-  - ai         # Edge Impulse model: earthquake vs noise (future upgrade of
-               # the built-in logistic-regression filter in app/classifier.py)
+# No Bricks: the map dashboard is served directly by the Python half, and the
+# quake-vs-noise filter is the online logistic regression in
+# python/classifier.py. Swapping that filter for an Edge Impulse model via the
+# AI brick is the planned upgrade.
+bricks: []

@@ -26,7 +26,7 @@ The recommended sensor is the same family used in real low-cost seismic projects
 (a MEMS IMU). Any of these work over I²C:
 
 - **Arduino Modulino Movement** (LSM6DSOX, 6-axis) — *recommended*: Qwiic, truly
-  plug-and-play with the UNO Q, matches the `firmware/seismo_mcu` code as-is.
+  plug-and-play with the UNO Q, matches the `sketch/sketch.ino` code as-is.
 - **SparkFun / Adafruit LSM6DSOX breakout** — same chip, often has a Qwiic/STEMMA
   QT connector too.
 - **MPU-6050 breakout** — cheapest, very common, but noisier; adapt the library
@@ -35,7 +35,7 @@ The recommended sensor is the same family used in real low-cost seismic projects
 
 > The firmware currently targets the **LSM6DSOX via the `Modulino` library**.
 > If you choose another chip, swap the sensor library and the read calls in
-> `firmware/seismo_mcu/seismo_mcu.ino` (the `readDynamicMagnitude()` function).
+> `sketch/sketch.ino` (the `readDynamicMagnitude()` function).
 
 ## Wiring
 

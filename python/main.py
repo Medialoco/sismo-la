@@ -1,6 +1,6 @@
 """Sismo-LA - web dashboard server (Dragonwing MPU).
 
-Runs the same detection/correlation/calibration loop as ``main.py`` in a
+Runs the same detection/correlation/calibration loop as ``pipeline.py`` in a
 background thread, keeps the resulting state in memory, and exposes:
 
   - ``GET /api/state``  -> JSON snapshot (station, USGS quakes, device
@@ -17,9 +17,13 @@ the true bearing purely so it can be drawn as a point; without a match it is
 drawn as a ring, which is the honest representation.
 
 Usage:
-    python server.py --mock                 # hardware-free development
-    python server.py --replay               # demo: replay recent USGS quakes
-    python server.py                        # serial source (config.yaml)
+    python main.py --mock                   # hardware-free development
+    python main.py --replay                 # demo: replay recent USGS quakes
+    python main.py                          # real sensor source (config.yaml)
+
+This is the entry point Arduino App Lab starts on the MPU: an App is a folder
+holding ``app.yaml``, ``python/main.py`` and ``sketch/``, and the runtime builds
+the sketch, flashes the MCU, installs these requirements and runs this file.
 """
 
 from __future__ import annotations
@@ -46,7 +50,7 @@ import requests
 import usgs
 from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
-from main import (
+from pipeline import (
     find_match,
     iter_mock_events,
     iter_monitor_events,

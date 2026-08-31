@@ -3,14 +3,14 @@
 The full path from zero to a calibrating seismograph. Tick as you go.
 
 ## 0. Software chain (no hardware needed) — DONE
-- [x] Python venv + dependencies installed (`app/.venv`).
-- [x] Live USGS fetch verified (M3+ around LA, distances computed).
+- [x] Python venv + dependencies installed (`python/.venv`).
+- [x] Live USGS fetch verified (M2+ around LA, distances computed).
 - [x] Full pipeline runs in `--mock` mode.
 
 ```bash
-cd app
+cd python
 source .venv/bin/activate
-python main.py --mock
+python pipeline.py --mock          # headless variant
 ```
 
 ### Web dashboard (device vs USGS map)
@@ -20,10 +20,10 @@ detections (intensity circle at the station location, linked to the matched USGS
 event for side-by-side comparison).
 
 ```bash
-cd app
+cd python
 source .venv/bin/activate
-python server.py --mock            # then open http://localhost:8000
-python server.py --replay          # DEMO/VIDEO mode: replays the last 24h of
+python main.py --mock              # then open http://localhost:8000
+python main.py --replay            # DEMO/VIDEO mode: replays the last 24h of
                                    # real USGS quakes as if the sensor were
                                    # detecting them live (~1 event / 12 s)
 ```
@@ -90,18 +90,23 @@ curl -s "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitud
 - [ ] Plug it into the UNO Q **Qwiic** port (bus `Wire1` on the UNO Q).
 - [ ] Mount it rigidly to a solid surface (see `hardware.md`).
 
-## 5. Flash & first signal (MCU)
-- [ ] Build/flash `firmware/seismo_mcu/seismo_mcu.ino` via App Lab.
-- [ ] Open the serial monitor at 115200 baud, tap the desk.
-- [ ] See JSON lines: `{"t_ms":...,"pga_g":...,"dur_ms":...,"dom_hz":...}`.
+## 5. Run it as one App (both halves together)
+- [ ] Copy the repo to the board: `scp -r sismo-la arduino@<board-ip>:~/ArduinoApps/`.
+- [ ] `arduino-app-cli app start ~/ArduinoApps/sismo-la` — builds the sketch,
+      flashes the MCU, installs `python/requirements.txt`, runs `python/main.py`.
+- [ ] `arduino-app-cli app logs ~/ArduinoApps/sismo-la` — both halves interleaved.
+- [ ] Tap the desk; see JSON lines
+      `{"t_ms":...,"pga_g":...,"dur_ms":...,"dom_hz":...}` in the logs.
+- [ ] **Check `dom_hz` actually varies between taps.** It was stuck near 25 Hz
+      until the sign-test fix of 2026-08-31; a constant value means the fix did
+      not take, and both the distance model and the AI filter run blind.
 
-## 6. Wire MCU → Linux
-- [ ] Replace the prototype serial transport with the App Lab **Bridge (RPC)**.
-- [ ] Point `app/config.yaml` `source.type` to the real source.
-- [ ] Run `app/main.py` on the board; confirm shakes flow through.
+## 6. Point the app at the real source
+- [ ] Set `source.type` in `python/config.yaml` to `monitor`.
+- [ ] Confirm shakes flow through to the dashboard.
 
 ## 7. Calibration & AI (over time)
-- [ ] Let it run in LA; accumulate M3+ correlations (calibration points).
+- [ ] Let it run in LA; accumulate M2+ correlations (calibration points).
 - [ ] Collect noise samples (truck, door, footsteps) for Edge Impulse.
 - [ ] Train + deploy the earthquake-vs-noise classifier.
 

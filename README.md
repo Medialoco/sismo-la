@@ -41,18 +41,27 @@ No hardware needed. Replay mode pulls the genuine catalog for the last 24 hours
 and drives the full pipeline with it.
 
 ```bash
-cd app
+cd python
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp config.example.yaml config.yaml
 
-python server.py --replay     # then open http://localhost:8000
+python main.py --replay       # then open http://localhost:8000
 ```
 
 Watch the side panel: the amplitude model flips to *calibrated*, the distance
 model to *ready*, and the noise filter starts telling earthquakes from trucks.
-Other modes: `python server.py --mock` (synthetic shakes), `python main.py
---mock` (headless), `python server.py` (real sensor on the board).
+Other modes: `python main.py --mock` (synthetic shakes), `python pipeline.py
+--mock` (headless), `python main.py` (real sensor on the board).
+
+On the board itself this is one command, because the repository *is* an App Lab
+App — `app.yaml` plus `python/` for the Linux half and `sketch/` for the MCU
+half:
+
+```bash
+arduino-app-cli app start ~/ArduinoApps/sismo-la    # builds, flashes, runs both
+arduino-app-cli app logs  ~/ArduinoApps/sismo-la    # both halves, interleaved
+```
 
 ## How the learning loop works
 
@@ -186,7 +195,7 @@ UNO Q gotchas we learned the hard way (details in
 ## Autonomous operation
 
 The station needs only WiFi and USB-C power — no attached computer. Beyond its
-local dashboard, `server.py` can push a JSON snapshot (detections, estimates,
+local dashboard, `python/main.py` can push a JSON snapshot (detections, estimates,
 calibration state) to a remote site every minute (`publish:` block in
 `config.yaml`: HTTP POST, file write, or any upload command such as `scp`).
 The static page [`web-remote/sismo.html`](web-remote/sismo.html) — hostable
@@ -195,10 +204,24 @@ degrades to USGS-only if the station goes offline.
 
 ## Repository layout
 
+The three top-level items are exactly what Arduino App Lab expects of an App:
+the manifest, the Linux half, the MCU half.
+
 ```
 sismo-la/
-├── README.md
-├── app.yaml                   # App Lab manifest (skeleton)
+├── app.yaml                   # App Lab manifest (name, ports, bricks)
+├── python/                    # runs on the Dragonwing MPU (Debian)
+│   ├── main.py                # App Lab entry point: loop + dashboard + publisher
+│   ├── pipeline.py            # detection/correlation helpers + headless CLI
+│   ├── usgs.py                # USGS FDSN client (LA-centered)
+│   ├── calibration.py         # amplitude model + distance model (persisted)
+│   ├── classifier.py          # online quake-vs-noise logistic regression
+│   ├── dashboard/index.html   # Leaflet map: USGS vs device, self-calib status
+│   ├── requirements.txt
+│   └── config.example.yaml
+├── sketch/                    # runs on the STM32U585 MCU (Zephyr)
+│   ├── sketch.ino             # STA/LTA + events via Bridge Monitor
+│   └── sketch.yaml            # named build profile + pinned Bridge library
 ├── docs/
 │   ├── getting-started.md     # end-to-end checklist (mock → WiFi → flash → live)
 │   ├── architecture.md        # pipeline & design decisions
@@ -207,19 +230,8 @@ sismo-la/
 │   ├── hackster-story.md      # contest submission draft (English)
 │   ├── hackster-submission.md # contest rules checklist
 │   └── images/                # screenshots for docs & submission
-├── firmware/seismo_mcu/
-│   └── seismo_mcu.ino         # MCU: STA/LTA + events via Bridge Monitor
-├── web-remote/
-│   └── sismo.html             # static public page: station.json + live USGS
-└── app/
-    ├── server.py              # detection loop + web dashboard + publisher
-    ├── main.py                # headless CLI variant
-    ├── usgs.py                # USGS FDSN client (LA-centered)
-    ├── calibration.py         # amplitude model + distance model (persisted)
-    ├── classifier.py          # online quake-vs-noise logistic regression
-    ├── dashboard/index.html   # Leaflet map: USGS vs device, self-calib status
-    ├── requirements.txt
-    └── config.example.yaml
+└── web-remote/
+    └── sismo.html             # static public page: station.json + live USGS
 ```
 
 ## Status

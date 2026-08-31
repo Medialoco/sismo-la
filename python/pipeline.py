@@ -7,9 +7,12 @@ Orchestrates:
   - updating the calibration model.
 
 Usage:
-    python main.py                 # source = config.yaml (serial by default)
-    python main.py --mock          # generates fake shakes, no hardware
-    python main.py --config c.yaml
+    python pipeline.py                 # source = config.yaml (serial by default)
+    python pipeline.py --mock          # generates fake shakes, no hardware
+    python pipeline.py --config c.yaml
+
+Headless variant. ``main.py`` is the App Lab entry point and reuses the
+detection/correlation helpers defined here.
 """
 
 from __future__ import annotations
