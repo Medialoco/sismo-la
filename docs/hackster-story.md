@@ -35,9 +35,10 @@ Intermediate
 
 ### 1. The problem: seismology is expensive, Los Angeles is not waiting
 
-Los Angeles sits on one of the most active fault systems in the world. In a
-typical week the USGS catalogs **dozens of earthquakes within 160 km of
-downtown** — most too small to feel, some very much not. Professional
+Los Angeles sits on one of the most active fault systems in the world. Over the
+91 days from June to August 2026 the USGS cataloged **2,136 earthquakes within
+160 km of downtown** — about 23 a day, most far too small to feel, some very
+much not. Professional
 strong-motion stations cost thousands of dollars; community projects like
 Raspberry Shake still start around $400. Meanwhile a MEMS accelerometer costs
 a few dollars and ships in every phone.
@@ -63,9 +64,29 @@ device calibrates itself in place:
 4. A regression over these points becomes the device's own, site-specific
    transfer function: `magnitude ≈ a·log10(PGA) + b·log10(distance) + c`.
 
-Every earthquake makes the device better. In LA's seismicity, the calibration
-converges in days, not months. And the same loop labels training data for an
-AI noise filter — for free.
+Every earthquake makes the device better. And the same loop labels training data
+for an AI noise filter — for free.
+
+**How fast does it actually converge?** I checked rather than guessed. Querying
+the USGS count API for the 91 days from June 1 to August 31, 2026, within 160 km
+of downtown Los Angeles:
+
+| | 160 km | 80 km | 50 km |
+|---|---|---|---|
+| M ≥ 0.5 | 2136 | — | — |
+| M ≥ 2.0 | 110 | 26 | 13 |
+| M ≥ 2.5 | 33 | 5 | 1 |
+| M ≥ 3.0 | 12 | 2 | 0 |
+
+The amplitude model needs 8 confirmed matches. If the sensor can detect M2 events
+out to 160 km, that is 110 per quarter — about a week to converge. If it can only
+feel M2.5 within 50 km, that is *one event per quarter*, and convergence takes
+years.
+
+Those two answers differ by a factor of a hundred, and the difference is exactly
+the sensor's true detection threshold — which is the one quantity I have not yet
+measured. So I am not going to claim a convergence time. Measuring that threshold
+on real recordings is the next step, and it is the honest crux of the project.
 
 ### 3. Hardware: two brains, one Qwiic cable, zero soldering
 
@@ -124,8 +145,8 @@ The web dashboard (served by the board) shows one map with two layers:
 - **the device's own estimates in red** — where and how big the sensor alone
   thinks each quake was, with a dashed error vector to the true epicenter.
 
-Watching the red circles converge toward the colored ones over days of
-calibration *is* the story of this project, live on screen. A side panel
+Watching the red circles converge toward the colored ones as calibration
+accumulates *is* the story of this project, live on screen. A side panel
 shows every detection with the verdict (`✓ confirmed by USGS`, `✗ local
 noise`, `? awaiting USGS`) and the running comparison
 (`device ~M1.4 vs USGS M1.5 · dist ~84 vs 83 km · AI 97% quake`).

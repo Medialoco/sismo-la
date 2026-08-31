@@ -49,7 +49,10 @@ float eventPeakG = 0.0f;
 unsigned long eventStartMs = 0;
 unsigned long lastSampleUs = 0;
 long zeroCrossings = 0;
-float prevDyn = 0.0f;
+// Previous sample of the MEAN-CENTERED signal. Both sides of the sign test
+// must be centered: `dyn` is a vector magnitude and is never negative, so
+// testing its raw sign would always yield the same answer.
+float prevCentered = 0.0f;
 
 // Heartbeat: proves the MCU->Linux Monitor link is alive even with no shakes.
 const unsigned long HEARTBEAT_MS = 10000;
@@ -63,14 +66,24 @@ void setup() {
   Modulino.begin(Wire1);
   imu.begin();
   Monitor.println("{\"status\":\"seismo_mcu ready\"}");
-  // Warm up the LTA for ~1 s to stabilize the background noise estimate.
+
+  // Seed both averages with the first reading instead of letting the LTA climb
+  // from ~0: a 10 s EMA started at zero stays far from the true noise floor for
+  // tens of seconds, and every ratio computed meanwhile is spuriously large.
+  // Seeding, then warming up for one full LTA window, avoids a burst of false
+  // triggers at boot.
+  float seed = readDynamicMagnitude();
+  sta = seed;
+  lta = (seed > 0.0f) ? seed : 1e-6f;
+
   unsigned long t0 = millis();
-  while (millis() - t0 < 1000) {
+  while (millis() - t0 < (unsigned long)(LTA_SEC * 1000.0f)) {
     float d = readDynamicMagnitude();
     lta = lta + LTA_W * (d - lta);
     sta = sta + STA_W * (d - sta);
     delayMicroseconds(SAMPLE_PERIOD_US);
   }
+  Monitor.println("{\"status\":\"noise floor ready\"}");
 }
 
 // Magnitude of the dynamic acceleration (gravity removed), in g.
@@ -104,6 +117,9 @@ void loop() {
 
   float ratio = sta / lta;
 
+  // Centered about the short-term mean so the signal actually crosses zero.
+  float centered = dyn - sta;
+
   if (!inEvent && ratio > TRIGGER_ON) {
     inEvent = true;
     eventPeakG = dyn;
@@ -111,15 +127,20 @@ void loop() {
     zeroCrossings = 0;
   } else if (inEvent) {
     if (dyn > eventPeakG) eventPeakG = dyn;
-    if ((prevDyn < 0) != (dyn < 0)) zeroCrossings++; // dominant freq approx.
+    if ((prevCentered < 0.0f) != (centered < 0.0f)) zeroCrossings++;
     if (ratio < TRIGGER_OFF) {
       unsigned long durMs = millis() - eventStartMs;
+      // Rectification note: `dyn` is a vector magnitude, so this rate runs
+      // about 2x the true ground-motion frequency. Both downstream consumers
+      // absorb a constant factor (log-linear distance fit, standardized
+      // classifier feature), so it is a usable proxy, not a calibrated
+      // spectral estimate.
       float domHz = (durMs > 0) ? (zeroCrossings * 1000.0f) / (2.0f * durMs) : 0;
       emitEvent(eventStartMs, eventPeakG, durMs, domHz);
       inEvent = false;
     }
   }
-  prevDyn = dyn - sta; // centered signal for zero-crossing counting
+  prevCentered = centered;
 
   unsigned long ms = millis();
   if (ms - lastHeartbeatMs >= HEARTBEAT_MS) {

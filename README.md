@@ -1,80 +1,152 @@
-# Sismo-LA — a $25 seismograph that learns from real Los Angeles earthquakes
+# Sismo-LA — a seismograph that learns from real Los Angeles earthquakes
 
-A **low-cost seismic node** built on the **Arduino UNO Q**, made credible by
-**continuous self-calibration against the USGS catalog**: every confirmed
-earthquake teaches the device its own, site-specific response function.
+A MEMS accelerometer costs a few dollars and can feel the ground move. It cannot
+tell you *how big* the earthquake was, because nobody ever calibrated it — and
+calibrating a seismic instrument normally takes a shake table or a professional
+station sitting next to it.
 
-Entry for the
-[Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab)
-contest — target category: **Best Social Impact**. The submission story draft
-lives in [`docs/hackster-story.md`](docs/hackster-story.md).
+In Los Angeles it takes neither. The USGS publishes magnitude, location and
+depth for every earthquake it catalogs, within minutes — 2,136 of them inside
+160 km of downtown over the last three months, about 23 a day. That feed is an
+**answer key**. So the device grades itself:
+it feels a shake, asks the catalog what really happened, and adjusts. After a
+handful of confirmed matches it can put a number on a tremor on its own — and it
+keeps that ability when you unplug the network.
 
-![Sismo-LA dashboard — device estimates (red) vs USGS ground truth](docs/images/dashboard-replay.png)
+![Sismo-LA dashboard — device estimates in red vs USGS ground truth](docs/images/dashboard-replay.png)
 
-*The dashboard in replay mode: USGS earthquakes (colored circles, the ground
-truth) vs what the device alone estimates (red circles + error vectors), with
-the self-calibration and AI-filter status live in the side panel. Replay figures
-measure the **software pipeline**, not the sensor — see
-[What this is, and what it is not](#what-this-is-and-what-it-is-not).*
+*Left, the map: USGS earthquakes as colored circles (the truth), the device's own
+estimates in red, joined by an error vector. Right, the panel: the three models
+learning, live. Figures shown come from replay mode and measure the software —
+see [What it is, and what it is not](#what-it-is-and-what-it-is-not).*
 
-## What this is, and what it is not
+## The idea in 30 seconds
 
-Read this before the numbers, so none of them are misread.
+1. The sensor feels a shake and reduces it to three numbers: peak acceleration,
+   duration, dominant frequency.
+2. The board asks the USGS catalog whether a real earthquake just happened
+   nearby.
+3. **Match** → that pair (what I measured ↔ what it really was) is one training
+   example. **No match** → it was a truck, which is a training example too.
+4. Three models refit on every example. Nobody labels anything by hand.
+5. Once converged, the models live on disk and run without the network.
 
-**It detects, it does not predict.** The device characterizes earthquakes *while
-they happen* — how strong, how far. It says nothing about earthquakes that have
-not occurred yet. Earthquake prediction is not a solved problem and this project
-does not attempt it.
+The trick generalizes: *cheap sensor + free authoritative real-time feed =
+calibrated autonomous instrument*. Earthquakes are simply the case where the
+answer key is richest.
 
-**It works disconnected, once calibrated.** The three learned models are
-persisted to disk, and inference is arithmetic on stored coefficients. Cut the
-network and the station keeps estimating magnitude and distance for the shakes
-it feels; reconnecting lets you check those estimates against the catalog after
-the fact. One capability degrades offline: with no matched catalog event to
-borrow an azimuth from, the output becomes a distance *ring*, not a located
-point. Offline it knows how big and how far, not in which direction.
+## See it work in 2 minutes
 
-**It is calibrated for one spot.** The learned transfer function absorbs this
-sensor, this mount, this building and this soil. Move the device and it must
-reconverge. That is the method working as designed, not a defect.
+No hardware needed. Replay mode pulls the genuine catalog for the last 24 hours
+and drives the full pipeline with it.
 
-**Replay figures validate the software, not the sensor.** In `--replay` mode the
-sensor readings are *synthesized* from cataloged magnitude and distance through
-an attenuation law, and the calibration then fits the inverse of that same law.
-The exercise proves the pipeline is correct and numerically stable; it is
-partly circular by construction and measures no physical accuracy. Real accuracy
-requires genuine recordings of genuine earthquakes — that campaign is ongoing.
+```bash
+cd app
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp config.example.yaml config.yaml
 
-**Expect ±0.3–0.5 magnitude, honestly.** Magnitude inferred from a single
-peak-acceleration sample is approximate by nature. A MEMS accelerometer is a
-strong-motion instrument: it senses appreciable local shaking, roughly M2.5+ at
-short range, and records no teleseisms. This is a neighborhood node, not an
-observatory.
+python server.py --replay     # then open http://localhost:8000
+```
 
-## The idea in one paragraph
+Watch the side panel: the amplitude model flips to *calibrated*, the distance
+model to *ready*, and the noise filter starts telling earthquakes from trucks.
+Other modes: `python server.py --mock` (synthetic shakes), `python main.py
+--mock` (headless), `python server.py` (real sensor on the board).
 
-A cheap MEMS sensor is not a seismometer: it feels shakes but cannot tell you
-magnitude or distance — it is uncalibrated. In Los Angeles, however, the
-ground truth is free and always on: the **USGS catalog** publishes magnitude,
-location and depth for dozens of earthquakes around the city every week. So
-the device calibrates itself in place: each local detection that matches a
-cataloged quake (≥ M2, 160 km radius) becomes one calibration point, and a
-regression turns raw accelerations into magnitude estimates. Every earthquake
-makes it better. The same loop labels data for an **AI noise filter**
-(earthquake vs passing truck) — no offline training set required.
+## How the learning loop works
 
-## What the device learns (three models, all persisted)
+Every confirmed match feeds three models, all persisted to disk:
 
-| Model | Input → output | Learned from |
+| Model | Input → output | Usable after |
 |---|---|---|
-| Amplitude calibration | log10(PGA), log10(distance) → magnitude | USGS-confirmed matches |
-| Distance model | duration, dominant frequency → epicentral distance | USGS-confirmed matches |
-| AI noise filter | PGA, duration, frequency → P(real earthquake) | matches = quake, unmatched = noise |
+| Amplitude calibration | log10(PGA), log10(distance) → magnitude | 8 matches |
+| Distance model | duration, dominant frequency → epicentral distance | 5 matches |
+| AI noise filter | PGA, duration, frequency → P(real earthquake) | 3 of each class |
 
-With distance + magnitude, a single station produces a full standalone
-estimate — the red circles on the map. One station knows distance but not
-direction (it draws a ring, not a pin); three neighboring nodes could
-triangulate. That is the scalability story.
+The amplitude model is a ground-motion prediction equation fitted backwards:
+`M ≈ a·log10(PGA) + b·log10(R) + c`. Its coefficients are not universal
+constants — they absorb this sensor, this mount, this building and this soil.
+That is the point: no laboratory could have calibrated *this* installation.
+
+The distance model exploits two classical regularities: coda duration grows with
+distance, and dominant frequency drops with distance as high frequencies
+attenuate first. With distance in hand, one station produces a full standalone
+estimate.
+
+The noise filter costs nothing extra: matched detections are earthquakes,
+unmatched ones are noise, and a logistic regression refits online. It predicts
+*before* learning from each new event, so the probability you see is never
+computed on data the model has already seen.
+
+Details in [`docs/calibration.md`](docs/calibration.md).
+
+## What it is, and what it is not
+
+**It detects, it does not predict.** The device characterizes earthquakes while
+they happen. It says nothing about earthquakes that have not occurred yet, and
+does not try to.
+
+**Replay figures measure the software, not the sensor.** In `--replay` the
+readings are *synthesized* from cataloged magnitude and distance through an
+attenuation law, and the calibration then fits the inverse of that same law. It
+proves the pipeline is correct and numerically stable; it is circular by
+construction and measures no physical accuracy. Worse, the reported RMSE is an
+in-sample training residual computed with the *true* catalog distance, while
+live operation feeds it an *estimated* distance. Treat it as a software health
+check, never as an accuracy claim. Real numbers need real recordings with
+residuals on held-out events; that campaign is running.
+
+**The red markers do not measure direction.** A single station recovers distance
+from the coda but not azimuth. When a catalog match exists the marker borrows
+the true bearing so it can be drawn as a point; only its radius and magnitude
+are the device's own. With no match it is drawn as a ring — the honest picture.
+Three neighboring nodes would triangulate, which is the scaling story.
+
+**It works disconnected, with one degradation.** The models are on disk and
+inference touches no network, so the station keeps estimating magnitude and
+distance while offline; reconnecting lets you check those estimates against the
+catalog afterwards. But offline there is no match to borrow a bearing from, so
+every output becomes a ring.
+
+**We do not know how fast it converges, and we say so.** Counts from the USGS
+API for June–August 2026 around downtown LA:
+
+| | 160 km | 80 km | 50 km |
+|---|---|---|---|
+| M ≥ 0.5 | 2136 | — | — |
+| M ≥ 2.0 | 110 | 26 | 13 |
+| M ≥ 2.5 | 33 | 5 | 1 |
+| M ≥ 3.0 | 12 | 2 | 0 |
+
+The amplitude model needs 8 matches. If the sensor detects M2 at 160 km, that is
+about a week. If it only feels M2.5 within 50 km, that is one event per quarter
+and convergence takes years. The two answers differ by a hundredfold, and what
+separates them is the sensor's true detection threshold — the quantity this
+project has not yet measured. So no convergence time is claimed here.
+
+**It is calibrated for one spot.** Move it, or even remount it, and it must
+reconverge. Consequence of the method, not a defect.
+
+**Expect ±0.3–0.5 magnitude at best.** PGA from a single cheap sensor is a noisy
+proxy for released energy. A MEMS accelerometer is a strong-motion instrument:
+it senses appreciable local shaking and records no teleseisms. Neighborhood
+node, not observatory.
+
+**It needs a busy region.** The method assumes frequent events and a promptly
+published catalog. Southern California is near the ideal case; somewhere with
+one felt earthquake a year, convergence would take decades.
+
+## Hardware
+
+- **Arduino UNO Q** (4 GB) — WiFi on board.
+- **Arduino Modulino Movement** (ABX00101, LSM6DSOX) + its bundled Qwiic cable.
+  The only part you add, and it plugs in — no breadboard, no soldering.
+- USB-C data cable (development) or USB-C power supply (standalone).
+
+Mounting matters more than the sensor: couple it rigidly to a concrete floor or
+load-bearing wall, away from fans and foot traffic. Bill of materials and wiring
+in [`docs/hardware.md`](docs/hardware.md).
 
 ## Dual-brain architecture
 
@@ -96,6 +168,11 @@ triangulate. That is the scalability story.
                     USGS: https://earthquake.usgs.gov/fdsnws/event/1/
 ```
 
+The MCU runs STA/LTA, the trigger seismic networks have used for decades: a
+0.5 s average of signal energy against a 10 s average, firing above a ratio of 4
+and closing below 1.5, with the long-term average frozen during an event so the
+earthquake cannot contaminate its own noise floor.
+
 UNO Q gotchas we learned the hard way (details in
 [`docs/getting-started.md`](docs/getting-started.md)):
 
@@ -106,36 +183,15 @@ UNO Q gotchas we learned the hard way (details in
   `Arduino_RouterBridge` library to be **version-matched** — update the board
   OS before flashing.
 
-## Hardware
+## Autonomous operation
 
-- **Arduino UNO Q** (4 GB) — WiFi on board.
-- **Arduino Modulino Movement** (ABX00101, LSM6DSOX) + its bundled Qwiic
-  cable. Plug-and-play, zero soldering.
-- USB-C data cable (development) or USB-C power supply (standalone).
-
-Bill of materials and wiring: [`docs/hardware.md`](docs/hardware.md).
-
-## Quick start (no hardware needed)
-
-```bash
-cd app
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp config.example.yaml config.yaml
-
-python server.py --replay    # DEMO: replays the last 24 h of real USGS quakes
-                             # as live detections -> http://localhost:8000
-python server.py --mock      # synthetic shakes, same pipeline
-python main.py --mock        # headless CLI variant
-```
-
-`--replay` fills the map within minutes: it pulls the real catalog, then
-*synthesizes* a plausible sensor reading for each cataloged quake and feeds the
-unmodified pipeline. Calibration converges and the AI filter starts separating
-quakes from injected truck noise, live on screen — a demonstration that the
-software works, not a measurement of sensor accuracy (see
-[What this is, and what it is not](#what-this-is-and-what-it-is-not)). On the
-board, run `python server.py` (no flag) to consume real sensor events.
+The station needs only WiFi and USB-C power — no attached computer. Beyond its
+local dashboard, `server.py` can push a JSON snapshot (detections, estimates,
+calibration state) to a remote site every minute (`publish:` block in
+`config.yaml`: HTTP POST, file write, or any upload command such as `scp`).
+The static page [`web-remote/sismo.html`](web-remote/sismo.html) — hostable
+anywhere, no backend — overlays that snapshot on the live USGS map, and
+degrades to USGS-only if the station goes offline.
 
 ## Repository layout
 
@@ -154,8 +210,7 @@ sismo-la/
 ├── firmware/seismo_mcu/
 │   └── seismo_mcu.ino         # MCU: STA/LTA + events via Bridge Monitor
 ├── web-remote/
-│   └── sismo.html             # static public page for any web host: reads the
-│                              #   station.json the device uploads + live USGS
+│   └── sismo.html             # static public page: station.json + live USGS
 └── app/
     ├── server.py              # detection loop + web dashboard + publisher
     ├── main.py                # headless CLI variant
@@ -167,46 +222,27 @@ sismo-la/
     └── config.example.yaml
 ```
 
-## Autonomous operation
-
-The station needs only **WiFi and USB-C power** — no attached computer. Beyond
-serving its local dashboard, `server.py` can push a JSON snapshot of the
-station (detections, estimates, calibration state) to a remote site every
-minute (`publish:` block in `config.yaml`: HTTP POST, file write, or any
-upload command such as `scp`/`curl -T`). The static page
-[`web-remote/sismo.html`](web-remote/sismo.html) — hostable anywhere, no
-backend — overlays that snapshot on the live USGS map, so anyone can watch
-the device's red estimates against the official record from the open web.
-
 ## Status
 
-- [x] Full software chain validated end-to-end on replayed catalog data:
-      correlation → calibration → distance model → AI filter. Validates the
-      pipeline, not the sensor.
-- [ ] **Physical validation on real recordings** — the number that would
-      actually measure this instrument. Not yet available.
+- [x] Software chain validated end-to-end on replayed catalog data:
+      correlation → calibration → distance model → AI filter.
 - [x] Web dashboard: USGS vs device overlay, error vectors, mode badge.
-- [x] Firmware compiles and flashes on the UNO Q (`arduino-cli`, FQBN
-      `arduino:zephyr:unoq`); sensor connected (Modulino on Qwiic).
+- [x] Firmware flashes on the UNO Q (`arduino-cli`, FQBN `arduino:zephyr:unoq`);
+      Modulino connected over Qwiic.
 - [x] Board on WiFi, USGS reachable from the board.
-- [x] Autonomous publishing: snapshot upload to a remote site + static public
-      page (`web-remote/sismo.html`), verified locally end-to-end.
-- [x] MCU→Linux Bridge link working: the app consumes the Monitor stream and
-      skips the firmware heartbeats.
+- [x] MCU→Linux Bridge link working; the app consumes the Monitor stream.
+- [x] Autonomous publishing: snapshot upload + static public page.
 - [ ] Live tap test, then move the whole app onto the board for true autonomy.
+- [ ] **Physical validation on real recordings** — the only number that would
+      actually measure this instrument. Not yet available.
 - [ ] Accumulate real M2+ correlations over LA; produce the calibration curve.
 - [ ] Optional: Edge Impulse classifier to replace the built-in filter.
-- [ ] Hackster submission (deadline **September 13, 2026**) — media checklist in
-      [`docs/hackster-submission.md`](docs/hackster-submission.md).
 
-## Calibration in brief
-
-For each local shake we search the USGS catalog for a confirmed earthquake
-within a time window that absorbs wave propagation and publication delay. On
-a match we add `(log10(PGA), log10(distance), magnitude)` to the calibration
-set and refit `Mw ≈ a·log10(PGA) + b·log10(distance) + c`; the coda duration
-and dominant frequency feed the distance model the same way. Details:
-[`docs/calibration.md`](docs/calibration.md).
+Entry for the
+[Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab)
+contest — target category **Best Social Impact**, submissions close
+**September 13, 2026**. Story draft in
+[`docs/hackster-story.md`](docs/hackster-story.md).
 
 ## License
 

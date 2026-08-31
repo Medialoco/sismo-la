@@ -8,9 +8,13 @@ background thread, keeps the resulting state in memory, and exposes:
   - ``GET /``           -> the Leaflet dashboard (``dashboard/index.html``).
 
 The dashboard overlays the USGS catalog (colored circles at epicenters) with
-the device's own estimates drawn in RED on the same map: estimated epicenter +
-estimated magnitude, so center/intensity errors against USGS are visible at a
-glance. That comparison is the whole story of the project.
+the device's own estimates drawn in RED on the same map, so errors against USGS
+are visible at a glance. That comparison is the whole story of the project.
+
+Read the red markers carefully: the device measures magnitude and distance, but
+a single station cannot measure azimuth. When a match exists the marker borrows
+the true bearing purely so it can be drawn as a point; without a match it is
+drawn as a ring, which is the honest representation.
 
 Usage:
     python server.py --mock                 # hardware-free development
