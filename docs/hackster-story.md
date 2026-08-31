@@ -136,17 +136,38 @@ afternoon.
 
 ### 7. Results (updating as the station accumulates data)
 
-- Calibration converges after ~8 confirmed events; in our replay validation
-  the amplitude model reached **RMSE ≈ 0.2 magnitude units**.
-- The AI filter separated replayed earthquakes from synthetic truck noise
-  with >95% confidence after ~5 examples of each class.
-- [ ] TODO: first real correlated M2+ earthquake (screenshot + event ID).
-- [ ] TODO: calibration curve after N days of live operation.
+Calibration becomes usable after 8 confirmed matches, the distance model after
+5, and the noise filter after 3 examples of each class. In replay validation the
+whole chain runs end-to-end and converges as designed.
+
+One caveat I want to state myself rather than have you wonder about it: in
+replay mode the sensor readings are **synthesized** from cataloged magnitude and
+distance through an attenuation law, and the calibration then fits the inverse
+of that same law. So the replay figures demonstrate that the *software* is
+correct — correlation, matching, fitting, persistence, inference — and they are
+partly circular by construction. They are not a measurement of how accurate the
+*instrument* is.
+
+The honest number for the instrument requires real recordings of real
+earthquakes at a fixed installation, with residuals reported on events held out
+from the fit. That campaign is running now.
+
+- [ ] TODO: first real correlated M2+ earthquake (screenshot + USGS event ID).
+- [ ] TODO: calibration curve from real recordings after N days.
 
 ### 8. Limits, honestly
 
+- **It detects, it does not predict.** The device characterizes earthquakes
+  while they happen. It says nothing about earthquakes that have not occurred
+  yet, and makes no attempt to.
 - A MEMS IMU senses local strong motion (M ≥ ~2.5–3 nearby), not teleseisms.
   This is a neighborhood strong-motion node, not a broadband observatory.
+- Cut the network and the station keeps working — the models are on disk — but
+  with no matched catalog event to borrow an azimuth from, its output becomes a
+  distance *ring* rather than a located point. Offline it knows how big and how
+  far, not in which direction.
+- The calibration belongs to this exact spot: this sensor, this mount, this
+  building, this soil. Move it and it must reconverge.
 - One station knows distance (from the coda) but not direction: alone it
   draws a circle, not a pin. Three neighbors could triangulate — that is the
   scalability story.

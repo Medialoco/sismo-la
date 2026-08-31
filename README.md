@@ -12,10 +12,44 @@ lives in [`docs/hackster-story.md`](docs/hackster-story.md).
 ![Sismo-LA dashboard — device estimates (red) vs USGS ground truth](docs/images/dashboard-replay.png)
 
 *The dashboard in replay mode: USGS earthquakes (colored circles, the ground
-truth) vs what the device alone estimates (red circles + error vectors). In this
-run the amplitude model reports **calibrated, ±0.19 magnitude RMSE** over 777
-catalog matches, and the AI filter has separated those 777 quakes from 313 noise
-events — every label harvested from the catalog, none written by hand.*
+truth) vs what the device alone estimates (red circles + error vectors), with
+the self-calibration and AI-filter status live in the side panel. Replay figures
+measure the **software pipeline**, not the sensor — see
+[What this is, and what it is not](#what-this-is-and-what-it-is-not).*
+
+## What this is, and what it is not
+
+Read this before the numbers, so none of them are misread.
+
+**It detects, it does not predict.** The device characterizes earthquakes *while
+they happen* — how strong, how far. It says nothing about earthquakes that have
+not occurred yet. Earthquake prediction is not a solved problem and this project
+does not attempt it.
+
+**It works disconnected, once calibrated.** The three learned models are
+persisted to disk, and inference is arithmetic on stored coefficients. Cut the
+network and the station keeps estimating magnitude and distance for the shakes
+it feels; reconnecting lets you check those estimates against the catalog after
+the fact. One capability degrades offline: with no matched catalog event to
+borrow an azimuth from, the output becomes a distance *ring*, not a located
+point. Offline it knows how big and how far, not in which direction.
+
+**It is calibrated for one spot.** The learned transfer function absorbs this
+sensor, this mount, this building and this soil. Move the device and it must
+reconverge. That is the method working as designed, not a defect.
+
+**Replay figures validate the software, not the sensor.** In `--replay` mode the
+sensor readings are *synthesized* from cataloged magnitude and distance through
+an attenuation law, and the calibration then fits the inverse of that same law.
+The exercise proves the pipeline is correct and numerically stable; it is
+partly circular by construction and measures no physical accuracy. Real accuracy
+requires genuine recordings of genuine earthquakes — that campaign is ongoing.
+
+**Expect ±0.3–0.5 magnitude, honestly.** Magnitude inferred from a single
+peak-acceleration sample is approximate by nature. A MEMS accelerometer is a
+strong-motion instrument: it senses appreciable local shaking, roughly M2.5+ at
+short range, and records no teleseisms. This is a neighborhood node, not an
+observatory.
 
 ## The idea in one paragraph
 
@@ -95,10 +129,13 @@ python server.py --mock      # synthetic shakes, same pipeline
 python main.py --mock        # headless CLI variant
 ```
 
-`--replay` fills the map within minutes using the real catalog — calibration
-converges (RMSE ≈ 0.2 Mw in our validation) and the AI filter starts
-separating quakes from injected truck noise, live on screen. On the board,
-run `python server.py` (no flag) to consume real sensor events.
+`--replay` fills the map within minutes: it pulls the real catalog, then
+*synthesizes* a plausible sensor reading for each cataloged quake and feeds the
+unmodified pipeline. Calibration converges and the AI filter starts separating
+quakes from injected truck noise, live on screen — a demonstration that the
+software works, not a measurement of sensor accuracy (see
+[What this is, and what it is not](#what-this-is-and-what-it-is-not)). On the
+board, run `python server.py` (no flag) to consume real sensor events.
 
 ## Repository layout
 
@@ -143,8 +180,11 @@ the device's red estimates against the official record from the open web.
 
 ## Status
 
-- [x] Full software chain validated end-to-end (replay mode, live USGS data):
-      correlation → calibration (RMSE ≈ 0.2 Mw) → distance model → AI filter.
+- [x] Full software chain validated end-to-end on replayed catalog data:
+      correlation → calibration → distance model → AI filter. Validates the
+      pipeline, not the sensor.
+- [ ] **Physical validation on real recordings** — the number that would
+      actually measure this instrument. Not yet available.
 - [x] Web dashboard: USGS vs device overlay, error vectors, mode badge.
 - [x] Firmware compiles and flashes on the UNO Q (`arduino-cli`, FQBN
       `arduino:zephyr:unoq`); sensor connected (Modulino on Qwiic).
