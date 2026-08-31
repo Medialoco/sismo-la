@@ -107,4 +107,4 @@ curl -s "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitud
 
 ## 8. Hackster write-up
 - [ ] Follow `hackster-submission.md` (cover image, story in steps, code snippets…).
-- [ ] Deadline: August 30, 2026.
+- [ ] Deadline: September 13, 2026.

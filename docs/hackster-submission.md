@@ -9,7 +9,7 @@ We fill this page in as the project progresses.
 
 - Must use the **Arduino UNO Q** and **App Lab**.
 - Target category: **Best Social Impact** (alt. Industrial IoT).
-- Submission deadline: **August 30, 2026**.
+- Submission deadline: **September 13, 2026, 11:59 PM PDT**.
 - Appreciated bonuses: sustainability, user experience, scalability, edge AI
   (Edge Impulse), cloud integration (Arduino Cloud / AWS).
 

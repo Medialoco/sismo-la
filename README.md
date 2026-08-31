@@ -12,8 +12,10 @@ lives in [`docs/hackster-story.md`](docs/hackster-story.md).
 ![Sismo-LA dashboard — device estimates (red) vs USGS ground truth](docs/images/dashboard-replay.png)
 
 *The dashboard in replay mode: USGS earthquakes (colored circles, the ground
-truth) vs what the device alone estimates (red circles + error vectors), with
-the self-calibration and AI-filter status live in the side panel.*
+truth) vs what the device alone estimates (red circles + error vectors). In this
+run the amplitude model reports **calibrated, ±0.19 magnitude RMSE** over 777
+catalog matches, and the AI filter has separated those 777 quakes from 313 noise
+events — every label harvested from the catalog, none written by hand.*
 
 ## The idea in one paragraph
 
@@ -149,12 +151,13 @@ the device's red estimates against the official record from the open web.
 - [x] Board on WiFi, USGS reachable from the board.
 - [x] Autonomous publishing: snapshot upload to a remote site + static public
       page (`web-remote/sismo.html`), verified locally end-to-end.
-- [ ] MCU→Linux Bridge link (board OS update in progress to match library
-      versions), then first live tap test.
+- [x] MCU→Linux Bridge link working: the app consumes the Monitor stream and
+      skips the firmware heartbeats.
+- [ ] Live tap test, then move the whole app onto the board for true autonomy.
 - [ ] Accumulate real M2+ correlations over LA; produce the calibration curve.
 - [ ] Optional: Edge Impulse classifier to replace the built-in filter.
-- [ ] Hackster submission (deadline **August 30, 2026**) — media checklist in
-      [`docs/hackster-story.md`](docs/hackster-story.md).
+- [ ] Hackster submission (deadline **September 13, 2026**) — media checklist in
+      [`docs/hackster-submission.md`](docs/hackster-submission.md).
 
 ## Calibration in brief
 
@@ -164,3 +167,7 @@ a match we add `(log10(PGA), log10(distance), magnitude)` to the calibration
 set and refit `Mw ≈ a·log10(PGA) + b·log10(distance) + c`; the coda duration
 and dominant frequency feed the distance model the same way. Details:
 [`docs/calibration.md`](docs/calibration.md).
+
+## License
+
+Released under the MIT License — see [`LICENSE`](LICENSE).
