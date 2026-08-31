@@ -5,11 +5,11 @@
  * characterize the event (PGA, duration, approximate dominant frequency) and
  * emit it.
  *
- * Transport: JSON lines over the Bridge Monitor stream. On the UNO Q the MCU's
+ * Transport: `Bridge.notify("seismic_event", ...)`, an RPC notification the
+ * Python half receives through `Bridge.provide`. On the UNO Q the MCU's
  * `Serial` goes to the D0/D1 UART pins (NOT USB): the USB-C port belongs to the
- * Linux MPU. `Monitor` routes through the Arduino Router (Bridge) to the Linux
- * side, where it is visible from App Lab, `arduino-cli monitor`, or any client
- * of the router — that is the stream `python/main.py` consumes.
+ * Linux MPU. Each event is also echoed as a JSON line on `Monitor` for
+ * debugging with `arduino-app-cli monitor`.
  *
  * Sensor: Modulino Movement (LSM6DSOX) over Qwiic (bus Wire1). Adapt for a
  * different IMU.
@@ -54,9 +54,21 @@ long zeroCrossings = 0;
 // testing its raw sign would always yield the same answer.
 float prevCentered = 0.0f;
 
-// Heartbeat: proves the MCU->Linux Monitor link is alive even with no shakes.
+// Heartbeat: proves the MCU->Linux link is alive even with no shakes.
 const unsigned long HEARTBEAT_MS = 10000;
 unsigned long lastHeartbeatMs = 0;
+
+bool sensorOk = false;
+
+// Status goes out on both transports for the same reason events do: the Bridge
+// reaches the app (and its log) from inside the container, the Monitor line is
+// there for a human watching `arduino-app-cli monitor`.
+void report(const char *message) {
+  Bridge.notify("mcu_status", message);
+  Monitor.print("{\"status\":\"");
+  Monitor.print(message);
+  Monitor.println("\"}");
+}
 
 void setup() {
   Bridge.begin();
@@ -64,8 +76,18 @@ void setup() {
   // On the UNO Q the Qwiic connector is on the I2C bus Wire1 (not Wire),
   // so we pass the bus explicitly (known gotcha on this board).
   Modulino.begin(Wire1);
-  imu.begin();
-  Monitor.println("{\"status\":\"sismo-la mcu ready\"}");
+  sensorOk = imu.begin();
+  report(sensorOk ? "imu ok" : "imu not found");
+
+  // Without an IMU there is nothing to sample, and silently running the
+  // detector on a dead bus would look identical to "no earthquakes". Say so,
+  // repeatedly, instead of pretending to monitor.
+  while (!sensorOk) {
+    report("imu not found - check the Modulino on the Qwiic port (Wire1)");
+    delay(5000);
+    sensorOk = imu.begin();
+    if (sensorOk) report("imu ok");
+  }
 
   // Seed both averages with the first reading instead of letting the LTA climb
   // from ~0: a 10 s EMA started at zero stays far from the true noise floor for
@@ -83,7 +105,7 @@ void setup() {
     sta = sta + STA_W * (d - sta);
     delayMicroseconds(SAMPLE_PERIOD_US);
   }
-  Monitor.println("{\"status\":\"noise floor ready\"}");
+  report("noise floor ready");
 }
 
 // Magnitude of the dynamic acceleration (gravity removed), in g.
@@ -145,6 +167,7 @@ void loop() {
   unsigned long ms = millis();
   if (ms - lastHeartbeatMs >= HEARTBEAT_MS) {
     lastHeartbeatMs = ms;
+    Bridge.notify("mcu_heartbeat", ms, ratio, dyn);
     Monitor.print("{\"status\":\"alive\",\"t_ms\":");
     Monitor.print(ms);
     Monitor.print(",\"sta_lta\":");
@@ -153,8 +176,13 @@ void loop() {
   }
 }
 
-// JSON line over the Bridge Monitor stream (reaches the Linux MPU / USB host).
+// Two transports on purpose. `Bridge.notify` is the one the app consumes: it
+// reaches the Python half through the router socket, which is the only path
+// available now that App Lab runs that half inside a container. The Monitor
+// line is kept as a human-readable trace for `arduino-app-cli monitor`.
 void emitEvent(unsigned long tMs, float pgaG, unsigned long durMs, float domHz) {
+  Bridge.notify("seismic_event", tMs, pgaG, durMs, domHz);
+
   Monitor.print("{\"t_ms\":");
   Monitor.print(tMs);
   Monitor.print(",\"pga_g\":");

@@ -22,6 +22,7 @@ import json
 import random
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import yaml
 
@@ -30,8 +31,28 @@ from calibration import CalibrationModel
 from classifier import QuakeNoiseClassifier
 
 
+def resolve_config_path(path: str) -> Path:
+    """Locate the config file regardless of where the process was launched.
+
+    App Lab runs the app from the repo root while the config sits next to this
+    module, and ``config.yaml`` is gitignored, so a fresh clone has only the
+    example. Falling back to it keeps "clone and start" working.
+    """
+    here = Path(__file__).resolve().parent
+    candidates = [Path(path), here / path]
+    if Path(path).name == "config.yaml":
+        candidates.append(here / "config.example.yaml")
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    tried = ", ".join(str(c) for c in candidates)
+    raise FileNotFoundError(f"no configuration file found (tried: {tried})")
+
+
 def load_config(path: str) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
+    resolved = resolve_config_path(path)
+    print(f"[config] {resolved}", flush=True)
+    with open(resolved, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -51,6 +72,49 @@ def iter_serial_events(port: str, baudrate: int):
             continue
         evt["recv_time"] = datetime.now(timezone.utc)
         yield evt
+
+
+def iter_bridge_events():
+    """Generator of events pushed by the MCU over the Bridge RPC link.
+
+    This is the transport to use on the board. App Lab runs this half inside a
+    container, where the MCU's Monitor stream is out of reach but the router
+    socket is bind-mounted, so ``iter_monitor_events`` cannot work there.
+
+    The sketch sends one ``seismic_event`` notification per detection. The
+    Bridge dispatches it on its own daemon thread, so the handler only hands
+    the event to this generator through a queue.
+    """
+    import queue
+
+    from arduino.app_utils import Bridge  # provided by the App Lab runtime
+
+    pending: "queue.Queue[dict]" = queue.Queue()
+
+    def on_seismic_event(t_ms, pga_g, dur_ms, dom_hz):
+        pending.put({
+            "t_ms": int(t_ms),
+            "pga_g": float(pga_g),
+            "dur_ms": int(dur_ms),
+            "dom_hz": float(dom_hz),
+            "recv_time": datetime.now(timezone.utc),
+        })
+
+    def on_mcu_status(message):
+        print(f"[bridge] mcu status: {message}", flush=True)
+
+    def on_mcu_heartbeat(t_ms, sta_lta, dyn_g):
+        # The noise floor is the one number that tells you the detector is
+        # actually looking at a sensor rather than at a dead I2C bus.
+        print(f"[bridge] mcu alive t={int(t_ms)}ms sta/lta={float(sta_lta):.2f} "
+              f"dyn={float(dyn_g):.5f}g", flush=True)
+
+    Bridge.provide("seismic_event", on_seismic_event)
+    Bridge.provide("mcu_status", on_mcu_status)
+    Bridge.provide("mcu_heartbeat", on_mcu_heartbeat)
+    print("[bridge] waiting for seismic_event notifications from the MCU")
+    while True:
+        yield pending.get()
 
 
 def iter_monitor_events(command: str):
@@ -163,6 +227,9 @@ def main() -> None:
     if args.mock or cfg["source"]["type"] == "mock":
         events = iter_mock_events()
         print("[Sismo-LA] source = MOCK")
+    elif cfg["source"]["type"] == "bridge":
+        events = iter_bridge_events()
+        print("[Sismo-LA] source = Bridge RPC (MCU notifications)")
     elif cfg["source"]["type"] == "monitor":
         cmd = cfg["source"].get("monitor_command", "arduino-app-cli monitor")
         events = iter_monitor_events(cmd)
@@ -202,7 +269,8 @@ def main() -> None:
                 event_id=match.event_id,
             )
             clf.add_sample(evt["pga_g"], evt.get("dur_ms"), evt.get("dom_hz"), label=1)
-            print(f"[{ts}] shake PGA={evt['pga_g']}g  <->  USGS M{match.magnitude} "
+            print(f"[{ts}] shake PGA={evt['pga_g']:.4f}g dur={evt.get('dur_ms', 0)}ms "
+                  f"f={evt.get('dom_hz', 0):.1f}Hz  <->  USGS M{match.magnitude} "
                   f"@ {match.distance_km:.0f}km ({match.place}) | {ai_txt} "
                   f"| {model.status()}")
         else:
@@ -210,7 +278,8 @@ def main() -> None:
             est = model.estimate_magnitude(evt["pga_g"], distance_km=30.0)
             est_txt = f"~M{est:.1f} (estimated @30km)" if est is not None else "unclassified"
             verdict = "noise" if (p_quake is not None and p_quake < 0.5) else "unconfirmed"
-            print(f"[{ts}] shake PGA={evt['pga_g']}g  no USGS match "
+            print(f"[{ts}] shake PGA={evt['pga_g']:.4f}g dur={evt.get('dur_ms', 0)}ms "
+                  f"f={evt.get('dom_hz', 0):.1f}Hz  no USGS match "
                   f"-> {est_txt} | {ai_txt} [{verdict}]")
 
 

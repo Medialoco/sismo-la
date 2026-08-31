@@ -52,6 +52,7 @@ from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
 from pipeline import (
     find_match,
+    iter_bridge_events,
     iter_mock_events,
     iter_monitor_events,
     iter_serial_events,
@@ -287,6 +288,9 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
     elif mode == "mock" or cfg["source"]["type"] == "mock":
         events = iter_mock_events()
         print("[Sismo-LA] source = MOCK")
+    elif cfg["source"]["type"] == "bridge":
+        events = iter_bridge_events()
+        print("[Sismo-LA] source = Bridge RPC (MCU notifications)")
     elif cfg["source"]["type"] == "monitor":
         cmd = cfg["source"].get("monitor_command", "arduino-app-cli monitor")
         events = iter_monitor_events(cmd)
@@ -354,11 +358,13 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
         state.add_detection(evt, match, p_quake)
         ts = evt["recv_time"].strftime("%H:%M:%S")
         ai_txt = f"AI p(quake)={p_quake:.2f}" if p_quake is not None else "AI warming up"
+        shake = (f"PGA={evt['pga_g']:.4f}g dur={evt.get('dur_ms', 0)}ms "
+                 f"f={evt.get('dom_hz', 0):.1f}Hz")
         if match:
-            print(f"[{ts}] shake PGA={evt['pga_g']}g <-> USGS M{match.magnitude} "
+            print(f"[{ts}] shake {shake} <-> USGS M{match.magnitude} "
                   f"@ {match.distance_km:.0f}km ({match.place}) | {ai_txt} | {model.status()}")
         else:
-            print(f"[{ts}] shake PGA={evt['pga_g']}g no USGS match | {ai_txt} | {model.status()}")
+            print(f"[{ts}] shake {shake} no USGS match | {ai_txt} | {model.status()}")
 
 
 def publisher_loop(pub_cfg: dict, state: SharedState) -> None:

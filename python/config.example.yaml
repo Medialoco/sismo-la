@@ -14,11 +14,16 @@ correlation:
   match_window_s: 180   # local timestamp <-> USGS origin time window
 
 source:
-  # "monitor" = real UNO Q via the Bridge Monitor stream (recommended on the
-  # board: type: monitor + monitor_command: arduino-app-cli monitor);
-  # "serial" = raw tty; "mock" = hardware-free development.
-  # "serial" for the real UNO Q, "mock" for hardware-free development.
-  type: serial
+  # "bridge" = the real UNO Q under App Lab. The sketch sends one
+  #   `seismic_event` RPC notification per detection and Python receives it
+  #   through Bridge.provide. This is the only transport that works when App
+  #   Lab runs the Python half in its container: the MCU's Monitor stream is
+  #   not reachable from there, the router socket is.
+  # "monitor" = read `arduino-app-cli monitor` as a subprocess. Only usable
+  #   when Python runs on the board host (or over adb from a dev machine).
+  # "serial" = raw tty. "mock" = hardware-free development.
+  type: bridge
+  monitor_command: arduino-app-cli monitor
   serial_port: /dev/ttyACM0
   baudrate: 115200
 

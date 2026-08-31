@@ -2,19 +2,34 @@
 #
 # The arduino:zephyr platform requires a NAMED profile: with only a bare
 # `default_fqbn`, `arduino-app-cli app start` fails with "sketch has no default
-# profile".
+# profile". `fqbn` is spelled out so the sketch also builds straight from a dev
+# machine with `arduino-cli compile --profile default ./sketch`; App Lab
+# supplies it on the board.
 #
-# Arduino_RouterBridge is pinned on purpose. The board's `arduino-router`
-# service and this library must be version-matched; a board image shipping
-# router 0.1.x against a 0.4.x library produces a silent "invalid packet" link
-# that never delivers events. Run `apt full-upgrade` on the board before
-# flashing, then keep these two in step.
+# Arduino_RouterBridge is deliberately NOT listed. The zephyr platform ships
+# its own bridge (Arduino_BridgeImola, included as <Arduino_RouterBridge.h>)
+# matched to the board's arduino-router, exactly as Arduino's own examples do.
+# Pinning the standalone library instead breaks the build whenever the two
+# drift apart: a 0.4.x library against an older platform fails to compile on
+# `RPCClient::get_response`, which expects a different number of arguments.
+# Keep the platform recent (`arduino-cli core install arduino:zephyr@0.90.0`)
+# rather than pinning the library.
 profiles:
   default:
+    fqbn: arduino:zephyr:unoq
     platforms:
       - platform: arduino:zephyr
     libraries:
-      - Arduino_RouterBridge (0.4.3)
+      # Arduino_Modulino pulls in every Modulino node's driver, and a profile
+      # build is hermetic (no automatic dependency resolution), so they all
+      # have to be named even though this sketch only touches the LSM6DSOX.
       - Arduino_Modulino (0.9.0)
+      - ArduinoGraphics (1.1.5)
+      - Arduino_HS300x (1.0.1)
+      - Arduino_LPS22HB (1.0.3)
+      - Arduino_LSM6DSOX (1.1.2)
+      - Arduino_LTR381RGB (1.0.1)
+      - STM32duino VL53L4CD (1.0.5)
+      - STM32duino VL53L4ED (1.0.1)
 
 default_profile: default

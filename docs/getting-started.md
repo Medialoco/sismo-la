@@ -90,20 +90,43 @@ curl -s "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitud
 - [ ] Plug it into the UNO Q **Qwiic** port (bus `Wire1` on the UNO Q).
 - [ ] Mount it rigidly to a solid surface (see `hardware.md`).
 
-## 5. Run it as one App (both halves together)
-- [ ] Copy the repo to the board: `scp -r sismo-la arduino@<board-ip>:~/ArduinoApps/`.
+## 5. Bring the board's toolchain up to date (do this FIRST)
+The stock image can ship a zephyr core too old to build *any* Bridge app —
+including Arduino's own examples. Symptom: `MsgPack.h: No such file or
+directory`, or a `RPCClient::get_response` argument-count error.
+
+- [ ] On the board: `arduino-cli lib update-index && arduino-cli core update-index`
+- [ ] `arduino-cli core install arduino:zephyr@0.90.0`
+      (confined to `~/.arduino15`; no `apt`, no `dpkg`, reversible)
+- [ ] Sanity check with an official app first, so a later failure is
+      unambiguously yours: `arduino-app-cli app start examples:blink-with-ui`,
+      then `arduino-app-cli app stop examples:blink-with-ui`.
+
+## 6. Run it as one App (both halves together)
+- [ ] Copy the repo to the board, e.g.
+      `COPYFILE_DISABLE=1 tar --exclude=.git -czf - sismo-la | ssh arduino@<board-ip> 'tar xzf - -C ~/ArduinoApps'`.
+      The `COPYFILE_DISABLE=1` matters on macOS: without it the archive carries
+      AppleDouble `._*` files into the app folder.
 - [ ] `arduino-app-cli app start ~/ArduinoApps/sismo-la` — builds the sketch,
       flashes the MCU, installs `python/requirements.txt`, runs `python/main.py`.
+      No `config.yaml` is needed: it falls back to `config.example.yaml`.
 - [ ] `arduino-app-cli app logs ~/ArduinoApps/sismo-la` — both halves interleaved.
-- [ ] Tap the desk; see JSON lines
-      `{"t_ms":...,"pga_g":...,"dur_ms":...,"dom_hz":...}` in the logs.
+      Within ~10 s you should see `mcu status: noise floor ready`, then a
+      `mcu alive ... dyn=0.0007g` heartbeat. A `dyn` that moves is your proof
+      the IMU is really being read.
+- [ ] Tap the desk; expect a line like
+      `shake PGA=0.0224g dur=583ms f=2.6Hz no USGS match`.
 - [ ] **Check `dom_hz` actually varies between taps.** It was stuck near 25 Hz
       until the sign-test fix of 2026-08-31; a constant value means the fix did
       not take, and both the distance model and the AI filter run blind.
+      Confirmed working on hardware: 2.57 / 4.99 / 10.60 Hz on three taps.
+- [ ] Open `http://<board-ip>:8000` for the dashboard.
 
-## 6. Point the app at the real source
-- [ ] Set `source.type` in `python/config.yaml` to `monitor`.
-- [ ] Confirm shakes flow through to the dashboard.
+Note on transports: the app defaults to `source.type: bridge`, the only one
+that works on the board. App Lab runs the Python half in a container, where the
+MCU's `Monitor` stream is unreachable but the router socket is mounted — so the
+sketch pushes each detection as a `seismic_event` RPC notification. `monitor`
+and `serial` remain for host-side debugging.
 
 ## 7. Calibration & AI (over time)
 - [ ] Let it run in LA; accumulate M2+ correlations (calibration points).
