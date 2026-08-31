@@ -75,7 +75,7 @@
 <body>
   <header>
     <span class="logo">Sismo-LA</span>
-    <span class="tagline">An autonomous $25 seismograph in Los Angeles —
+    <span class="tagline">An autonomous low-cost seismograph in Los Angeles —
       red = the device's own estimates, colors = the official USGS record.</span>
     <span id="station-badge" class="badge off">station: no data</span>
   </header>
@@ -120,8 +120,14 @@
       `&minmagnitude=${st.min_mag}&orderby=time&limit=50`;
 
     const map = L.map("map").setView([FALLBACK.lat, FALLBACK.lon], 8);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 19,
+    // Esri's dark canvas: CARTO now watermarks anonymous tiles with
+    // "API KEY REQUIRED". This one needs no key. Labels ride on a second layer.
+    const esri = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
+    L.tileLayer(`${esri}/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, {
+      attribution: "Tiles &copy; Esri", maxZoom: 16,
+    }).addTo(map);
+    L.tileLayer(`${esri}/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, {
+      maxZoom: 16,
     }).addTo(map);
     const usgsLayer = L.layerGroup().addTo(map);
     const deviceLayer = L.layerGroup().addTo(map);

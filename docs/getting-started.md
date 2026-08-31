@@ -133,6 +133,29 @@ and `serial` remain for host-side debugging.
 - [ ] Collect noise samples (truck, door, footsteps) for Edge Impulse.
 - [ ] Train + deploy the earthquake-vs-noise classifier.
 
-## 8. Hackster write-up
+### Grading the calibration honestly
+Every detection is appended to `event_log.jsonl` with what the models predicted
+*before* they learned it, so the journal can be replayed for out-of-sample
+residuals rather than the training ones the dashboard shows.
+
+```bash
+python audit.py                      # the honest scoreboard
+python audit.py --include-synthetic  # also score --replay events (circular)
+```
+
+Read the operational line first: it estimates distance from the shake, as the
+station must in the field. It is the only figure that describes what the device
+can really do, and it is several times worse than the panel's number.
+
+## 8. Media for the submission
+- [ ] Restart `python main.py --replay` so calibration starts from zero.
+- [ ] `./tools/capture-timelapse.sh 48` — screenshots the dashboard and
+      assembles `calibration-timelapse.mp4`. Convergence is invisible if the
+      model is already trained, hence the restart.
+- [ ] Shoot the live tap last: it needs retakes, and the MCU heartbeat should be
+      on camera before you tap so the sensor is visibly alive.
+- [ ] Narration and subtitles: `docs/video-script.md`, `docs/video/narration.srt`.
+
+## 9. Hackster write-up
 - [ ] Follow `hackster-submission.md` (cover image, story in steps, code snippets…).
 - [ ] Deadline: September 13, 2026.

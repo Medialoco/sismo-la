@@ -50,6 +50,7 @@ import requests
 import usgs
 from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
+from eventlog import EventLog
 from pipeline import (
     find_match,
     iter_bridge_events,
@@ -275,12 +276,48 @@ def iter_replay_events(st: dict, us: dict, period_s: float = 12.0):
                 yield synth_noise_event()
 
 
+def snapshot_prior(evt: dict, match, model: CalibrationModel,
+                   dist_model: DistanceModel) -> dict:
+    """What the models predict for this event, before they learn it.
+
+    Two magnitude figures on purpose. ``magnitude_operational`` follows the
+    path the station actually walks in the field: estimate the distance from
+    duration and frequency, then invert the amplitude law with that estimate.
+    It is the number that matters, and it carries both errors.
+    ``magnitude_true_distance`` substitutes the catalog distance instead, which
+    isolates the amplitude law from distance-estimation error.
+    """
+    est_distance = dist_model.estimate_distance(evt.get("dur_ms"), evt.get("dom_hz"))
+    prior = {
+        "distance_km": est_distance,
+        "magnitude_operational": (
+            model.estimate_magnitude(evt["pga_g"], est_distance)
+            if est_distance else None
+        ),
+        "magnitude_true_distance": None,
+        "amplitude_points": len(model.points),
+        "amplitude_ready": model.ready,
+        "distance_points": len(dist_model.points),
+        "distance_ready": dist_model.ready,
+    }
+    if match is not None and getattr(match, "distance_km", None):
+        prior["magnitude_true_distance"] = model.estimate_magnitude(
+            evt["pga_g"], match.distance_km
+        )
+    return prior
+
+
 def detection_loop(cfg: dict, mode: str, state: SharedState,
                    model: CalibrationModel, clf: QuakeNoiseClassifier,
                    dist_model: DistanceModel) -> None:
     st = cfg["station"]
     us = cfg["usgs"]
     corr = cfg["correlation"]
+
+    journal = EventLog(cfg["calibration"].get("journal_file", "event_log.jsonl"))
+    if journal.enabled:
+        print(f"[Sismo-LA] journal: {journal.path} ({journal.count()} records) "
+              f"- replay it with `python audit.py`")
 
     if mode == "replay":
         events = iter_replay_events(st, us)
@@ -339,6 +376,13 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
             match_pool = [q for q in quakes if q.magnitude >= us["min_magnitude"]]
             match = find_match(evt["recv_time"], match_pool, corr["match_window_s"])
         p_quake = clf.predict_proba(evt["pga_g"], evt.get("dur_ms"), evt.get("dom_hz"))
+
+        # Snapshot the models BEFORE they learn this event. Once the point is
+        # folded in, any estimate is contaminated by the answer, and the
+        # residual stops being an out-of-sample error. See eventlog.py.
+        prior = snapshot_prior(evt, match, model, dist_model)
+        journal.append(evt, match, p_quake, prior)
+
         if match:
             model.add_point(
                 pga_g=evt["pga_g"],

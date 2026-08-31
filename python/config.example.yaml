@@ -28,6 +28,11 @@ source:
   baudrate: 115200
 
 calibration:
+  # Append-only journal, one JSON line per detection, recording what the models
+  # predicted BEFORE they learned each event. `python audit.py` replays it to
+  # get out-of-sample residuals; the RMSE the models report about themselves is
+  # a training residual and is optimistic. Never rewritten, safe to keep.
+  journal_file: event_log.jsonl
   state_file: calibration_state.json
   classifier_state_file: classifier_state.json
   distance_state_file: distance_state.json

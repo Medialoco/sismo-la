@@ -7,7 +7,7 @@ Draft for the project page on hackster.io, following the structure in
 
 ## Name
 
-**Sismo-LA: a $25 seismograph that learns from real Los Angeles earthquakes**
+**Sismo-LA: a seismograph that learns from real Los Angeles earthquakes**
 
 ## Pitch
 
@@ -199,7 +199,7 @@ from the fit. That campaign is running now.
 
 The pattern — **cheap sensor + free open ground truth = self-calibrating
 instrument** — is not specific to earthquakes. Air quality (OpenAQ), weather
-(NOAA), urban noise: wherever open data exists, a $25 device can bootstrap
+(NOAA), urban noise: wherever open data exists, a cheap device can bootstrap
 itself into a useful instrument. Sismo-LA is the proof of concept, in the
 best possible test city.
 

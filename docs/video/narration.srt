@@ -1,0 +1,117 @@
+1
+00:00:00,000 --> 00:00:05,500
+Los Angeles gets more than two thousand
+earthquakes in three months.
+
+2
+00:00:05,500 --> 00:00:10,500
+This ten-dollar motion chip can feel the
+bigger ones.
+
+3
+00:00:10,500 --> 00:00:15,000
+It just has no idea what it is feeling. A raw
+acceleration number means nothing on its own.
+
+4
+00:00:15,000 --> 00:00:21,000
+But in Los Angeles the ground truth is public.
+
+5
+00:00:21,000 --> 00:00:27,000
+Minutes after every quake, the USGS publishes
+its magnitude and its location.
+
+6
+00:00:27,000 --> 00:00:33,000
+So the device waits, feels a shake, then asks
+the catalog what that shake actually was.
+
+7
+00:00:33,000 --> 00:00:40,000
+Match enough of them and it learns its own
+site-specific response — for free.
+
+8
+00:00:40,000 --> 00:00:45,000
+The UNO Q is two computers.
+
+9
+00:00:45,000 --> 00:00:52,000
+The microcontroller watches the accelerometer
+a hundred times a second, and runs the classic
+seismology trigger.
+
+10
+00:00:52,000 --> 00:01:00,000
+The Linux side handles WiFi, queries the USGS,
+correlates, and serves the dashboard.
+
+11
+00:01:00,000 --> 00:01:06,000
+Here it is running on the board, on its own.
+
+12
+00:01:06,000 --> 00:01:11,000
+Every ten seconds it reports its noise floor.
+Now watch when I tap the desk.
+
+13
+00:01:11,000 --> 00:01:18,000
+Peak acceleration, duration, dominant
+frequency — all three measured in real time.
+
+14
+00:01:18,000 --> 00:01:25,000
+And it correctly reports no match in the
+catalog: a tap on a desk is not an earthquake.
+
+15
+00:01:25,000 --> 00:01:32,000
+This next part is a replay, not a live
+recording.
+
+16
+00:01:32,000 --> 00:01:40,000
+It feeds the last day of real cataloged quakes
+through the pipeline as synthetic shakes.
+
+17
+00:01:40,000 --> 00:01:46,000
+So you can watch in thirty seconds what takes
+weeks in the field.
+
+18
+00:01:46,000 --> 00:01:55,000
+Red is what the device thinks. Colour is what
+really happened. The dashed line is its error.
+
+19
+00:01:55,000 --> 00:02:02,000
+Now the part most demos skip.
+
+20
+00:02:02,000 --> 00:02:10,000
+The dashboard's residual is measured on the
+very points the model was fitted on, and it is
+handed the true distance. That flatters it.
+
+21
+00:02:10,000 --> 00:02:16,000
+Every detection is journalled with what the
+model predicted before it learned that point.
+
+22
+00:02:16,000 --> 00:02:20,000
+Replaying that journal gives the out-of-sample
+error — several times worse.
+
+23
+00:02:20,000 --> 00:02:25,000
+It detects, it does not predict. One station
+cannot triangulate.
+
+24
+00:02:25,000 --> 00:02:30,000
+But a cheap sensor plus open public data
+improves every time the ground moves.

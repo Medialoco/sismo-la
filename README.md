@@ -51,8 +51,24 @@ python main.py --replay       # then open http://localhost:8000
 
 Watch the side panel: the amplitude model flips to *calibrated*, the distance
 model to *ready*, and the noise filter starts telling earthquakes from trucks.
+
+![Calibration converging: the panel goes from learning 1/8 to calibrated while red device estimates fill the map](docs/video/calibration-timelapse.gif)
+
+*Sixteen seconds of replay, sampled every few seconds. The panel starts at
+"learning 1/8" with an empty map and ends "calibrated" with the distance model
+ready and the noise filter separating 24 quakes from 8 noises. Replayed catalog
+data, not a live recording — the badge says so throughout.*
 Other modes: `python main.py --mock` (synthetic shakes), `python pipeline.py
 --mock` (headless), `python main.py` (real sensor on the board).
+
+Then grade it honestly. Every detection is appended to `event_log.jsonl` along
+with what the models predicted *before* they learned it, so the journal can be
+replayed for out-of-sample residuals instead of the flattering training ones:
+
+```bash
+python audit.py                      # the honest scoreboard
+python audit.py --include-synthetic  # also score --replay events (circular)
+```
 
 On the board itself this is one command, because the repository *is* an App Lab
 App — `app.yaml` plus `python/` for the Linux half and `sketch/` for the MCU
@@ -105,6 +121,28 @@ in-sample training residual computed with the *true* catalog distance, while
 live operation feeds it an *estimated* distance. Treat it as a software health
 check, never as an accuracy claim. Real numbers need real recordings with
 residuals on held-out events; that campaign is running.
+
+**The dashboard number is the optimistic one, and now you can measure that.**
+Every detection is journalled together with what each model predicted *before*
+it learned that point, so `python audit.py` replays the journal and reports
+genuine out-of-sample residuals instead of training ones.
+
+What it reports so far, on two replay runs:
+
+| Estimator | run A (11 pts) | run B (27 pts) |
+|---|---|---|
+| In-sample, true distance — *what the panel shows* | 0.20 Mw | 0.18 Mw |
+| Out-of-sample, true distance | 0.30 Mw | 0.21 Mw |
+| Out-of-sample, **estimated** distance — the operational path | 1.10 Mw | 0.26 Mw |
+
+Two honest readings of that table. The out-of-sample figure is consistently
+worse than the panel's, which is the expected direction. But it is wildly
+unstable — 1.10 against 0.26 for the same pipeline — because prequential
+scoring grades the earliest points with a model that has barely learned
+anything, and with a handful of points those dominate. **At this sample size
+none of these numbers is trustworthy in absolute terms, and that instability is
+itself the finding.** They are quoted here to show the method, not to claim an
+accuracy. Real figures need real recordings, and many more of them.
 
 **The red markers do not measure direction.** A single station recovers distance
 from the coda but not azimuth. When a catalog match exists the marker borrows

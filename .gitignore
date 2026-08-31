@@ -13,6 +13,9 @@ data/
 calibration_state.json
 classifier_state.json
 distance_state.json
+# The detection journal: station-specific, append-only, grows without bound.
+# Replay it with `python audit.py`; do not commit it.
+event_log.jsonl
 events_log.jsonl
 
 # OS / editors

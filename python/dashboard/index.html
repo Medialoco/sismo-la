@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sismo-LA — a $25 sensor vs the USGS</title>
+  <title>Sismo-LA — a low-cost sensor vs the USGS</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -70,6 +70,8 @@
 
     /* ---- Status ---- */
     .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin: 4px 0; }
+    .note { color: var(--muted); font-size: 11px; line-height: 1.45; margin: 6px 0 2px; }
+    .note code { background: #0d1218; padding: 1px 4px; border-radius: 3px; }
     .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
     .pill.ok { background: rgba(111,207,122,.15); color: var(--green); }
     .pill.wait { background: rgba(255,176,74,.15); color: var(--orange); }
@@ -107,7 +109,7 @@
 <body>
   <header>
     <span class="logo">Sismo-LA</span>
-    <span class="tagline">A $25 MEMS sensor + open USGS data = a self-calibrating seismograph.
+    <span class="tagline">A low-cost MEMS sensor + open USGS data = a self-calibrating seismograph.
       Red = what the device thinks. Colors = what really happened.</span>
     <span id="mode-badge" class="mode-badge mode-mock">…</span>
   </header>
@@ -155,8 +157,12 @@
         </div>
         <div class="progress"><div id="calib-bar" style="width:0%"></div></div>
         <div class="stat-row" style="margin-top:8px">
-          <span>Accuracy (RMSE)</span><span id="calib-rmse">--</span>
+          <span title="Root-mean-square residual over the very points the model was fitted on, using each quake's true catalog distance. It is a training error, not an accuracy: the station has to estimate that distance itself, and run `python audit.py` for the out-of-sample figure.">Fit residual (in-sample)</span><span id="calib-rmse">--</span>
         </div>
+        <div class="note">Training residual, not accuracy — it scores the model
+          on its own fitting points and is given the true distance.
+          <code>python audit.py</code> replays the journal for the honest,
+          out-of-sample number.</div>
         <div class="stat-row">
           <span>Distance model</span><span id="calib-dist">--</span>
         </div>
@@ -181,9 +187,16 @@
   ></script>
   <script>
     const map = L.map("map", { zoomControl: true }).setView([34.0522, -118.2437], 8);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap &copy; CARTO",
-      maxZoom: 19,
+    // Esri's dark canvas, not CARTO's: CARTO now stamps "API KEY REQUIRED"
+    // across every tile it serves anonymously, which made the map unusable in
+    // screenshots. This one needs no key. Labels ride on a second layer.
+    const esri = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
+    L.tileLayer(`${esri}/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, {
+      attribution: "Tiles &copy; Esri",
+      maxZoom: 16,
+    }).addTo(map);
+    L.tileLayer(`${esri}/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, {
+      maxZoom: 16,
     }).addTo(map);
 
     const usgsLayer = L.layerGroup().addTo(map);
