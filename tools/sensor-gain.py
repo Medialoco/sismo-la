@@ -59,11 +59,14 @@ DEADLINE_DAYS = 12
 # numbers; the range matters because the density moves with it.
 CANDIDATES = [
     # (label, noise density ug/rtHz, full scale the density applies to)
-    ("KX134-1211", 130.0, "+-8 g"),
+    ("KX134-1211", 300.0, "+-8 g, ODR 50 Hz"),
+    ("KX132-1211", 130.0, "+-2 g"),
     ("LSM6DSOX (current)", 110.0, "+-4 g"),
-    ("ADXL357", 80.0, "+-10.24 g"),
-    ("SCA3300-D01", 37.0, "+-3 g, mode 1"),
+    ("ADXL357", 75.0, "+-10 g"),
+    ("ISM330DHCX", 60.0, "HP, any FS"),
+    ("SCA3300-D01", 44.0, "+-3 g, mode 1"),
     ("ADXL355", 22.5, "+-2 g"),
+    ("IIS2ICLX", 15.0, "2-axis, any FS"),
 ]
 
 

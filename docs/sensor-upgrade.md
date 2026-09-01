@@ -84,23 +84,28 @@ is not optional: the density moves with the range.
 
 | Sensor | µg/√Hz | floor (g) | M@10km | M@30 | M@50 | M@100 | M@160 | det/year (x1..x4) | mean wait | P(one in 12 d) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| KX134-1211 (±8 g) | 130 | 0.00364 | 3.2 | 4.0 | 4.4 | 5.0 | 5.4 | 1.6 - 8.1 | 45-224 d | 5-23% |
+| KX134-1211 (±8 g) | 300 | 0.00839 | 3.6 | 4.4 | 4.8 | 5.4 | 5.8 | 0.6 - 3.1 | 118-599 d | 2-10% |
+| KX132-1211 (±2 g) | 130 | 0.00364 | 3.2 | 4.0 | 4.4 | 5.0 | 5.4 | 1.6 - 8.1 | 45-224 d | 5-23% |
 | **LSM6DSOX, current (±4 g)** | **110** | **0.00308** | 3.1 | 3.9 | 4.3 | 4.9 | 5.3 | **2.0 - 9.8** | 37-184 d | 6-28% |
-| ADXL357 (±10.24 g) | 80 | 0.00224 | 3.0 | 3.8 | 4.2 | 4.8 | 5.2 | 2.9 - 13.8 | 26-127 d | 9-36% |
-| SCA3300-D01 (±3 g) | 37 | 0.00103 | 2.6 | 3.4 | 3.8 | 4.4 | 4.8 | 7.0 - 29.8 | 12-52 d | 21-62% |
+| ADXL357 (±10 g) | 75 | 0.00210 | 2.9 | 3.7 | 4.1 | 4.7 | 5.1 | 3.1 - 14.7 | 25-118 d | 10-38% |
+| ISM330DHCX (HP) | 60 | 0.00168 | 2.8 | 3.6 | 4.0 | 4.6 | 5.0 | 4.0 - 18.5 | 20-91 d | 12-46% |
+| SCA3300-D01 (±3 g, mode 1) | 44 | 0.00123 | 2.7 | 3.5 | 3.9 | 4.5 | 4.9 | 5.8 - 25.2 | 14-63 d | 17-56% |
 | **ADXL355 (±2 g)** | **22.5** | **0.00063** | 2.3 | 3.1 | 3.5 | 4.1 | 4.5 | **12.2 - 47.0** | 8-30 d | 33-79% |
+| IIS2ICLX (2-axis) | 15 | 0.00042 | 2.1 | 2.9 | 3.3 | 3.9 | 4.3 | 18.5 - 66.9 | 5-20 d | 46-89% |
 
 Read every magnitude as **±0.45 Mw (1σ)**, and below M3 as extrapolation: the
 smallest earthquake in the fit is M3.03.
 
-Two honest limits on the bottom two rows. The floor-scaling assumption was only
-*measured* at 0.00036 g; below roughly 1e-4 g, where an ADXL355 would sit, the
-site's own contribution has never been shown to be negligible, because it could
-not be separated from zero at the current floor. Expect the first factor of 2-3
-to be certain and the rest to be probable. And `AGENTS.md` quotes 10.9-42.8/year
-for the ADXL355 — that figure was computed with 25 µg/√Hz, the value in Rev. 0
-of the datasheet. Rev. D says 22.5, which gives 12.2-47.0. The difference is
-0.05 Mw and changes nothing.
+Two honest limits on the bottom rows. The floor-scaling assumption was only
+*measured* at 0.00036 g; below roughly 1e-4 g, where an ADXL355 or IIS2ICLX
+would sit, the site's own contribution has never been shown to be negligible,
+because it could not be separated from zero at the current floor. Expect the
+first factor of 2-3 to be certain and the rest to be probable. And `AGENTS.md`
+quotes 10.9-42.8/year for the ADXL355 — that figure was computed with 25 µg/√Hz,
+the value in Rev. 0 of the datasheet. Rev. D says 22.5, which gives 12.2-47.0.
+The difference is 0.05 Mw and changes nothing. The IIS2ICLX row is an upper
+bound twice over: two axes instead of three (the current `pga_g` is a 3-vector
+magnitude), and the same site-noise caveat, one step further down.
 
 ## 3. The candidates, one by one
 
@@ -135,11 +140,14 @@ the ADXL355.** Not from SparkFun, not from Adafruit, not from ADI. Checked
   2 × 3, 0.1" spacing, through hole, **do not insert**". So this board needs
   header soldering — 12 pins — before a single Dupont wire can be attached.
   That is the honest answer to the question the user asked not to be guessed at.
-- **EVAL-ADXL355-PMDZ**: Pmod form factor, and ADI documents it as using the
-  **extended SPI** Pmod interface. So although the chip can do I2C, this board
-  is wired for SPI. It ships with a 12-pin Pmod header, which on this board is
-  a right-angle male header — usable with female Dupont jumpers, but confirm
-  before ordering (see the uncertainty list).
+- **EVAL-ADXL355-PMDZ** (~$36-47): Pmod form factor, wired for the **extended
+  SPI** Pmod interface. The chip can do I2C; this board cannot, as shipped.
+  **The 12-pin right-angle header is already soldered** — confirmed from ADI's
+  own product photograph (`EVAL-ADXL355-PMDZ 08-043217 REV A` on
+  wiki.analog.com, 2026-09-01). Female Dupont jumpers plug onto it. ADI's own
+  no-OS guide documents exactly that wiring to boards that have no Pmod
+  socket. This is the lowest-hand-work ADXL355 path: bucket (b), wires, no
+  soldering.
 - **Generic "ADXL355 module" listings** on marketplaces do exist, some with
   headers already fitted. None of the ones surfaced were from a vendor whose
   stock, authenticity or delivery date could be verified, and several pages
@@ -181,133 +189,218 @@ before ordering.
      proper `TwoWire&` parameter is the same edit done politely, and worth
      upstreaming.
 
-**Hand-work verdict: bucket (c), soldering.** Twelve header pins on an
-EVAL-ADXL355Z, then six to seven Dupont wires (VSUPPLY, VDDIO, GND, SDA, SCL,
-`SCLK`→GND to select I2C, `ASEL`→GND for address 0x1D). Not a plug-in cable.
-This is the single biggest gap between this option and the current setup.
+**Hand-work verdict: bucket (b) on the PMDZ, bucket (c) on the EVAL-Z.** The
+PMDZ is six Dupont wires (3.3 V from JANALOG/IOREF, GND, MOSI, MISO, SCK, plus
+a GPIO chip-select — JSPI has no CS and no 3.3 V pin). The EVAL-Z is twelve
+header pins to solder first, then the same number of wires, plus two ground
+straps if I2C is used. Neither is a Qwiic cable. The PMDZ is the one to
+order: the library's SPI path already accepts a custom `SPIClass`, so no
+patch, and SPI also sidesteps the point-to-point I2C bug.
 
 ### SCA3300-D01 — disqualified, and for a different reason than expected
 
-**Noise: 37 µg/√Hz** (Mode 1, ±3 g, 70 Hz), integrated 0.44 mg rms, from the
-Murata SCA3300-D01 datasheet, verified 2026-09-01. Ranges ±1.5/±3/±6 g, 3.0-3.6
-V supply, 3.3 V logic. 3.0x quieter than the LSM6DSOX — a real gain, 7.0-29.8
+**Noise: 44 µg/√Hz typical in Mode 1 (±3 g, 70 Hz), 35 in Modes 3/4 (±1.5 g).**
+The cover of the Murata SCA3300-D01 datasheet says "Ultra-low 37 µg/√Hz"; the
+specification table does not contain a 37. Cite the table. 2.5x quieter than
+the LSM6DSOX in the mode this station would actually use — 5.8-25.2
 detections/year.
 
-**Interface: SPI only, and confirmed from the pin table rather than the
-marketing text.** The twelve pins are AVSS, A_EXTC, RESERVED, VDD, **CSB, MISO,
-MOSI, SCK**, DVIO, D_EXTC, DVSS, EMC_GND. There is no SDA, no SCL, no I2C
-anywhere in the part. The datasheet goes further: "3-wire SPI connection is not
-supported", and frames are 32-bit 4-wire. **So a Qwiic connector on any
-SCA3300 board can carry power and nothing else** — the user's suspicion is
-correct, and it is a property of the silicon, not of the board.
+**Interface: SPI only, confirmed from the 12-pin map.** CSB, MISO, MOSI, SCK,
+and nothing else. "3-wire SPI connection is not supported." Frames are 32-bit
+off-frame with CRC — not a register SPI. **So a Qwiic connector on any SCA3300
+board can carry power and nothing else.** The user's suspicion is correct, and
+it is a property of the silicon.
+
+**There is also no SparkFun SCA3300 board.** The catalog of 18 SparkFun
+accelerometers (2026-09-01) has none; the product URL, the GitHub library and
+the docs page all 404; the retired-product archive has a SCA3000 (SEN-08791)
+and nothing later. The "Qwiic-shaped SPI trap" does not exist here because the
+board itself does not exist. The Murata Chip Carrier (SCA3300-D01-PCB) is
+**discontinued at Digi-Key**, and the MIKROE Inclinometer Click is an SCL3300.
 
 **And there is a worse problem, which is why this is disqualified rather than
-merely inconvenient.** The datasheet states the ODR is fixed at 2000 Hz and
-that "registers are updated in every 0.5 ms and **if all data is not read the
-full noise performance of sensor is not met**", recommending that all three axes
-be read every cycle at sensor ODR. Getting the 37 µg/√Hz therefore means 6000
-32-bit SPI frames per second. The station's loop runs at a measured 95.3 Hz. The
-firmware would have to be restructured around a 2 kHz DMA'd SPI cadence to
-obtain a gain that is still 1.6x worse than the ADXL355's. There is also no
-SCA3300 library in the Arduino library index at all.
+merely inconvenient.** The ODR is fixed at 2000 Hz and "if all data is not
+read the full noise performance of sensor is not met" — 6000 32-bit SPI frames
+per second against a loop measured at 95.3 Hz. There is no SCA3300 library in
+the Arduino index.
 
 **Verdict: no.** More firmware work than the ADXL355, for less gain, over a bus
-that needs more wires.
+that needs more wires, and no board to buy from a US distributor.
+
+### ISM330DHCX — the only quieter part that actually plugs in
+
+**Noise: 60 µg/√Hz typical, 100 max, high-performance mode, independent of ODR
+and full scale** (ST datasheet note 8, verified 2026-09-01). 1.83x quieter.
+4.0-18.5 detections/year, 0.30 Mw — the same order as the band-pass just
+flashed, not a step change.
+
+**Board: SparkFun 6DoF IMU Breakout - ISM330DHCX (Qwiic), SEN-19764, $25.50,
+in stock** on sparkfun.com 2026-09-01. Two real Qwiic connectors, I2C at 0x6B
+(0x6A alternate), 3.3 V. **Bucket (a): one Qwiic cable, nothing else.** SparkFun
+ships from Boulder, CO; the exact LA delivery date was not confirmed.
+
+**Library: `SparkFun_6DoF_ISM330DHCX` v1.0.6.** `library.properties` has no
+`depends=` line — only `Wire.h` and `SPI.h` from the core, so the hermetic
+profile needs one entry. `QwI2C::init(TwoWire&)` accepts `Wire1` by design.
+Not compiled against `arduino:zephyr` during this survey.
+
+This is a drop-in replacement for the Modulino Movement. The only reason it is
+not the recommendation is that ×1.83 does not change the station, and swapping
+it now still puts the hardware on the bench for a gain the band-pass already
+bought.
+
+### IIS2ICLX — quieter than the ADXL355, and unavailable
+
+**Noise: 15 µg/√Hz typical, 30 max**, independent of the ±0.5/±1/±2/±3 g
+range (ST datasheet, verified). 7.3x quieter. 18.5-66.9 detections/year on
+paper.
+
+**Interface: native I2C and SPI.** The register map is the LSM6DSO family's —
+`CTRL1_XL` at 0x10, the same `HPCF_XL` field this sketch already writes — and
+the ODRs include 104 Hz. The firmware would almost port. **It is two axes
+(X and Y).** That is a second break in the definition of `pga_g`, after the
+band-pass.
+
+**No Qwiic board exists.** The only ready I2C board, MIKROE Inclinometer 2
+Click (MIKROE-5156), ships with jumpers in the I2C position, and is **out of
+stock everywhere** authorised (MIKROE, SparkFun SEN-20585 retired, TME empty).
+Secondary brokers quote 9-14 business days. The ST STEVAL-MKI209V1K ($32.46)
+is a DIL24 ribbon, not a plug. **Not a 12-day part, and not a 3-axis one.**
+
+Worth knowing: it is the only non-ADI MEMS that beats the ADXL355 on noise.
+Revisit after the contest only if a board reappears.
 
 ### ADXL357 — quieter on paper, not where it counts
 
-**Noise: 80 µg/√Hz** at ±10.24 g. Only 1.4x better than the LSM6DSOX, because
-the ADXL357's whole point is a ±10/±20/±40 g range, and noise density scales
-with full scale. 2.9-13.8 detections/year, a mean wait of 26-127 days. Same
-board problem as the ADXL355 (EVAL-ADXL357Z, headers not fitted), same wiring,
-for a quarter of the benefit. **No.**
-*(This density is from the ADXL356/357 datasheet as cited by ADI's product
-literature; it was not read out of the PDF directly during this survey — see
-the uncertainty list.)*
+**Noise: 75 µg/√Hz at ±10 g** (ADXL356/357 datasheet Rev. A; older Pr-D
+revisions said 80). Only 1.5x better than the LSM6DSOX, because the part's
+point is a ±10/±20/±40 g range. 3.1-14.7 detections/year. Same board problem
+as the ADXL355, for a quarter of the benefit. **No.**
 
-### KX134-1211 — the trap of a convenient connector
+### KX134 / KX132 — the trap of a convenient connector
 
-The one candidate with a genuinely plug-and-play board: **SparkFun Triple Axis
-Accelerometer Breakout - KX134 (Qwiic), SEN-17589**, ~$27-36, real Qwiic
-connectors, I2C *and* SPI, and a maintained library (`SparkFun KX13X` v2.0.4)
-which does accept an alternate `TwoWire`. Everything the current setup has.
+SparkFun sells both as Qwiic breakouts with a maintained library (`SparkFun
+KX13X` v2.0.4) that accepts an alternate `TwoWire`. Everything the current
+setup has.
 
-**And it is louder than what is already on the board: 130 µg/√Hz** at ±8 g
-(SparkFun's own specification, 2026-09-01). Fitting it would move the station
-from 2.0-9.8 detections a year to **1.6-8.1**. The sister part KX132-1211 goes
-down to ±2 g and may be quieter at that range, but no figure was confirmed from
-the ROHM/Kionix datasheet during this survey.
+**And both are louder than what is already on the board**, from the
+manufacturer datasheets, not the shop pages:
 
-This entry is kept precisely because it is the shape of mistake this exercise
-exists to avoid: the easiest board to plug in is the one that makes the
-instrument worse.
+- **KX134-1211: 300 µg/√Hz** at ±8 g, ODR 50 Hz (ROHM/Kionix datasheet table 1).
+  SparkFun's own page quotes 130; that figure is the sister part. Fitting a
+  KX134 would drop the station from 2.0-9.8 detections a year to **0.6-3.1**.
+- **KX132-1211: 130 µg/√Hz** (Kionix rev. 1.0); SparkFun says 150. Either way,
+  worse than 110. SEN-17871, $15.50, in stock.
+
+This pair is kept because it is the shape of mistake this exercise exists to
+avoid: the easiest board to plug in is the one that makes the instrument worse.
 
 ### Geophones and a Qwiic ADC — the Raspberry Shake route
 
-A 4.5 Hz geophone with a 24-bit ADC is what Raspberry Shake does, and it is
-quieter in 1-10 Hz than any MEMS part here. It is also the wrong answer to the
-question that was asked, for reasons that are structural rather than
-incidental:
+A 4.5 Hz geophone with a 24-bit ADC is quieter in 1-10 Hz than any MEMS part
+here, including the ADXL355. It is also the wrong answer for the next 12 days,
+for reasons that are logistical rather than analog.
 
-- **A geophone measures velocity, not acceleration.** The station's entire
-  chain — `pga_g`, the band-pass normalisation to g, `REF_GMPE`, the amplitude
-  law the station learns, the plausibility veto — is built on PGA. Using a
-  geophone means either differentiating a noisy signal or switching to a PGV
-  ground-motion law and refitting everything the project has measured.
-- **It rolls off below its own corner**, and local energy at 20-50 km sits
-  partly below 4.5 Hz.
-- **It needs an analog front end**: tens of µV to mV differential, so a gain
-  stage, a virtual ground on a single supply, and anti-alias filtering — a
-  circuit to design and solder, which is explicitly what the user ruled out.
-- The ADC side is the easy half. Qwiic 24-bit boards exist (SparkFun ADS1219,
-  NAU7802) with maintained Arduino libraries. The amplifier is the hard half.
+**What is actually in stock in the US, 2026-09-01:**
 
-**Verdict: real potential, wrong shape, and out of the question in 12 days.**
-Worth revisiting only after the MEMS step has been made and measured. A
-detailed sub-survey of specific geophone parts, ADC noise budgets and turnkey
-modules is deliberately not reproduced here, because the disqualifying argument
-is the velocity-vs-acceleration rewrite, not the parts list.
+- **SM-24** (ION, 10 Hz, 28.8 V/(m/s), 375 Ω): **$69.95, in stock at SparkFun**
+  (Niwot, CO). The only geophone that ships domestically. Its corner is 10 Hz,
+  so it misses the lower half of the 1-10 Hz band a local M4 occupies; that is
+  compensable digitally, at a cost in firmware.
+- **4.5 Hz elements** (Racotech RGI-4.5Hz / Tinyos PS-4.5B / EGL EG-4.5-II,
+  ~28.8 V/(m/s)): $33-35 from China, ~10 business days announced, or factory
+  quote. None are on a US shelf.
+- **No geophone ships with a preamp attached.** GeoMCU and GeophoneDuino are
+  KiCad files, not products.
+
+**The ADC half is easier than the literature suggests, and a preamp is not
+required.** That last claim is arithmetic, not taste. The SparkFun ADS1219
+(SEN-27544, **$14.95, in stock**, two Qwiic ports, 24-bit / 20 effective) at
+330 SPS and gain 4 has 4.54 µV rms of input-referred noise. Against a 4.5 Hz
+28.8 V/(m/s) geophone, weighted by the geophone's own |H(f)| over 0.7-12 Hz,
+that is **2.5×10⁻⁷ g** — 1 400x below the current 0.00036 g floor. Cross-check:
+the published RS1D floor is 0.08 µm/s rms on 1-20 Hz; the same chain computed
+here is 0.14 µm/s on 1-10 Hz. A factor 1.8 off a commercial instrument, which
+is the right order of magnitude.
+
+The NAU7802 (SEN-15242, $5.95) is quieter still and is **the only ADC with a
+spring terminal** — press the geophone wires in, no soldering. It is on
+**backorder**. The ADS1219 breaks out 0.1" pins and has no screw terminal:
+headers have to be soldered, or wires jammed in the holes.
+
+**The chain would be site-limited, not sensor-limited.** The current 0.00036 g
+floor only proves the site is quieter than 0.00036 g (~194 µm/s at 2.9 Hz),
+which is a loose bound. Urban 1-10 Hz floors measured elsewhere run 10 µm/s
+(Taipei, night) to 500 µm/s (Karlsruhe cellars). If the station's site is the quiet end
+of that, the real gain is closer to ×36 than ×1 400 — still seven times the
+ADXL355, and enough that M2 at 100 km becomes reachable. The only way to
+know is the same two-channel ratio this station already used.
+
+**A geophone measures velocity.** Keep the Python pipeline on PGA: differentiate
+inside the existing band-pass (`a_n = (v_n − v_{n-1}) · f_s`) and leave
+`REF_GMPE` alone. Switching the whole project to PGV would force a refit of
+every number in "Claims discipline" for no scientific gain. Keep the
+LSM6DSOX on the bus for tilt and strong motion — that is the RS4D
+architecture, and Qwiic is a bus. Polarisation of the floating coil is still
+untested: two 100 kΩ resistors to mid-rail, or an asymmetric AINN-to-AGND
+trick that the ADS1219 datasheet permits and nobody has confirmed in the
+field.
+
+**Not feasible in 12 days.** The only zero-solder ADC is backordered; the only
+US-stocked geophone is the wrong corner frequency; and even with both parts on
+the table the firmware is 8-13 days (Zephyr driver on `Wire1`, pole
+compensation, counts→V→m/s→g, a third schema break). Two contest deliverables
+are still missing.
+
+**Worth doing after the contest, and more than the ADXL355** — provided the
+site allows it. Order a 4.5 Hz element ($33-35) plus the ADS1219 ($14.95),
+keep the Modulino, differentiate in firmware, measure the two-channel ratio.
 
 ### Ready-made seismic modules
 
-- **Raspberry Shake RS1D**: $294.99 for the board, $584.99 turnkey (checked
-  2026-09-01 for `docs/hardware.md`). It is a Raspberry Pi appliance with its
-  own software stack, not an Arduino peripheral. Buying one would replace the
-  project, not improve it.
-- **Grillo OpenEEW**: ADXL355-based and open-source, which is a useful
-  confirmation that the ADXL355 is the right class of part for earthquake
-  detection. Whether a board can be bought and delivered was not established.
-- The `SW-420` / `801S` "earthquake sensor modules" sold for Arduino are
-  **vibration switches, not seismometers**. They have no calibrated
-  sensitivity and would be a large step backwards. Not candidates.
+- **Raspberry Shake RS1D**: $294.99 board / $584.99 turnkey (checked 2026-09-01
+  for `docs/hardware.md`). A Raspberry Pi appliance, not an Arduino
+  peripheral. It will not accept a different geophone. Buying one replaces
+  the project.
+- **Grillo OpenEEW / Grillo One / Pulse**: ADXL355-based, which confirms the
+  part. **PCBWay out of stock, both shop SKUs sold out**, 2026-09-01. The
+  Qwiic port on the OpenEEW node is an *output* for extra sensors, not the
+  accelerometer interface (that is ESP32 HSPI).
+- **Infiltec QM-4.5LV** ($345, ships in the US): 0.01-1.0 Hz, 16-bit, a
+  teleseismic instrument. Wrong band.
+- The `SW-420` / `801S` "earthquake sensor modules" are **vibration switches**.
+  A spring and a rod. No units, no linearity, no sensitivity. Five to six
+  orders of magnitude below the need.
 
 ## 4. Recommendation
 
-**The ADXL355 is the only candidate worth any effort, and it should not be
-attempted before 2026-09-13.**
+**The ADXL355 is the only MEMS candidate that changes the answer, and it
+should not be attempted before 2026-09-13.** The geophone is the better
+long-term instrument, and it is even less of a 12-day job.
 
-Why it is the right part: it is the only option that changes the station's
-character rather than nudging it. 4.9x lower noise, 6x the detection rate, the
-required magnitude at 30 km falling from M3.9 to M3.1, and the probability of a
-first genuine detection in a 12-day window going from 6-28% to 33-79%.
-Everything else on the list is either louder than what is fitted, or a smaller
-gain for more work, or a different project.
+Why the ADXL355 is the right *next MEMS*: 4.9x lower noise, 6x the detection
+rate, M@30 km from 3.9 to 3.1, P(one in 12 d) from 6-28% to 33-79%. The
+ISM330DHCX is the only quieter part that plugs in over Qwiic, and it buys
+0.30 Mw — the band-pass already did that. The IIS2ICLX would beat the
+ADXL355 on paper (15 µg/√Hz) and has no board. Everything else is louder
+than what is fitted, or more work for less gain.
 
 Why not now, stated plainly:
 
 1. **Two contest deliverables are still missing** — the cover photo, which must
    be a text-free shot of the physical station, and the video. Both need the
    station assembled and running. A sensor swap puts the hardware on the bench.
-2. **The board needs soldering.** Twelve header pins on an EVAL-ADXL355Z, then
-   six or seven wires, then an I2C-mode strap. Nothing here is a Qwiic cable.
-   If the soldering iron slips, the project has no sensor at all.
-3. **The Qwiic library path needs a patch.** Small, mechanical, tested — but a
-   patched library must go into the hermetic profile build, be flashed, and be
-   verified over the Bridge before it can be trusted.
-4. **A sensor arriving on 10 September is a liability, not an asset.** Even
-   with next-day US shipping the realistic sequence is order, receive, solder,
-   wire, patch, flash, verify, re-measure the two-channel noise floor. That is
-   not a two-day job on a station whose only remote surface is a read-only
+2. **Nothing here is a Qwiic cable except the ISM330DHCX, and that one is not
+   worth the bench time.** The ADXL355 path is six Dupont wires onto a PMDZ
+   (headers already fitted) plus a SPI rewrite of the sketch. The EVAL-Z still
+   needs twelve pins soldered. Either way the station comes off the wall.
+3. **The I2C library path needs a patch; the SPI path does not.** `PL ADXL355`
+   hardcodes `Wire`. Its SPI entry point already takes a custom `SPIClass`,
+   compiles for this core, and avoids the chip's point-to-point I2C bug. That
+   is why the PMDZ, not the EVAL-Z, is the board to buy — after the deadline.
+4. **A sensor arriving on 10 September is a liability, not an asset.** Order,
+   receive, wire, flash, verify, re-measure the two-channel floor. That is not
+   a two-day job on a station whose only remote surface is a read-only
    dashboard and which cannot be rebooted remotely.
 5. **The upgrade would not rescue the calibration anyway.** At 12.2-47.0
    detections a year the mean wait is still 8-30 days, and the calibration needs
@@ -319,13 +412,17 @@ the floor is the sensor's own electrical noise, proven in two bands, and the
 next gain is therefore hardware. That is a stronger result than a rushed swap,
 and it is already written down.
 
-**After the contest**, in order: confirm price and stock on Mouser's and ADI's
-own pages; order an EVAL-ADXL355Z; solder P1 and P2; wire it to the classic
-SDA/SCL header pins first, because the unpatched library works there and it
-removes one variable; read the same two-channel in-band/wideband ratio the
-band-pass work introduced. That last step is what will show whether the site
-noise stays negligible at 0.00008 g — the one thing the current measurement
-cannot prove.
+**After the contest**, two steps, in this order:
+
+1. **ADXL355 first**, because it is a drop-in change of density and nothing
+   else. Confirm stock on Mouser/ADI's own pages; order the **EVAL-ADXL355-PMDZ**;
+   six Dupont wires to JSPI + JANALOG + a GPIO CS; use the unpatched library
+   in SPI; read the two-channel ratio. That is what shows whether the site
+   stays negligible at 0.00008 g.
+2. **A 4.5 Hz geophone second**, if and only if that ratio says the site has
+   room. SM-24 from SparkFun if impatience wins (wrong corner, ships now);
+   a Chinese 4.5 Hz element plus the ADS1219 if it can wait ten days. Keep
+   the LSM6DSOX. Differentiate in firmware. Do not refit the GMPE.
 
 ## 5. Verified, versus assumed
 
@@ -339,43 +436,56 @@ cannot prove.
   SDA warning — ADXL354/355 datasheet Rev. D.
 - EVAL-ADXL355Z headers are **not** fitted — ADI product page ("vias for
   populating 6-pin headers") and user guide UG-1030 BOM ("do not insert").
-- EVAL-ADXL355-PMDZ uses the Pmod **extended SPI** interface — ADI system-level
-  documentation.
-- SCA3300-D01: 37 µg/√Hz Mode 1, SPI-only 12-pin map, 3-wire unsupported, ODR
+- EVAL-ADXL355-PMDZ uses the Pmod **extended SPI** interface, and its 12-pin
+  header is **already soldered** — ADI wiki photograph, board rev.
+  `08-043217 REV A`.
+- SCA3300-D01: table values 44 µg/√Hz (mode 1) / 35 (modes 3/4), cover-page
+  "37" is not in the table; SPI-only 12-pin map, 3-wire unsupported, ODR
   fixed at 2000 Hz with the noise spec conditional on reading every cycle —
-  Murata SCA3300-D01 datasheet.
+  Murata SCA3300-D01 datasheet. No SparkFun SCA3300 board exists (catalog,
+  product URL, GitHub, docs, retired archive all checked 2026-09-01).
 - `PL ADXL355` v1.4.2 is the only ADXL355 library in the Arduino index; released
   2026-08-27; hardcodes `Wire` at 13 I2C call sites; accepts a custom
   `SPIClass`; **compiles and links for `arduino:zephyr:unoq`**, and still does
   after the `Wire1` substitution — both builds run locally.
-- No Qwiic/STEMMA-QT ADXL355 board exists from SparkFun, Adafruit or ADI.
-- KX134-1211 at 130 µg/√Hz, i.e. louder than the LSM6DSOX — SparkFun product
-  specification.
+- No Qwiic/STEMMA-QT ADXL355 board exists from SparkFun, Adafruit or ADI
+  (Mikroe Accel Click is an ADXL345; Accel 16 is an ADXL363; Accel 32 is an
+  ADXL382).
+- KX134-1211 at **300 µg/√Hz** (ROHM/Kionix datasheet); KX132-1211 at
+  **130 µg/√Hz** (Kionix rev. 1.0). Both louder than the LSM6DSOX.
+- ISM330DHCX at 60 µg/√Hz (ST datasheet, HP mode, FS-independent);
+  SparkFun SEN-19764 $25.50 in stock; library accepts `TwoWire&`.
+- IIS2ICLX at 15 µg/√Hz, 2-axis, I2C native (ST datasheet); MIKROE-5156 out
+  of stock at every authorised distributor.
+- SM-24 $69.95 in stock at SparkFun; ADS1219 SEN-27544 $14.95 in stock;
+  NAU7802 SEN-15242 on backorder; Grillo One / Pulse / OpenEEW all sold out
+  or out of stock.
+- ADXL357 at 75 µg/√Hz ±10 g — ADXL356/357 datasheet Rev. A.
 - All detection rates: computed by `tools/sensor-gain.py` over 2185 real USGS
   events, method validated against the published station figures.
 
 **Assumed, or not established — do not treat as settled:**
 
-- **Prices and stock.** Every EVAL-ADXL355Z figure came from an aggregator, one
-  of which served 2020 data. Confirm on mouser.com and analog.com before
-  ordering. No shipping date to Los Angeles was confirmed with any vendor.
-- **Whether the EVAL-ADXL355-PMDZ's Pmod header ships pre-soldered**, and in
-  what orientation. This is decisive for the amount of hand-work and it could
-  not be determined from the documentation.
-- **ADXL357's 80 µg/√Hz** was taken from ADI product literature, not read out
-  of the ADXL356/357 PDF during this survey. It only affects a candidate
-  already rejected.
-- **KX132-1211's noise density at ±2 g** — not confirmed from the Kionix/ROHM
-  datasheet. Possibly better than 130 µg/√Hz, almost certainly not competitive
-  with 22.5.
-- **The floor-scaling assumption below 1e-4 g.** The site was shown to
-  contribute nothing resolvable *at 0.00036 g*. It cannot follow that it stays
-  negligible five times lower. The ADXL355 rates are therefore an upper bound
-  on what the site will allow, and the way to find out is to run it.
-- **Whether the Modulino's Qwiic pull-ups are load-bearing.** The board's own
-  2.2 kΩ resistors should be sufficient alone, but this has only been read off
-  a schematic, never tested with a pull-up-less peripheral.
-- **Availability of a Grillo OpenEEW board** to a private buyer.
+- **Prices and stock of the EVAL boards.** Every ADXL355 figure came from an
+  aggregator; DigiKey/Mouser/Newark blocked automated reads, and the
+  aggregators contradict each other (Mouser 135 / 337 / 506 on the same SKU).
+  Confirm on the vendors' own pages before ordering. No shipping date to Los
+  Angeles was confirmed with any vendor.
+- **Whether the EVAL-ADXL355Z bag includes the unsoldered headers.** The
+  user guide says the boards "include two 6-pin headers"; the BOM says
+  "do not insert". Unresolved.
+- **Whether a strap on the PMDZ (SCLK to DGND) would actually enable I2C.**
+  The schematic ZIP timed out. Do not plan on it; use SPI.
+- **SparkFun ISM330DHCX library on `arduino:zephyr`.** The API is right; it
+  was not compiled.
+- **The floor-scaling assumption below 1e-4 g**, and every geophone g-equivalent
+  below the site's unknown floor. The site was shown to contribute nothing
+  resolvable *at 0.00036 g*. It cannot follow that it stays negligible five
+  or a thousand times lower.
+- **AINN-to-AGND as a solder-free geophone bias.** Permitted by the ADS1219
+  abs-max table, untested.
+- **NAU7802 noise at 320 SPS.** The datasheet only quotes 10 and 80 SPS; the
+  320 SPS figures were extrapolated as √Fe.
 
 ## 6. Reproducing the numbers
 
