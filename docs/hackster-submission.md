@@ -38,8 +38,10 @@ We fill this page in as the project progresses.
 
 ## Recommended Story structure (steps)
 
-1. **The problem** — LA is seismic; real seismographs are expensive; idea of a
-   low-cost citizen node (cf. MyShake, Raspberry Shake).
+1. **The question** — ten million people on active faults, instrumentation that
+   exists but is institutional, and the feasibility question that follows: can a
+   $75–90 node detect a quake and size it, unattended? (cf. MyShake, Raspberry
+   Shake, whose cheapest board is $294.99.)
 2. **The key idea: USGS calibration** — why a cheap sensor becomes useful when you
    have a free ground truth.
 3. **Hardware & wiring** — UNO Q + IMU (photo + Fritzing schematic).

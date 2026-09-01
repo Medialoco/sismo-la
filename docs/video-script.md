@@ -32,8 +32,8 @@ the one thing that would make the whole project look dishonest.
 the UNO Q wired up.
 
 > Los Angeles gets more than two thousand earthquakes in three months. This
-> ten-dollar motion chip can feel the bigger ones. It just has no idea what it
-> is feeling. A raw acceleration number means nothing on its own.
+> twelve-dollar motion chip can feel the bigger ones. It just has no idea what
+> it is feeling. A raw acceleration number means nothing on its own.
 
 ## Shot 2 — The idea (0:15–0:40)
 

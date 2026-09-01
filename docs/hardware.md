@@ -5,12 +5,36 @@ This project is deliberately **low-cost**: the value comes from the software
 
 ## Bill of materials (BOM)
 
-| # | Part | Qty | Why |
-|---|------|-----|-----|
-| 1 | **Arduino UNO Q (4 GB)** | 1 | The board (Dragonwing MPU + STM32 MCU, WiFi) |
-| 2 | **IMU / accelerometer over I²C** — see options below | 1 | Senses ground motion |
-| 3 | **Qwiic cable** (JST-SH 4-pin) | 1 | Plug-and-play I²C to the UNO Q |
-| 4 | **USB-C cable + 5 V / 3 A supply** | 1 | Powers the board — 3 A is a requirement, not a suggestion |
+| # | Part | Qty | Price | Why |
+|---|------|-----|-------|-----|
+| 1 | **Arduino UNO Q 2 GB** (ABX00162) | 1 | $59.00 · $44.00–45.20 | The board (Dragonwing MPU + STM32 MCU, WiFi) |
+| 2 | **IMU / accelerometer over I²C** — Modulino Movement (ABX00101), see options below | 1 | $11.80 | Senses ground motion |
+| 3 | **Qwiic cable** (JST-SH 4-pin) | 1 | $0 | Ships in the Modulino box |
+| 4 | **USB-C cable + 5 V / 3 A supply** | 1 | ~$15 | Powers the board — 3 A is a requirement, not a suggestion |
+| | **One node** | | **$71–86** | ~$90 with tax and shipping |
+
+**Prices checked 1 September 2026**, in USD, before tax and shipping:
+
+- UNO Q 2 GB (ABX00162): **$59.00** at
+  [store-usa.arduino.cc](https://store-usa.arduino.cc/products/uno-q);
+  **$44.00** at DigiKey and PiShop, **$45.20** at Farnell, **$59.00** at Newark.
+  The 4 GB variant (ABX00173) is **$79.00** at the Arduino store and is not
+  needed here — Arduino itself recommends the 2 GB for dedicated deployed
+  nodes.
+- Modulino Movement (ABX00101): **$11.80** at
+  [store-usa.arduino.cc](https://store-usa.arduino.cc/products/modulino-movement)
+  (€13.30 on the EU store), Qwiic cable included.
+- Power supply: not sourced to one vendor — a 15–20 W USB-C adapter is a
+  commodity at $10–20. Counted at $15.
+
+For comparison, on the same date: a Raspberry Shake RS1D is **$294.99** for the
+board alone and **$584.99** turnkey
+([raspberryshake.org/pricing](https://raspberryshake.org/pricing)), and a
+research-grade station is a five-figure item once sited and installed.
+
+> **There is no "$25 node".** Earlier drafts of this project quoted $25; the
+> figure was never substantiated and the UNO Q alone costs more than that. The
+> $11.80 sensor is the only part that price ever described.
 
 > **The power supply is not a detail.** Arduino's datasheet asks for 5 V at 3 A
 > (15 W) and warns that a weaker source browns out "during short activity peaks

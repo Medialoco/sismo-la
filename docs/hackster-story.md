@@ -1,30 +1,29 @@
 # Hackster story draft (English) — ready to paste
 
 Draft for the project page on hackster.io, following the structure in
-`hackster-submission.md`. Update the numbers before submitting.
+`hackster-submission.md`. Numbers are current as of 1 September 2026; refresh
+the calibration count and the detection status before submitting.
 
 ---
 
 ## Name
 
-**This seismograph calibrates itself on real Los Angeles earthquakes**
+**Can a neighborhood run its own seismic network? Testing the $80 node that
+would make it possible**
 
-> The rules ask for a sentence that says *what it does*, not a label. The old
-> title ("Sismo-LA: a seismograph that learns…") led with a project codename,
-> which means nothing to a juror scrolling a list. Alternates, same idea:
-> - *A neighborhood seismograph that learns its own scale from every quake it feels*
-> - *It feels the ground, asks the USGS what really happened, and grades itself*
+> The rules ask for a sentence that says *what it does*. This one says what it
+> tests, which is stronger here: the project's result is an answer to a
+> question, including where the answer is "not yet". Alternates:
+> - *An $80 Arduino node that learns to measure earthquakes from the USGS catalog*
+> - *The cheap seismograph that grades itself against every quake it feels*
 
 ## Pitch
 
-A cheap accelerometer can feel the ground move but has no idea how big the
-earthquake was — so this Arduino UNO Q checks every shake against the USGS
-catalog, works out the conversion on its own, and keeps that ability when the
-network goes away.
-
-> Deliberately avoids repeating the name, states the problem before the
-> solution, and claims nothing the code does not do: it measures a quake that
-> has already happened, it never forecasts one.
+A neighborhood seismic network needs one thing to be possible: a node cheap
+enough to give away that can still detect an earthquake and put a number on it.
+This Arduino UNO Q station tests that condition in Los Angeles — it checks every
+shake it feels against the USGS catalog, works out its own calibration from the
+matches, and reports honestly how far it gets.
 
 ## Categories (max 3)
 
@@ -36,213 +35,247 @@ Intermediate
 
 ## Things
 
-- Arduino UNO Q (4 GB)
+- Arduino UNO Q 2 GB (ABX00162)
 - Arduino Modulino Movement (ABX00101, LSM6DSOX IMU) + bundled Qwiic cable
-- USB-C to USB-C data cable (or a USB-C power supply for standalone use)
+- USB-C power supply, 5 V / 3 A (3 A is a requirement, not a suggestion)
 
 ---
 
 ## Story
 
-### 1. The problem: seismology is expensive, Los Angeles is not waiting
+### 1. Who does not have an instrument, and why it matters
 
-Los Angeles sits on one of the most active fault systems in the world. Over the
-91 days from June to August 2026 the USGS cataloged **2,136 earthquakes within
-160 km of downtown** — about 23 a day, most far too small to feel, some very
-much not. Professional
-strong-motion stations cost thousands of dollars; community projects like
-Raspberry Shake still start around $400. Meanwhile a MEMS accelerometer costs
-a few dollars and ships in every phone.
+Nearly ten million people live in Los Angeles County, on top of one of the
+most active fault systems in the world. The county is not under-instrumented: hundreds of
+professional stations record it, and the USGS publishes magnitude, location and
+depth minutes after every event. Over five years, 2,184 earthquakes of M ≥ 2
+occurred within 160 km of this station.
 
-The catch: a cheap MEMS sensor out of the box tells you *something shook*, not
-*how big it was* or *how far away*. It is uncalibrated. Calibrating an
-instrument normally requires a reference — a shake table, a co-located
-professional station, a lab.
+What almost nobody has is an instrument of their own. Seismic hardware is
+institutional — sited, calibrated and maintained by organizations. A
+research-grade station is a five-figure item once installed. The cheapest
+citizen instrument with a public price is a Raspberry Shake: $294.99 for the
+board, $584.99 turnkey (raspberryshake.org, 1 September 2026). That is a real
+price for a school; it is not a price at which a street covers itself.
 
-### 2. The key idea: the ground truth is free
+That gap is what this project is about. Not "here is a seismograph", but:
+
+> **Could a neighborhood run its own network? The prerequisite is a node cheap
+> enough to hand out that still detects an earthquake and estimates its size,
+> unattended, with nobody there to calibrate it. Is that possible?**
+
+I built one node and ran it continuously to find out. Below is what it costs,
+how it teaches itself, what happened when it actually ran, and exactly how far
+it got — including the part it has not reached.
+
+### 2. What a node costs
+
+Prices checked 1 September 2026.
+
+| Part | Price |
+|---|---|
+| Arduino UNO Q 2 GB (ABX00162) | $59.00 at store.arduino.cc, $44.00–45.20 at DigiKey / PiShop / Farnell |
+| Modulino Movement (ABX00101) | $11.80 at store.arduino.cc |
+| USB-C supply, 5 V / 3 A | about $15 |
+| **Total** | **$71–86**, call it $75–90 delivered |
+
+I want to be precise about this because I got it wrong first: an early draft of
+this project said "$25 a node". That figure was never substantiated — the UNO Q
+alone costs more than that — so it is gone. **A node is $75–90.**
+
+The argument does not need the exaggeration. $80 against a five-figure
+professional station is two orders of magnitude; $80 against the cheapest
+citizen alternative is roughly seven times cheaper. And the component that
+actually senses the ground is $11.80. Nearly all of a node's cost is the
+computer that learns — which is exactly the part the next paragraph is about.
+
+### 3. The idea: the answer key is free
 
 ![How Sismo-LA calibrates itself](images/how-it-works.png)
 
-In Los Angeles, the reference already exists and it is free: the **USGS
-earthquake catalog**, updated within minutes, with magnitude, location and
-depth for every event. So instead of calibrating the sensor in a lab, the
-device calibrates itself in place:
+A MEMS accelerometer feels the ground move but has no idea how big the
+earthquake was. It is uncalibrated, and calibrating a seismic instrument
+normally takes a shake table or a professional station standing next to it —
+which is precisely the cost that keeps these things institutional.
 
-1. The sensor detects a shake and measures its amplitude (PGA), duration and
+In Los Angeles it takes neither, because the reference already exists, is free,
+and arrives within minutes:
+
+1. The sensor detects a shake and reduces it to amplitude (PGA), duration and
    dominant frequency.
-2. The Linux side queries the USGS API: *was there a real earthquake near me
-   just now?*
-3. If yes — that pair (my measurement ↔ official magnitude and distance) is
-   one calibration point.
-4. A regression over these points becomes the device's own, site-specific
-   transfer function: `magnitude ≈ a·log10(PGA) + b·log10(distance) + c`.
+2. The Linux side asks the USGS API: was there a real earthquake near me just
+   now?
+3. If yes, that pair — my measurement against the official magnitude and
+   distance — is one calibration point.
+4. A regression over those points becomes this station's own transfer function,
+   `M ≈ a·log10(PGA) + b·log10(R) + c`.
 
-Every earthquake makes the device better. And the same loop labels training data
-for an AI noise filter — for free.
+The coefficients are not universal constants. They absorb this sensor, this
+mount, this building, this soil — which is the whole point: a network of these
+would need no laboratory and no site survey, because every node works out its
+own coefficients where it stands. The same loop labels training data for a
+noise filter at no extra cost: matched shakes are earthquakes, unmatched ones
+are trucks.
 
-**How fast does it actually converge?** I checked rather than guessed. Querying
-the USGS count API for the 91 days from June 1 to August 31, 2026, within 160 km
-of downtown Los Angeles:
+### 4. How it is built
 
-| | 160 km | 80 km | 50 km |
-|---|---|---|---|
-| M ≥ 0.5 | 2136 | — | — |
-| M ≥ 2.0 | 110 | 26 | 13 |
-| M ≥ 2.5 | 33 | 5 | 1 |
-| M ≥ 3.0 | 12 | 2 | 0 |
+The Arduino UNO Q is two computers on one board, and this application needs
+exactly that split:
 
-The amplitude model needs 8 confirmed matches. If the sensor can detect M2 events
-out to 160 km, that is 110 per quarter — about a week to converge. If it can only
-feel M2.5 within 50 km, that is *one event per quarter*, and convergence takes
-years.
+- the **STM32U585 MCU** (Zephyr) samples the IMU at 100 Hz and runs **STA/LTA**,
+  the trigger real seismic networks have used for decades — a 0.5 s energy
+  average against a 10 s one, with the long-term average frozen during an event
+  so the earthquake cannot contaminate its own noise floor. It emits one compact
+  message per event: peak acceleration, duration, dominant frequency.
+- the **Qualcomm Dragonwing QRB2210 MPU** (Debian) does WiFi, the USGS feed, the
+  correlation, the three models, the dashboard, and the publishing.
 
-Those two answers differ by a factor of a hundred, and the difference is exactly
-the sensor's true detection threshold — which is the one quantity I have not yet
-measured. So I am not going to claim a convergence time. Measuring that threshold
-on real recordings is the next step, and it is the honest crux of the project.
+The only wiring is the Modulino Movement plugged into the Qwiic connector with
+the 5 cm cable in the box. No breadboard, no soldering.
 
-### 3. Hardware: two brains, one Qwiic cable, zero soldering
+> Gotchas worth knowing on the UNO Q: the Qwiic connector is on `Wire1`, not
+> `Wire`; the MCU's `Serial` goes to the D0/D1 header pins rather than USB, so
+> events travel over the Bridge; and the board's `arduino-router` must be
+> version-matched with the bridge library or nothing arrives at all.
 
-![The whole build and the path a shake takes through it](images/wiring.png)
+### 5. What happened when it actually ran
 
-The Arduino UNO Q is two computers on one board:
+This is the part I would want to read. Five episodes from the logs, picked
+because each says something about putting these in people's homes.
 
-- an **STM32U585 MCU** (Zephyr RTOS) — the real-time brain that never misses
-  a shake;
-- a **Qualcomm Dragonwing QRB2210 MPU** (Debian Linux) — the connected brain
-  that talks to USGS, learns, and serves the dashboard.
+**Moving the box cut false detections by 86%, without touching the code.** On a
+desk the station triggered 22.6 times an hour. Moved to a better mount, 3.2 —
+while the noise floor barely moved, 0.00087 g to 0.00066 g. Coupling decides
+whether a home node is usable, not firmware. It also gives a criterion an owner
+can act on: the trigger rate on the dashboard responds to placement by nearly an
+order of magnitude, so "put it somewhere quieter" is an instruction with visible
+feedback.
 
-The only wiring is the Modulino Movement plugged into the UNO Q's Qwiic
-connector with the 5 cm cable that ships in the box. Mount the sensor rigidly
-to a solid surface (concrete floor, load-bearing wall) — coupling quality is
-the real "antenna" of a seismograph.
+**It came back from a power cut on its own.** Getting there took an actual
+diagnosis rather than a guess: at boot, Docker starts the container, and one
+second later App Lab's daemon stops it — App Lab has no notion of an app that
+should still be running — and Docker records that as a *deliberate* stop, so
+from the following boot it does not even try. Systemd would fix it but needs
+root; cron would fix it except that the board account's password is expired, so
+PAM silently refuses every job and no log is written at all. What works is a
+watchdog sidecar container, because the Docker daemon runs as root from boot and
+never consults PAM. Verified on a real unplug: **4 min 24 s from power-on to a
+serving dashboard**. A later 5 h 43 min outage confirmed the microcontroller
+reboots straight into its own flash unaided.
 
-> Gotcha worth knowing: on the UNO Q the Qwiic connector is on `Wire1` (not
-> `Wire`), and the MCU's `Serial` goes to the D0/D1 header pins, not to USB.
-> MCU-to-Linux communication goes through the Bridge (Arduino's RPC router).
+**The station went blind and nothing said so.** The MCU stopped; the USGS
+refresh lived inside the event loop, so with no shakes arriving the pipeline
+froze — while the web server happily kept serving a snapshot from hours earlier
+as though it were live. Every liveness signal in the system was derived from the
+thing that had died. There is now a health block built on the one independent
+signal, the MCU heartbeat, shown as a red badge on the public page and a
+`STATION DEGRADED` banner on the operator dashboard. For an unattended device,
+"is it lying to me?" turned out to be a more important question than "is it
+up?".
 
-### 4. The real-time side: STA/LTA, the classic that still works
+**A feature was fake for weeks.** The dominant-frequency estimate compared the
+sign of a *centered* sample against an *uncentered* one — on a vector magnitude,
+which is never negative — so it reported ~25 Hz regardless of the signal. Replay
+mode never caught it, because replay synthesizes that field analytically. Real
+taps now give 2.6, 5.0, 10.6 Hz.
 
-The MCU samples the IMU at 100 Hz, removes gravity with a slow low-pass
-filter, and runs **STA/LTA** — the trigger algorithm real seismic networks
-have used for decades. A short-term average (0.5 s) of the signal energy is
-compared with a long-term average (10 s): when the ratio exceeds 4, an event
-starts; when it falls below 1.5, the event ends. The LTA freezes during an
-event so the earthquake does not contaminate its own noise floor.
+**Our attenuation law over-predicted ground motion by a factor of 38.** I
+checked it against 12,324 peak accelerations actually recorded by USGS ShakeMap
+stations during 40 southern California earthquakes (M3.03–5.51, 3–200 km, 1,006
+distinct stations). The bias was uniform across every magnitude and distance
+bin. Refitting the same form on that dataset gives
+`0.867·M − 1.740·log10 R − 3.305`, scatter 0.390 log10, R² = 0.80. Consequence:
+every "what could this feel" estimate I had made before that check was
+optimistic by about two magnitude units. The corrected law is what section 6
+uses.
 
-For each event the MCU emits one compact JSON message over the Bridge:
-peak acceleration (g), duration (ms), dominant frequency (Hz).
+### 6. Results: half the condition is met, and the other half is measured
 
-### 5. The Linux side: correlate, learn, serve
+**What is established.** The station runs unattended in Los Angeles on its own
+power — no shell access, no attached computer. It detects, correlates against
+USGS, keeps a journal, serves a dashboard, publishes a snapshot to GitHub Pages
+every 20 minutes, and recovers from a power cut. The learning chain runs end to
+end. Every detection is recorded together with what each model predicted
+*before* it learned that point, so the project can score itself out-of-sample
+rather than quote its own training residuals.
 
-A Python application on the Dragonwing:
+**What is not established: that this sensor can measure a real earthquake.**
+The calibration record stands at **0 of the 8 matches** the amplitude model
+needs. Every shake so far has been correctly identified as local noise.
 
-- polls the USGS FDSN API every 60 s (radius 160 km, M ≥ 0.5 for context,
-  M ≥ 2.0 for calibration);
-- matches local events to cataloged quakes within a time window that absorbs
-  wave propagation and USGS publication delay;
-- updates **three models** on every confirmed match:
-  - amplitude → magnitude (the core calibration),
-  - duration + frequency → epicentral distance (so a single station can
-    estimate *where*, not just *how big*),
-  - an online logistic-regression **noise filter** (earthquake vs truck).
+That is not a correlation bug — it is the threshold, and this week it stopped
+being a mystery. There is no absolute g threshold in the firmware, only an
+STA/LTA ratio, so the floor is a property of the site and has to be measured.
+Over 163 events, the smallest peak acceleration that has ever triggered is
+**0.0034 g** (0.0044 g in the quietest window). Through the refit law, that
+becomes a required magnitude, ±0.45 at 1σ, extrapolated below M3:
 
-The noise filter needs no offline training set: USGS-confirmed events are
-positive samples, unmatched shakes are negatives. The device literally learns
-what *its* neighborhood's earthquakes feel like versus *its* street's trucks.
+| | 10 km | 30 km | 50 km | 100 km | 160 km |
+|---|---|---|---|---|---|
+| M needed | 3.3 | 4.1 | 4.5 | 5.1 | 5.5 |
 
-### 6. The dashboard: red circles vs the truth
+Crossed with the real catalog — 2,184 events of M ≥ 2 within 160 km over five
+years — and converting the fit's 0.39 log10 scatter into a per-event
+probability, this station should feel **1.3 to 6.6 genuine earthquakes a year**
+(the range is unknown site amplification, ×1 to ×4). That is a mean wait of 56
+to 279 days for *one* of the 8 points. Only 9 of those 2,184 events had a better
+than even chance of being felt; 2,082 had less than 1%. The station is not
+waiting for "an earthquake", it is waiting for one of a handful of specific
+ones.
 
-The web dashboard (served by the board) shows one map with two layers:
+**So: probability of a first genuine detection before the deadline on
+13 September: 4 to 19%.** Probably not. I would rather write that here than have
+you wonder why the calibration counter still reads zero.
 
-- **USGS earthquakes** — colored circles at the true epicenters (the ground
-  truth);
-- **the device's own estimates in red** — where and how big the sensor alone
-  thinks each quake was, with a dashed error vector to the true epicenter.
+The honest summary of the feasibility question is therefore: **the difficult
+half of the condition is already met** — autonomy, self-calibration, continuous
+correction against a ground truth, on a $80 node that nobody calibrated —
+**and the missing half is measured rather than glossed over**. We now know which
+magnitude is needed at which distance, which tells us exactly what to improve:
+coupling first (86% of false triggers came off the table with a better mount),
+then the trigger, then the site.
 
-Watching the red circles converge toward the colored ones as calibration
-accumulates *is* the story of this project, live on screen. A side panel
-shows every detection with the verdict (`✓ confirmed by USGS`, `✗ local
-noise`, `? awaiting USGS`) and the running comparison
-(`device ~M1.4 vs USGS M1.5 · dist ~84 vs 83 km · AI 97% quake`).
+One more caveat I will state myself. The `--replay` mode, used for the demo
+video, synthesizes sensor readings from cataloged magnitude and distance through
+an attenuation law, and the calibration then fits the inverse of that same law.
+It proves the *software* is correct — matching, fitting, persistence, inference
+— and it is circular by construction. It measures nothing about the instrument.
 
-A **replay mode** re-plays the last 24 h of the real USGS catalog as if the
-sensor were detecting each quake live — so the demo works even on a quiet
-afternoon.
-
-### 7. Results (updating as the station accumulates data)
-
-Calibration becomes usable after 8 confirmed matches, the distance model after
-5, and the noise filter after 3 examples of each class. In replay validation the
-whole chain runs end-to-end and converges as designed.
-
-One caveat I want to state myself rather than have you wonder about it: in
-replay mode the sensor readings are **synthesized** from cataloged magnitude and
-distance through an attenuation law, and the calibration then fits the inverse
-of that same law. So the replay figures demonstrate that the *software* is
-correct — correlation, matching, fitting, persistence, inference — and they are
-partly circular by construction. They are not a measurement of how accurate the
-*instrument* is.
-
-The honest number for the instrument requires real recordings of real
-earthquakes at a fixed installation, with residuals reported on events held out
-from the fit. That campaign is running now.
-
-- [ ] TODO: first real correlated M2+ earthquake (screenshot + USGS event ID).
-- [ ] TODO: calibration curve from real recordings after N days.
-
-### 8. Limits, honestly
-
-- **It detects, it does not predict.** The device characterizes earthquakes
-  while they happen. It says nothing about earthquakes that have not occurred
-  yet, and makes no attempt to.
-- A MEMS IMU senses local strong motion (M ≥ ~2.5–3 nearby), not teleseisms.
-  This is a neighborhood strong-motion node, not a broadband observatory.
-- Cut the network and the station keeps working — the models are on disk — but
-  with no matched catalog event to borrow an azimuth from, its output becomes a
-  distance *ring* rather than a located point. Offline it knows how big and how
-  far, not in which direction.
-- The calibration belongs to this exact spot: this sensor, this mount, this
-  building, this soil. Move it and it must reconverge.
-- One station knows distance (from the coda) but not direction: alone it
-  draws a circle, not a pin. Three neighbors could triangulate — that is the
-  scalability story.
-- Magnitude from a single PGA measurement is approximate by nature
-  (±0.3–0.5 after good calibration is realistic).
-
-### 9. What three of these would add
+### 7. What three of these would add
 
 ![One station draws a ring, three rings cross at a point](images/network.png)
 
 One station measures a distance, never a direction. The firmware reduces each
 sample to the magnitude of the acceleration vector, which throws direction away,
 and the one arrival whose polarization would recover it — the P wave — is far
-below the hundredths of a g it takes to trip this sensor; what fires the trigger
+below the hundredths of a g needed to trip this sensor; what fires the trigger
 are the S and surface waves behind it. So the honest output of a single station
-is a ring, not a pin. Three rings cross in one place, and that place is the
-epicenter — the same trick as GPS, where no satellite knows the direction to the
-receiver either.
+is a ring, not a pin. Three rings cross in one place, the way GPS locates a
+receiver that no satellite knows the direction of.
 
-The part that would make such a network real is not the sensor. A conventional
-array needs chosen sites, instruments calibrated against a reference, and people
-who know how to keep them honest. Here each station learns its own coefficients
-from the USGS catalog and adapts to its own soil, its own building, its own
-mount — so coverage could grow street by street instead of budget by budget.
-That, and not the price of an accelerometer, is the claim I would defend.
+The part that would make such a network real is not the price of the sensor. A
+conventional array needs chosen sites, instruments calibrated against a
+reference, and people who know how to keep them honest. Here each node learns
+its own coefficients from a public catalog and adapts to its own soil, its own
+building, its own mount — so coverage could grow street by street instead of
+budget by budget.
 
 **Said plainly: this is an argument, not a demonstration.** There is one
-station, and it has not yet recognized a single real earthquake — the
-calibration record stands at 0 of the 8 matches it needs. I did not simulate a
-network to draw that figure; it is the geometry three stations would use, and
-nothing more.
+station, and it has not yet recognized a single real earthquake. I did not
+simulate a network to draw that figure; it is the geometry three stations would
+use, and nothing more.
 
-### 10. Why this matters (and scales)
+### 8. Why this pattern matters beyond earthquakes
 
-The pattern — **cheap sensor + free open ground truth = self-calibrating
-instrument** — is not specific to earthquakes. Air quality (OpenAQ), weather
-(NOAA), urban noise: wherever open data exists, a cheap device can bootstrap
-itself into a useful instrument. Sismo-LA is the proof of concept, in the
-best possible test city.
+**Cheap sensor + free authoritative feed = an instrument that calibrates
+itself.** Nothing in that loop is specific to seismology. Air quality has
+OpenAQ, weather has NOAA, and the same structure applies wherever an open,
+promptly published reference exists: the device measures, the feed says what was
+true, and the difference is training data nobody had to label.
+
+Earthquakes are simply the case where the answer key is richest — and Los
+Angeles the place where the question of who owns an instrument is least
+abstract.
 
 ---
 
