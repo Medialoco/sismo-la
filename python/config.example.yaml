@@ -46,8 +46,9 @@ publish:
   enabled: false
   method: command       # post | file | command
   # Each snapshot published to the repository is a commit that redeploys the
-  # page. A minute is far too fast for that route; a quarter of an hour is not.
-  interval_s: 900
+  # page, so this is deliberately slow. Detections are not lost in between:
+  # every snapshot carries the recent ones.
+  interval_s: 1800
   # method: post  -> HTTP POST to this endpoint (optional bearer token)
   url: https://example.org/api/station
   token: ""

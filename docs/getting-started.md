@@ -64,8 +64,9 @@ publishes it on GitHub Pages (`.github/workflows/pages.yml` serves everything
 under `web-remote/`). It fetches USGS live from the browser and overlays the
 station's red estimates from a `station.json` sitting beside it, so the target
 of `publish:` has to be `web-remote/station.json` in this repository. Every
-snapshot commit redeploys the page — keep `interval_s` generous (a quarter of
-an hour, not a minute) so the commit history stays usable.
+snapshot commit redeploys the page, so `interval_s` is 1800 — one push every
+half hour. Nothing is lost in between: each snapshot carries the recent
+detections, not just the newest one.
 
 The page is fully self-contained, so it works just as well dropped on any
 other static host. If the station stops publishing, it degrades to a USGS-only

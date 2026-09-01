@@ -3,187 +3,137 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sismo-LA — a seismograph that grades itself against the USGS</title>
-  <meta name="description" content="Live map of recent Los Angeles earthquakes next to the estimates of a self-calibrating Arduino UNO Q seismic station." />
+  <title>Sismo-LA — the device against the record</title>
+  <meta name="description" content="Recent Los Angeles earthquakes from the USGS, next to what a self-calibrating Arduino station measured." />
   <!--
-    Public page for the Sismo-LA station (Arduino UNO Q + MEMS IMU).
+    Public page for the Sismo-LA station (Arduino UNO Q + MEMS accelerometer).
+    Self-contained: no framework, no build step, no asset from another site.
+    Served by GitHub Pages from web-remote/ in this repository.
 
-    Fully self-contained: no framework, no build step, no asset from any other
-    site. Drop it on any static host together with station.json, which the
-    device uploads periodically (see the `publish:` block in python/config.yaml).
-    Served by GitHub Pages from this repository.
+      - USGS FDSN API : fetched live by the browser  -> what really happened
+      - station.json  : published by the device      -> what it measured
 
-    Data sources:
-      - USGS FDSN API, fetched live by the browser -> the ground truth;
-      - station.json, published by the device -> its own estimates, in red.
-    A missing or unreachable station.json is a normal state: the page then
-    shows the USGS layer alone and says the station is offline.
+    No station.json is a normal state; the page then shows USGS alone.
   -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <style>
     :root, [data-theme="light"] {
-      --bg: #f5f0e6; --bg-soft: #f0ebe0; --card: #fbf8f2;
-      --text: #4a443a; --muted: #6b6358; --border: #e0d9ce;
-      --dev: #c62b39; --dev-fill: rgba(198, 43, 57, .16);
-      --ok: #2f7d3a; --shadow: rgba(15, 23, 42, .08);
+      --bg: #f5f0e6; --soft: #efeae0; --card: #fbf8f2;
+      --text: #4a443a; --muted: #7a7266; --border: #e0d9ce;
+      --dev: #c62b39; --ok: #2f7d3a; --shadow: rgba(15,23,42,.10);
     }
     [data-theme="dark"] {
-      --bg: #1a1a1a; --bg-soft: #252525; --card: #202020;
-      --text: #d1d5db; --muted: #9ca3af; --border: #374151;
-      --dev: #ff5c66; --dev-fill: rgba(255, 92, 102, .22);
-      --ok: #6fcf7a; --shadow: rgba(0, 0, 0, .35);
+      --bg: #1a1a1a; --soft: #222; --card: #262626;
+      --text: #d6d9dd; --muted: #9ca3af; --border: #3a3f47;
+      --dev: #ff5c66; --ok: #6fcf7a; --shadow: rgba(0,0,0,.4);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
     body {
       display: flex; flex-direction: column;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
       background: var(--bg); color: var(--text);
     }
 
     header {
-      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      padding: 10px 16px; background: var(--bg-soft);
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; background: var(--soft); border-bottom: 1px solid var(--border);
     }
-    .logo { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
-    .tagline { color: var(--muted); font-size: 13px; flex: 1; min-width: 220px; }
-    .badge {
-      padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
-      border: 1px solid var(--border); color: var(--muted);
-    }
+    .logo { font-weight: 700; }
+    .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .badge { padding: 2px 9px; border-radius: 999px; font-size: 12px;
+             border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
     .badge.on { border-color: var(--dev); color: var(--dev); }
-    .iconbtn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 30px; height: 30px; padding: 0; cursor: pointer;
-      background: transparent; color: var(--muted);
-      border: 1px solid var(--border); border-radius: 8px;
-    }
+    header a { color: var(--muted); font-size: 13px; text-decoration: none; }
+    header a:hover { color: var(--text); }
+    .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
+               background: none; border: 1px solid var(--border); border-radius: 7px;
+               display: inline-flex; align-items: center; justify-content: center; }
     .iconbtn:hover { color: var(--text); }
-    header a { color: var(--muted); font-size: 12.5px; text-decoration: none; }
-    header a:hover { color: var(--text); text-decoration: underline; }
 
     #content { display: flex; flex: 1; min-height: 0; }
-    #map { flex: 1; height: 100%; background: var(--bg-soft); }
-    #panel {
-      width: 340px; height: 100%; overflow-y: auto; padding: 14px;
-      background: var(--bg-soft); border-left: 1px solid var(--border);
-    }
+    #map { flex: 1; position: relative; background: var(--soft); }
+    #panel { width: 290px; overflow-y: auto; padding: 14px;
+             background: var(--soft); border-left: 1px solid var(--border); }
     @media (max-width: 820px) {
       #content { flex-direction: column; }
-      #map { min-height: 55vh; }
-      #panel { width: 100%; height: auto; border-left: none; border-top: 1px solid var(--border); }
+      #map { min-height: 60vh; }
+      #panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
     }
 
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px; margin-bottom: 12px;
-    }
-    .card h2 {
-      font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
-      color: var(--muted); margin: 0 0 8px; font-weight: 600;
-    }
-    .row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin: 5px 0; }
-    .row span:last-child { text-align: right; }
-    .legend { display: flex; gap: 8px; align-items: flex-start; margin: 7px 0; font-size: 12.5px; }
-    .swatch { flex: none; width: 14px; height: 14px; border-radius: 50%; margin-top: 2px; }
-    .scale { display: flex; gap: 4px; align-items: center; margin: 6px 0 2px; font-size: 11.5px; color: var(--muted); }
-    .scale i { width: 16px; height: 10px; border-radius: 2px; display: inline-block; }
+    h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+         color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+    #status { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+    #status b { color: var(--text); font-weight: 600; }
 
-    .det {
-      border: 1px solid var(--border); border-left: 3px solid var(--muted);
-      border-radius: 9px; padding: 8px 10px; margin: 8px 0; font-size: 12.5px;
-    }
+    .det { border-left: 3px solid var(--border); padding: 2px 0 2px 9px; margin: 0 0 12px; }
     .det.quake { border-left-color: var(--ok); }
-    .det.noise { border-left-color: var(--border); }
-    .det .v { font-weight: 600; }
-    .det.quake .v { color: var(--ok); }
-    .det.noise .v { color: var(--muted); }
-    .det .t { float: right; color: var(--muted); font-size: 11px; font-weight: 400; }
-    .det .cmp { color: var(--muted); margin-top: 4px; }
+    .det .top { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+    .det .who { color: var(--muted); }
+    .det .when { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .det .vals { font-size: 13px; margin-top: 2px; }
     .dev { color: var(--dev); font-weight: 600; }
-    .empty { color: var(--muted); font-size: 12.5px; }
-    .note { color: var(--muted); font-size: 11.5px; line-height: 1.45; margin-top: 8px; }
-    .foot { color: var(--muted); font-size: 11px; text-align: right; }
-    .foot a { color: var(--muted); }
+    .empty { color: var(--muted); font-size: 13px; }
 
-    .leaflet-container { background: var(--bg-soft); font-family: inherit; }
-    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-      background: var(--card); color: var(--text);
-      border: 1px solid var(--border); box-shadow: 0 8px 24px var(--shadow);
+    /* legend, over the map, bottom left */
+    .legend {
+      position: absolute; left: 12px; bottom: 22px; z-index: 500;
+      background: var(--card); border: 1px solid var(--border); border-radius: 9px;
+      padding: 9px 11px; font-size: 12px; box-shadow: 0 4px 14px var(--shadow);
     }
-    .leaflet-popup-content { margin: 10px 12px; font-size: 12.5px; line-height: 1.45; }
+    .legend .line { display: flex; align-items: center; gap: 7px; margin: 5px 0; }
+    .legend .sw { flex: none; width: 13px; height: 13px; border-radius: 50%; }
+    .legend .scale { display: flex; gap: 3px; align-items: center; color: var(--muted); }
+    .legend .scale i { width: 15px; height: 9px; border-radius: 2px; }
+
+    .leaflet-container { background: var(--soft); font-family: inherit; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: var(--card); color: var(--text); border: 1px solid var(--border);
+    }
+    .leaflet-popup-content { margin: 9px 12px; font-size: 12.5px; }
     .leaflet-control-attribution { background: var(--card) !important; color: var(--muted) !important; }
     .leaflet-control-attribution a { color: var(--muted) !important; }
     .leaflet-bar a { background: var(--card); color: var(--text); border-color: var(--border); }
-    .leaflet-bar a:hover { background: var(--bg-soft); }
   </style>
 </head>
 <body>
 
   <header>
     <span class="logo">Sismo-LA</span>
-    <span class="tagline">A self-calibrating seismic station in Los Angeles. Red is what the device
-      worked out on its own; the coloured circles are what the USGS recorded.</span>
-    <span id="badge" class="badge">station offline</span>
+    <span class="sub">What the USGS recorded, and what a self-calibrating Arduino station made of it.</span>
+    <span id="badge" class="badge">no device data</span>
     <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
-    <button type="button" id="theme" class="iconbtn" aria-label="Switch between light and dark">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    <button type="button" id="theme" class="iconbtn" aria-label="Light or dark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
     </button>
   </header>
 
   <div id="content">
-    <div id="map"></div>
-    <aside id="panel">
-
-      <div class="card">
-        <h2>Station</h2>
-        <div class="row"><span>Last update</span><span id="st-updated">&mdash;</span></div>
-        <div class="row"><span>Magnitude model</span><span id="st-calib">&mdash;</span></div>
-        <div class="row"><span>Distance model</span><span id="st-dist">&mdash;</span></div>
-        <div class="row"><span>Noise filter</span><span id="st-ai">&mdash;</span></div>
-        <div class="note" id="st-note">
-          Waiting for the station to publish. Until then this page shows the USGS
-          catalogue alone.
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>How to read the map</h2>
-        <div class="legend"><span class="swatch" style="background:#fec44f;border:1px solid #8a7a4a"></span>
-          <span><b>USGS earthquakes</b> &mdash; drawn at the true epicentre. Size and colour follow the
-          official magnitude.</span></div>
-        <div class="scale">
+    <div id="map">
+      <div class="legend">
+        <div class="line"><span class="sw" style="background:#fec44f;border:1px solid #8a7a4a"></span>
+          <b>USGS</b></div>
+        <div class="line scale">
           <i style="background:#fff7bc"></i><i style="background:#fee391"></i><i style="background:#fec44f"></i><i style="background:#fe9929"></i><i style="background:#cc4c02"></i>
           <span>M&lt;2 &middot; 2 &middot; 3 &middot; 4 &middot; 5+</span>
         </div>
-        <div class="legend"><span class="swatch" style="background:var(--dev-fill);border:2px dashed var(--dev)"></span>
-          <span><b>Device estimate</b> &mdash; how big and how far the sensor alone thinks the quake was.
-          The <i>direction</i> is not measured: it is borrowed from the matched USGS event so the
-          marker can be drawn as a point.</span></div>
-        <div class="legend"><span class="swatch" style="background:transparent;border:2px dashed var(--dev)"></span>
-          <span><b>Distance ring</b> &mdash; no USGS match, so the quake lies somewhere on this circle.
-          A single station knows a distance, never a bearing.</span></div>
-        <div class="legend"><span class="swatch" style="background:var(--dev)"></span>
-          <span><b>The station</b> &mdash; an Arduino UNO Q and a MEMS accelerometer, downtown LA.</span></div>
+        <div class="line"><span class="sw" style="background:rgba(198,43,57,.18);border:2px dashed #c62b39"></span>
+          <b>Arduino estimate</b></div>
+        <div class="line" style="color:var(--muted)">
+          <span class="sw" style="background:none;border:2px dashed #c62b39"></span>
+          distance only, direction unknown</div>
       </div>
+    </div>
 
-      <div class="card">
-        <h2>Recent detections (<span id="det-count">0</span>)</h2>
-        <div id="det-list"><div class="empty">No station data yet.</div></div>
-        <div class="note">
-          A detection is any shake strong enough to trip the trigger &mdash; an
-          earthquake, a truck, a slammed door. The device only learns it was a
-          quake if the USGS catalogue confirms one at that moment.
-        </div>
-      </div>
+    <aside id="panel">
+      <h2>Station</h2>
+      <div id="status">Waiting for the device. Showing the USGS record only.</div>
 
-      <div class="foot">
-        USGS fetched live &middot; station via station.json &middot;
-        <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">how it works</a>
-      </div>
+      <h2>What the device measured</h2>
+      <div id="list"><div class="empty">Nothing yet.</div></div>
     </aside>
   </div>
 
@@ -191,204 +141,186 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     const STATION_URL = 'station.json';
-    const STATION_SHOWN = 3;          // device estimates drawn on the map
+    const SHOWN = 3;            // device estimates drawn on the map
+    const LISTED = 6;           // rows in the panel
     const USGS_LIMIT = 8;
-    const FALLBACK = { lat: 34.0522, lon: -118.2437, radius_km: 160 };
+    const HOME = { lat: 34.0522, lon: -118.2437, radius_km: 160 };
 
-    const usgsUrl = (st) =>
+    const usgsUrl = (s) =>
       'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time' +
-      `&limit=${USGS_LIMIT}&latitude=${st.lat}&longitude=${st.lon}` +
-      `&maxradiuskm=${st.radius_km}&eventtype=earthquake`;
+      `&limit=${USGS_LIMIT}&latitude=${s.lat}&longitude=${s.lon}` +
+      `&maxradiuskm=${s.radius_km}&eventtype=earthquake`;
 
-    /* ---------- theme ---------- */
+    /* theme */
     const root = document.documentElement;
-    const stored = localStorage.getItem('sismo-theme');
-    if (stored) root.setAttribute('data-theme', stored);
-    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
-    document.getElementById('theme').addEventListener('click', () => {
+    const saved = localStorage.getItem('sismo-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+    document.getElementById('theme').onclick = () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
       localStorage.setItem('sismo-theme', next);
-      applyBasemap();
-    });
+      basemap();
+    };
 
-    /* ---------- map ---------- */
-    const map = L.map('map', { zoomControl: true }).setView([FALLBACK.lat, FALLBACK.lon], 8);
+    /* map */
+    const map = L.map('map').setView([HOME.lat, HOME.lon], 8);
     map.attributionControl.setPrefix(false);
 
-    // Labels ride above the basemap but below the data, so no place name ever
-    // hides a circle.
+    // Labels above the basemap but below the data, so no place name hides a circle.
     map.createPane('labels');
     map.getPane('labels').style.zIndex = 250;
     map.getPane('labels').style.pointerEvents = 'none';
 
-    // Esri's Gray Canvas: deliberately muted, so the data is the only thing on
-    // this map with colour -- and, unlike Carto's raster tiles, it still serves
-    // anonymous requests instead of stamping "API KEY REQUIRED" on every tile.
+    // Esri Gray Canvas, keyless: Carto now stamps "API KEY REQUIRED" on
+    // anonymous tiles. Falls back to OpenStreetMap if Esri ever does the same.
     const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
-    const TILE_OPTS = { maxZoom: 19, maxNativeZoom: 16, attribution: 'Tiles &copy; Esri' };
-    let baseLayer = null, labelLayer = null, usedFallbackTiles = false;
+    const OPTS = { maxZoom: 19, maxNativeZoom: 16, attribution: 'Tiles &copy; Esri' };
+    let base, labels, fallen = false;
 
-    function applyBasemap() {
+    function basemap() {
+      if (base) map.removeLayer(base);
+      if (labels) { map.removeLayer(labels); labels = null; }
+      if (fallen) {
+        base = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+        return;
+      }
       const tone = root.getAttribute('data-theme') === 'dark' ? 'Dark' : 'Light';
-      if (baseLayer) map.removeLayer(baseLayer);
-      if (labelLayer) map.removeLayer(labelLayer);
-      if (usedFallbackTiles) { addFallbackTiles(); return; }
-      baseLayer = L.tileLayer(`${ESRI}/World_${tone}_Gray_Base/MapServer/tile/{z}/{y}/{x}`, TILE_OPTS);
-      // If Esri ever goes the way of Carto, degrade to OpenStreetMap rather
-      // than leaving the visitor with an empty grey rectangle.
-      baseLayer.once('tileerror', () => { usedFallbackTiles = true; applyBasemap(); });
-      baseLayer.addTo(map);
-      labelLayer = L.tileLayer(`${ESRI}/World_${tone}_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
-        Object.assign({ pane: 'labels' }, TILE_OPTS, { attribution: '' })).addTo(map);
+      base = L.tileLayer(`${ESRI}/World_${tone}_Gray_Base/MapServer/tile/{z}/{y}/{x}`, OPTS);
+      base.once('tileerror', () => { fallen = true; basemap(); });
+      base.addTo(map);
+      labels = L.tileLayer(`${ESRI}/World_${tone}_Gray_Reference/MapServer/tile/{z}/{y}/{x}`,
+        Object.assign({ pane: 'labels' }, OPTS, { attribution: '' })).addTo(map);
     }
-    function addFallbackTiles() {
-      baseLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-      labelLayer = null;
-    }
-    applyBasemap();
+    basemap();
 
     const usgsLayer = L.layerGroup().addTo(map);
-    const deviceLayer = L.layerGroup().addTo(map);
-    L.control.layers(null, { 'USGS catalogue': usgsLayer, 'Sismo-LA station': deviceLayer },
-      { collapsed: true }).addTo(map);
+    const devLayer = L.layerGroup().addTo(map);
 
     const magColor = (m) =>
       m >= 5 ? '#cc4c02' : m >= 4 ? '#fe9929' : m >= 3 ? '#fec44f' : m >= 2 ? '#fee391' : '#fff7bc';
-    const magRadius = (m) => 5 + 3.2 * Math.pow(Math.max(m ?? 0.1, 0.1), 1.5);
-    const fmtTime = (x) => {
-      try { return new Date(x).toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour12: false }); }
-      catch (e) { return String(x); }
+    const magRadius = (m) => 5 + 3.2 * Math.pow(Math.max(m ?? .1, .1), 1.5);
+    const clock = (t) => {
+      try { return new Date(t).toLocaleTimeString('en-US',
+        { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false }); }
+      catch (e) { return ''; }
     };
-    const devColor = () => getComputedStyle(root).getPropertyValue('--dev').trim() || '#c62b39';
+    const day = (t) => {
+      try { return new Date(t).toLocaleDateString('en-US',
+        { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric' }); }
+      catch (e) { return ''; }
+    };
+    const dev = () => getComputedStyle(root).getPropertyValue('--dev').trim() || '#c62b39';
 
-    function renderUSGS(features) {
+    function drawUSGS(features) {
       usgsLayer.clearLayers();
       const pts = [];
       features.forEach((f) => {
-        const p = f.properties || {}, c = f.geometry.coordinates;
-        const [lon, lat, depth] = c, m = p.mag ?? 0;
+        const p = f.properties || {}, [lon, lat] = f.geometry.coordinates, m = p.mag ?? 0;
         L.circleMarker([lat, lon], {
-          radius: magRadius(m), color: '#6b6358', weight: 0.8,
-          fillColor: magColor(m), fillOpacity: 0.7,
-        }).bindPopup(
-          `<b>USGS &mdash; M${m.toFixed(1)}</b><br>${p.place || ''}` +
-          `<br>${fmtTime(p.time)} (LA time)<br>depth ${(depth || 0).toFixed(1)} km` +
-          (p.url ? `<br><a href="${p.url}" target="_blank" rel="noopener">USGS details</a>` : '')
-        ).addTo(usgsLayer);
+          radius: magRadius(m), color: '#6b6358', weight: .8,
+          fillColor: magColor(m), fillOpacity: .7,
+        }).bindPopup(`<b>USGS M${m.toFixed(1)}</b><br>${p.place || ''}<br>${day(p.time)} ${clock(p.time)}`)
+          .addTo(usgsLayer);
         pts.push([lat, lon]);
       });
       return pts;
     }
 
-    function renderStation(s) {
-      const badge = document.getElementById('badge');
+    function drawDevice(s) {
+      devLayer.clearLayers();
       const st = s.station || {};
-      deviceLayer.clearLayers();
-      if (st.lat == null) return;
-      const col = devColor();
+      if (st.lat == null) return 0;
+      const col = dev();
 
-      L.circleMarker([st.lat, st.lon], {
-        radius: 5, color: col, weight: 2, fillColor: col, fillOpacity: 1,
-      }).bindPopup('<b>Sismo-LA station</b><br>Arduino UNO Q + MEMS accelerometer').addTo(deviceLayer);
+      L.circleMarker([st.lat, st.lon], { radius: 5, color: col, weight: 2,
+        fillColor: col, fillOpacity: 1 }).bindPopup('The station').addTo(devLayer);
 
-      const shown = (s.detections || []).filter((d) => d.device_est).slice(0, STATION_SHOWN);
+      const shown = (s.detections || []).filter((d) => d.device_est).slice(0, SHOWN);
       shown.forEach((d) => {
         const e = d.device_est;
-        const truth = d.match
-          ? `<br><span style="opacity:.75">USGS says M${d.match.magnitude.toFixed(1)} at ${d.match.distance_km} km</span>`
-          : '<br><span style="opacity:.75">No cataloged quake matched this shake</span>';
-        const caveat = e.kind === 'point'
-          ? '<br><span style="opacity:.75">Distance and magnitude are the device\'s own. The direction is borrowed from the matched event &mdash; one station cannot measure a bearing.</span>'
-          : '<br><span style="opacity:.75">One station cannot measure a direction, so the epicentre lies somewhere on this ring.</span>';
-        const popup = `<b style="color:${col}">Device estimate</b><br>~M${e.mag} at ~${e.distance_km} km` +
-          `<br>${fmtTime(d.recv_time)} (LA time)` + truth + caveat;
-
+        // A lone station measures a distance, never a bearing. A "point" only
+        // lands somewhere because the direction comes from the matched event.
+        const popup = `<b style="color:${col}">Arduino: ~M${e.mag}, ~${e.distance_km} km</b>` +
+          (d.match ? `<br>USGS: M${d.match.magnitude.toFixed(1)}, ${d.match.distance_km} km`
+                   : '<br>no USGS match') +
+          (e.kind === 'point' ? '<br><span style="opacity:.7">direction taken from the USGS event</span>'
+                              : '<br><span style="opacity:.7">direction unknown</span>');
         if (e.kind === 'point') {
-          L.circleMarker([e.lat, e.lon], {
-            radius: magRadius(e.mag), color: col, weight: 2, dashArray: '3,3',
-            fillColor: col, fillOpacity: 0.18,
-          }).bindPopup(popup).addTo(deviceLayer);
+          L.circleMarker([e.lat, e.lon], { radius: magRadius(e.mag), color: col, weight: 2,
+            dashArray: '3,3', fillColor: col, fillOpacity: .18 }).bindPopup(popup).addTo(devLayer);
           if (d.match) {
             L.polyline([[e.lat, e.lon], [d.match.lat, d.match.lon]],
-              { color: col, weight: 1.5, opacity: .6, dashArray: '3,6' })
-              .bindPopup('Distance between the device estimate and the true epicentre.')
-              .addTo(deviceLayer);
+              { color: col, weight: 1.5, opacity: .6, dashArray: '3,6' }).addTo(devLayer);
           }
         } else {
-          L.circle([st.lat, st.lon], {
-            radius: e.distance_km * 1000, color: col, weight: 1.5,
-            dashArray: '6,8', fill: false, opacity: .7,
-          }).bindPopup(popup).addTo(deviceLayer);
+          L.circle([st.lat, st.lon], { radius: e.distance_km * 1000, color: col,
+            weight: 1.5, dashArray: '6,8', fill: false, opacity: .7 }).bindPopup(popup).addTo(devLayer);
         }
       });
+      return shown.length;
+    }
 
-      const c = s.calibration || {}, ai = s.ai || {};
-      document.getElementById('st-updated').textContent = fmtTime(s.updated);
-      document.getElementById('st-calib').textContent = c.ready
-        ? `calibrated, fit residual ${(c.rmse ?? 0).toFixed(2)} Mw`
-        : `learning, ${c.n_points ?? 0}/${c.min_points ?? '?'} points`;
-      document.getElementById('st-dist').textContent = c.distance_ready
-        ? `ready, ${c.distance_points ?? 0} points` : 'learning';
-      document.getElementById('st-ai').textContent = ai.ready
-        ? `active, ${ai.n_quakes} quakes / ${ai.n_noise} noises` : 'learning';
-      document.getElementById('st-note').textContent = c.ready
-        ? 'The fit residual is measured on the points the model was trained on, so it flatters the model. The honest, out-of-sample figure comes from the audit tool in the repository.'
-        : 'The station only learns from earthquakes the USGS confirms, so calibration progresses at the pace of real seismicity.';
+    function fillPanel(s) {
+      const c = s.calibration || {};
+      document.getElementById('status').innerHTML =
+        `Last update <b>${day(s.updated)} ${clock(s.updated)}</b><br>` +
+        (c.ready ? `Calibrated on <b>${c.n_points}</b> confirmed earthquakes.`
+                 : `Learning: <b>${c.n_points ?? 0}</b> of ${c.min_points ?? '?'} confirmed earthquakes.`);
 
-      const dets = s.detections || [];
-      document.getElementById('det-count').textContent = dets.length;
-      const list = document.getElementById('det-list');
-      list.innerHTML = '';
-      if (!dets.length) { list.innerHTML = '<div class="empty">No detections yet.</div>'; }
-      dets.slice(0, 12).forEach((d) => {
-        const isQuake = !!d.match;
-        const isNoise = !isQuake && d.p_quake != null && d.p_quake < 0.5;
-        const el = document.createElement('div');
-        el.className = 'det ' + (isQuake ? 'quake' : isNoise ? 'noise' : '');
-        const verdict = isQuake ? 'Earthquake, confirmed by USGS'
-          : isNoise ? `Local noise (${(d.p_quake * 100).toFixed(0)}% confident)`
-          : 'Unconfirmed';
-        const cmp = isQuake
-          ? `<span class="dev">~M${d.est_mag ?? '?'}</span> against USGS M${d.match.magnitude.toFixed(1)} &mdash; ${d.match.place || ''}`
-          : d.device_est ? `<span class="dev">~M${d.device_est.mag}</span> at ~${d.device_est.distance_km} km` : '';
-        el.innerHTML = `<div class="v">${verdict}<span class="t">${fmtTime(d.recv_time)}</span></div>` +
-                       (cmp ? `<div class="cmp">${cmp}</div>` : '');
+      const dets = (s.detections || []).slice(0, LISTED);
+      const list = document.getElementById('list');
+      list.innerHTML = dets.length ? '' : '<div class="empty">Nothing yet.</div>';
+      dets.forEach((d) => {
+        const e = d.device_est, el = document.createElement('div');
+        el.className = 'det' + (d.match ? ' quake' : '');
+        const said = e ? `<span class="dev">~M${e.mag}</span> at ~${e.distance_km} km`
+                       : '<span class="dev">shake detected</span>';
+        const truth = d.match ? `USGS: M${d.match.magnitude.toFixed(1)} at ${d.match.distance_km} km`
+                              : 'no earthquake in the catalogue';
+        el.innerHTML =
+          `<div class="top"><span class="who">${d.match ? 'Earthquake' : 'Unmatched'}</span>` +
+          `<span class="when">${day(d.recv_time)} ${clock(d.recv_time)}</span></div>` +
+          `<div class="vals">${said}</div>` +
+          `<div class="top"><span class="who">${truth}</span></div>`;
         list.appendChild(el);
       });
-
-      badge.textContent = shown.length ? `station live, ${shown.length} recent` : 'station live';
-      badge.className = 'badge on';
     }
 
-    function stationOffline() {
-      deviceLayer.clearLayers();
-      const badge = document.getElementById('badge');
-      badge.textContent = 'station offline';
-      badge.className = 'badge';
+    function offline() {
+      devLayer.clearLayers();
+      const b = document.getElementById('badge');
+      b.textContent = 'no device data';
+      b.className = 'badge';
     }
 
-    let firstFit = true;
+    let fitted = false;
     async function refresh() {
-      let st = { ...FALLBACK };
+      let home = { ...HOME };
       try {
         const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
-        if (!r.ok) throw new Error(r.status);
+        if (!r.ok) throw 0;
         const s = await r.json();
         if (s.station && s.station.lat != null) {
-          st = { lat: s.station.lat, lon: s.station.lon, radius_km: (s.config || {}).radius_km || FALLBACK.radius_km };
+          home = { lat: s.station.lat, lon: s.station.lon,
+                   radius_km: (s.config || {}).radius_km || HOME.radius_km };
         }
-        renderStation(s);
-      } catch (e) { stationOffline(); }
+        const n = drawDevice(s);
+        fillPanel(s);
+        const b = document.getElementById('badge');
+        b.textContent = n ? `${n} recent estimates` : 'device online';
+        b.className = 'badge on';
+      } catch (e) { offline(); }
 
       try {
-        const r = await fetch(usgsUrl(st), { cache: 'no-store' });
-        const g = await r.json();
-        const pts = renderUSGS(g.features || []);
-        if (firstFit && pts.length) { map.fitBounds(L.latLngBounds(pts.concat([[st.lat, st.lon]])).pad(0.2)); firstFit = false; }
-      } catch (e) { /* keep whatever is already drawn */ }
+        const r = await fetch(usgsUrl(home), { cache: 'no-store' });
+        const pts = drawUSGS((await r.json()).features || []);
+        if (!fitted && pts.length) {
+          map.fitBounds(L.latLngBounds(pts.concat([[home.lat, home.lon]])).pad(.2));
+          fitted = true;
+        }
+      } catch (e) { /* keep what is drawn */ }
     }
 
     refresh();
