@@ -5,6 +5,12 @@ __pycache__/
 venv/
 *.egg-info/
 
+# The GitHub token the station publishes with. App Lab offers no way to put a
+# variable in the container's environment, so the token travels as a file in
+# the app folder, which is bind-mounted into it. This repository is public:
+# committing this file would hand anyone write access to it.
+.sismo-token
+
 # Local config & data
 python/config.yaml
 *.local.yaml

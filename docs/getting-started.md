@@ -62,15 +62,39 @@ publish:
 The public page is `web-remote/index.html`, and this repository already
 publishes it on GitHub Pages (`.github/workflows/pages.yml` serves everything
 under `web-remote/`). It fetches USGS live from the browser and overlays the
-station's red estimates from a `station.json` sitting beside it, so the target
-of `publish:` has to be `web-remote/station.json` in this repository. Every
+station's readings from a `station.json` sitting beside it, so the target of
+`publish:` has to be `web-remote/station.json` in this repository. Every
 snapshot commit redeploys the page, so `interval_s` is 1800 — one push every
-half hour. Nothing is lost in between: each snapshot carries the recent
-detections, not just the newest one.
+half hour, and a snapshot that differs only by its clock is skipped entirely.
+Nothing is lost in between: each snapshot carries the whole confirmed history,
+rebuilt from the journal.
+
+Three things have to line up, and missing any one of them looks identical from
+outside — a page with no device data:
+
+- [ ] **A `config.yaml` on the board.** Without one the app silently falls back
+      to `config.example.yaml`, where publishing is off. Check the startup log
+      for a `[Sismo-LA] publisher on (...)` line; no line, no publisher.
+- [ ] **`publish.enabled: true`** in that file.
+- [ ] **A token the container can read.** App Lab builds the container's compose
+      file from `app.yaml`, which has no field for environment variables, and
+      regenerates it on every start — so a secret cannot be passed through the
+      environment. The app folder is bind-mounted at `/app`, so put the token in
+      a file there instead:
+
+      ```bash
+      printf '%s' 'github_pat_...' > ~/ArduinoApps/sismo-la/.sismo-token
+      chmod 600 ~/ArduinoApps/sismo-la/.sismo-token
+      ```
+
+      Use a *fine-grained* token limited to this one repository with
+      "Contents: read and write" and nothing else. `.sismo-token` is gitignored;
+      this repository is public, and committing it would hand anyone write
+      access.
 
 The page is fully self-contained, so it works just as well dropped on any
-other static host. If the station stops publishing, it degrades to a USGS-only
-map and marks itself offline.
+other static host. If the station publishes nothing, the page shows the USGS
+catalogue alone rather than breaking.
 
 ## 1. App Lab — Network setup (GUI, you do it)
 - [ ] Select your WiFi SSID and enter the password (2.4 or 5 GHz).

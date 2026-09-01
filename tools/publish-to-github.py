@@ -42,6 +42,35 @@ def _request(url: str, token: str, method: str = "GET", payload: dict | None = N
         return json.loads(resp.read() or b"{}")
 
 
+def _token_file() -> str:
+    """Where the token lives when it does not come from the environment.
+
+    App Lab generates the container's compose file from ``app.yaml``, which has
+    no field for environment variables, and regenerates it on every app start --
+    so there is no supported way to hand the container a secret through its
+    environment. The app folder, however, is bind-mounted at /app, so a file
+    dropped beside the code is visible inside. That is the route.
+    """
+    override = os.environ.get("SISMO_GITHUB_TOKEN_FILE")
+    if override:
+        return override
+    root = os.environ.get("APP_HOME") or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+    return os.path.join(root, ".sismo-token")
+
+
+def _token() -> str | None:
+    token = os.environ.get("SISMO_GITHUB_TOKEN")
+    if token:
+        return token.strip()
+    try:
+        with open(_token_file(), "r", encoding="utf-8") as fh:
+            return fh.read().strip() or None
+    except OSError:
+        return None
+
+
 def _same_but_for_time(old: bytes, new: bytes) -> bool:
     """True when two snapshots carry the same news.
 
@@ -64,9 +93,10 @@ def main() -> int:
         return 2
     snapshot = sys.argv[1]
 
-    token = os.environ.get("SISMO_GITHUB_TOKEN")
+    token = _token()
     if not token:
-        print("publish-to-github: SISMO_GITHUB_TOKEN is not set", file=sys.stderr)
+        print(f"publish-to-github: no token. Set SISMO_GITHUB_TOKEN, or write it "
+              f"to {_token_file()} (chmod 600).", file=sys.stderr)
         return 1
 
     repo = os.environ.get("SISMO_GITHUB_REPO", "Medialoco/sismo-la")
