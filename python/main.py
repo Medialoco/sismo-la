@@ -411,6 +411,32 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
             print(f"[{ts}] shake {shake} no USGS match | {ai_txt} | {model.status()}")
 
 
+def strip_location(snapshot: dict) -> dict:
+    """Drop the station's coordinates from a snapshot before publishing.
+
+    The public page does not need them: it draws the catalog, and the device's
+    contribution is a magnitude and a distance attached to the matched event.
+    Only the local dashboard, on the operator's own network, plots the station.
+
+    This is not anonymity. The distances to several known epicenters still
+    trilaterate the station, roughly. It only avoids publishing a home address
+    outright.
+    """
+    out = dict(snapshot)
+    out["station"] = {"label": snapshot.get("station", {}).get("label", "Los Angeles")}
+    out["detections"] = []
+    for d in snapshot.get("detections", []):
+        d = dict(d)
+        est = d.get("device_est")
+        if est is not None:
+            # "kind" (point vs ring) only described how to draw it on a map
+            # centred on the station, so it goes with the coordinates.
+            drop = ("lat", "lon", "kind")
+            d["device_est"] = {k: v for k, v in est.items() if k not in drop}
+        out["detections"].append(d)
+    return out
+
+
 def publisher_loop(pub_cfg: dict, state: SharedState) -> None:
     """Periodically publish the station snapshot to a remote site, so the
     device is fully autonomous and a public web page can display its data.
@@ -424,9 +450,12 @@ def publisher_loop(pub_cfg: dict, state: SharedState) -> None:
     """
     method = pub_cfg.get("method", "post")
     interval = float(pub_cfg.get("interval_s", 60))
+    with_location = bool(pub_cfg.get("include_location", False))
     while True:
         time.sleep(interval)
         snapshot = state.snapshot()
+        if not with_location:
+            snapshot = strip_location(snapshot)
         payload = json.dumps(snapshot).encode("utf-8")
         try:
             if method == "post":

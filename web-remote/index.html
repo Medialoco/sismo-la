@@ -3,17 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sismo-LA — the device against the record</title>
-  <meta name="description" content="Recent Los Angeles earthquakes from the USGS, next to what a self-calibrating Arduino station measured." />
+  <title>Sismo-LA — a seismograph checking its own work</title>
+  <meta name="description" content="An Arduino station in Los Angeles reads every shake, then checks what it read against the USGS catalogue." />
   <!--
     Public page for the Sismo-LA station (Arduino UNO Q + MEMS accelerometer).
     Self-contained: no framework, no build step, no asset from another site.
     Served by GitHub Pages from web-remote/ in this repository.
 
       - USGS FDSN API : fetched live by the browser  -> what really happened
-      - station.json  : published by the device      -> what it measured
+      - station.json  : published by the device      -> what it read
 
-    No station.json is a normal state; the page then shows USGS alone.
+    The station's coordinates are deliberately NOT published, so nothing here
+    plots the device. A single station measures a magnitude and a distance,
+    never a direction; drawing it on a map meant borrowing the bearing from
+    the very event it was supposed to be estimating. The comparison below is
+    what the device actually produces.
+
+    No station.json is a normal state; the page then shows the catalogue alone.
   -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -21,12 +27,12 @@
     :root, [data-theme="light"] {
       --bg: #f5f0e6; --soft: #efeae0; --card: #fbf8f2;
       --text: #4a443a; --muted: #7a7266; --border: #e0d9ce;
-      --dev: #c62b39; --ok: #2f7d3a; --shadow: rgba(15,23,42,.10);
+      --dev: #c62b39; --shadow: rgba(15,23,42,.10);
     }
     [data-theme="dark"] {
       --bg: #1a1a1a; --soft: #222; --card: #262626;
       --text: #d6d9dd; --muted: #9ca3af; --border: #3a3f47;
-      --dev: #ff5c66; --ok: #6fcf7a; --shadow: rgba(0,0,0,.4);
+      --dev: #ff5c66; --shadow: rgba(0,0,0,.4);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -55,11 +61,11 @@
 
     #content { display: flex; flex: 1; min-height: 0; }
     #map { flex: 1; position: relative; background: var(--soft); }
-    #panel { width: 290px; overflow-y: auto; padding: 14px;
+    #panel { width: 300px; overflow-y: auto; padding: 14px;
              background: var(--soft); border-left: 1px solid var(--border); }
-    @media (max-width: 820px) {
+    @media (max-width: 860px) {
       #content { flex-direction: column; }
-      #map { min-height: 60vh; }
+      #map { min-height: 55vh; }
       #panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
     }
 
@@ -68,8 +74,12 @@
     #status { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
     #status b { color: var(--text); font-weight: 600; }
 
+    /* device magnitude against catalogue magnitude */
+    #chart { width: 100%; height: auto; display: block; margin-bottom: 6px; }
+    #chartnote { font-size: 11.5px; color: var(--muted); margin-bottom: 18px; }
+
     .det { border-left: 3px solid var(--border); padding: 2px 0 2px 9px; margin: 0 0 12px; }
-    .det.quake { border-left-color: var(--ok); }
+    .det.quake { border-left-color: var(--dev); }
     .det .top { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
     .det .who { color: var(--muted); }
     .det .when { color: var(--muted); font-size: 11px; white-space: nowrap; }
@@ -77,7 +87,6 @@
     .dev { color: var(--dev); font-weight: 600; }
     .empty { color: var(--muted); font-size: 13px; }
 
-    /* legend, over the map, bottom left */
     .legend {
       position: absolute; left: 12px; bottom: 22px; z-index: 500;
       background: var(--card); border: 1px solid var(--border); border-radius: 9px;
@@ -102,7 +111,7 @@
 
   <header>
     <span class="logo">Sismo-LA</span>
-    <span class="sub">What the USGS recorded, and what a self-calibrating Arduino station made of it.</span>
+    <span class="sub">An Arduino station in Los Angeles reads every shake, then checks itself against the record.</span>
     <span id="badge" class="badge">no device data</span>
     <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
     <button type="button" id="theme" class="iconbtn" aria-label="Light or dark">
@@ -115,24 +124,27 @@
     <div id="map">
       <div class="legend">
         <div class="line"><span class="sw" style="background:#fec44f;border:1px solid #8a7a4a"></span>
-          <b>USGS</b></div>
+          <b>USGS catalogue</b></div>
         <div class="line scale">
           <i style="background:#fff7bc"></i><i style="background:#fee391"></i><i style="background:#fec44f"></i><i style="background:#fe9929"></i><i style="background:#cc4c02"></i>
           <span>M&lt;2 &middot; 2 &middot; 3 &middot; 4 &middot; 5+</span>
         </div>
-        <div class="line"><span class="sw" style="background:rgba(198,43,57,.18);border:2px dashed #c62b39"></span>
-          <b>Arduino estimate</b></div>
-        <div class="line" style="color:var(--muted)">
-          <span class="sw" style="background:none;border:2px dashed #c62b39"></span>
-          distance only, direction unknown</div>
+        <div class="line"><span class="sw" style="background:#fec44f;border:2px solid #c62b39"></span>
+          <b>felt by the station</b></div>
       </div>
     </div>
 
     <aside id="panel">
       <h2>Station</h2>
-      <div id="status">Waiting for the device. Showing the USGS record only.</div>
+      <div id="status">No snapshot yet. Showing the USGS record alone.</div>
 
-      <h2>What the device measured</h2>
+      <h2>Its reading vs the record</h2>
+      <svg id="chart" viewBox="0 0 260 180" role="img"
+           aria-label="Magnitude read by the device against magnitude published by the USGS"></svg>
+      <div id="chartnote">Each dot is one earthquake. On the line means the
+        device got the magnitude right.</div>
+
+      <h2>Recent shakes</h2>
       <div id="list"><div class="empty">Nothing yet.</div></div>
     </aside>
   </div>
@@ -141,15 +153,16 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     const STATION_URL = 'station.json';
-    const SHOWN = 3;            // device estimates drawn on the map
-    const LISTED = 6;           // rows in the panel
-    const USGS_LIMIT = 8;
-    const HOME = { lat: 34.0522, lon: -118.2437, radius_km: 160 };
+    const LISTED = 6;
+    const USGS_LIMIT = 12;
+    // Coarse Los Angeles view. Fixed on purpose: the station does not publish
+    // where it is, so nothing here is centred on the device.
+    const LA = { lat: 34.0522, lon: -118.2437, radius_km: 160 };
 
-    const usgsUrl = (s) =>
+    const usgsUrl = (r) =>
       'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time' +
-      `&limit=${USGS_LIMIT}&latitude=${s.lat}&longitude=${s.lon}` +
-      `&maxradiuskm=${s.radius_km}&eventtype=earthquake`;
+      `&limit=${USGS_LIMIT}&latitude=${LA.lat}&longitude=${LA.lon}` +
+      `&maxradiuskm=${r}&eventtype=earthquake`;
 
     /* theme */
     const root = document.documentElement;
@@ -161,10 +174,11 @@
       root.setAttribute('data-theme', next);
       localStorage.setItem('sismo-theme', next);
       basemap();
+      drawChart(lastMatched);
     };
 
     /* map */
-    const map = L.map('map').setView([HOME.lat, HOME.lon], 8);
+    const map = L.map('map').setView([LA.lat, LA.lon], 8);
     map.attributionControl.setPrefix(false);
 
     // Labels above the basemap but below the data, so no place name hides a circle.
@@ -196,7 +210,6 @@
     basemap();
 
     const usgsLayer = L.layerGroup().addTo(map);
-    const devLayer = L.layerGroup().addTo(map);
 
     const magColor = (m) =>
       m >= 5 ? '#cc4c02' : m >= 4 ? '#fe9929' : m >= 3 ? '#fec44f' : m >= 2 ? '#fee391' : '#fff7bc';
@@ -211,63 +224,82 @@
         { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric' }); }
       catch (e) { return ''; }
     };
-    const dev = () => getComputedStyle(root).getPropertyValue('--dev').trim() || '#c62b39';
+    const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
 
-    function drawUSGS(features) {
+    /* The device has no map presence of its own. Where it recognised an event,
+       that event is outlined and carries what the device read. */
+    function drawUSGS(features, felt) {
       usgsLayer.clearLayers();
+      const dev = css('--dev') || '#c62b39';
       const pts = [];
       features.forEach((f) => {
         const p = f.properties || {}, [lon, lat] = f.geometry.coordinates, m = p.mag ?? 0;
+        const mine = felt.get(f.id);
         L.circleMarker([lat, lon], {
-          radius: magRadius(m), color: '#6b6358', weight: .8,
+          radius: magRadius(m),
+          color: mine ? dev : '#6b6358', weight: mine ? 2.5 : .8,
           fillColor: magColor(m), fillOpacity: .7,
-        }).bindPopup(`<b>USGS M${m.toFixed(1)}</b><br>${p.place || ''}<br>${day(p.time)} ${clock(p.time)}`)
-          .addTo(usgsLayer);
+        }).bindPopup(
+          `<b>USGS M${m.toFixed(1)}</b><br>${p.place || ''}<br>${day(p.time)} ${clock(p.time)}` +
+          (mine ? `<br><b style="color:${dev}">The station read ~M${mine.mag}` +
+                  `, ${mine.distance_km} km away</b>` : '')
+        ).addTo(usgsLayer);
         pts.push([lat, lon]);
       });
       return pts;
     }
 
-    function drawDevice(s) {
-      devLayer.clearLayers();
-      const st = s.station || {};
-      if (st.lat == null) return 0;
-      const col = dev();
+    /* Device magnitude against catalogue magnitude, with the y = x line.
+       Dots on the line mean the conversion it taught itself is right. */
+    let lastMatched = [];
+    function drawChart(pairs) {
+      lastMatched = pairs;
+      const svg = document.getElementById('chart');
+      const dev = css('--dev') || '#c62b39', muted = css('--muted') || '#888';
+      const border = css('--border') || '#ddd';
+      const W = 260, H = 180, P = 30;
+      // Fit the axes to the data, but never below a 2-unit span: LA's small
+      // quakes would otherwise crowd one corner of a mostly empty square.
+      const vals = pairs.flatMap((p) => [p.usgs, p.dev]);
+      let lo = vals.length ? Math.min(...vals) - .3 : 1;
+      let hi = vals.length ? Math.max(...vals) + .3 : 4;
+      if (hi - lo < 2) { const mid = (lo + hi) / 2; lo = mid - 1; hi = mid + 1; }
+      lo = Math.floor(lo * 2) / 2; hi = Math.ceil(hi * 2) / 2;
+      const x = (m) => P + (m - lo) / (hi - lo) * (W - P - 10);
+      const y = (m) => H - P - (m - lo) / (hi - lo) * (H - P - 12);
 
-      L.circleMarker([st.lat, st.lon], { radius: 5, color: col, weight: 2,
-        fillColor: col, fillOpacity: 1 }).bindPopup('The station').addTo(devLayer);
+      const ticks = [];
+      for (let m = Math.ceil(lo); m <= hi; m += 1) ticks.push(m);
 
-      const shown = (s.detections || []).filter((d) => d.device_est).slice(0, SHOWN);
-      shown.forEach((d) => {
-        const e = d.device_est;
-        // A lone station measures a distance, never a bearing. A "point" only
-        // lands somewhere because the direction comes from the matched event.
-        const popup = `<b style="color:${col}">Arduino: ~M${e.mag}, ~${e.distance_km} km</b>` +
-          (d.match ? `<br>USGS: M${d.match.magnitude.toFixed(1)}, ${d.match.distance_km} km`
-                   : '<br>no USGS match') +
-          (e.kind === 'point' ? '<br><span style="opacity:.7">direction taken from the USGS event</span>'
-                              : '<br><span style="opacity:.7">direction unknown</span>');
-        if (e.kind === 'point') {
-          L.circleMarker([e.lat, e.lon], { radius: magRadius(e.mag), color: col, weight: 2,
-            dashArray: '3,3', fillColor: col, fillOpacity: .18 }).bindPopup(popup).addTo(devLayer);
-          if (d.match) {
-            L.polyline([[e.lat, e.lon], [d.match.lat, d.match.lon]],
-              { color: col, weight: 1.5, opacity: .6, dashArray: '3,6' }).addTo(devLayer);
-          }
-        } else {
-          L.circle([st.lat, st.lon], { radius: e.distance_km * 1000, color: col,
-            weight: 1.5, dashArray: '6,8', fill: false, opacity: .7 }).bindPopup(popup).addTo(devLayer);
-        }
-      });
-      return shown.length;
+      svg.innerHTML =
+        `<line x1="${x(lo)}" y1="${y(lo)}" x2="${x(hi)}" y2="${y(hi)}"
+               stroke="${muted}" stroke-width="1" stroke-dasharray="4,4" opacity=".7"/>` +
+        `<line x1="${P}" y1="${H - P}" x2="${W - 8}" y2="${H - P}" stroke="${border}"/>` +
+        `<line x1="${P}" y1="10" x2="${P}" y2="${H - P}" stroke="${border}"/>` +
+        ticks.map((m) =>
+          `<text x="${x(m)}" y="${H - P + 13}" fill="${muted}" font-size="9"
+                 text-anchor="middle">${m}</text>` +
+          `<text x="${P - 6}" y="${y(m) + 3}" fill="${muted}" font-size="9"
+                 text-anchor="end">${m}</text>`).join('') +
+        `<text x="${(W + P) / 2}" y="${H - 4}" fill="${muted}" font-size="9.5"
+               text-anchor="middle">USGS magnitude</text>` +
+        `<text x="11" y="${(H - P) / 2}" fill="${muted}" font-size="9.5"
+               text-anchor="middle" transform="rotate(-90 11 ${(H - P) / 2})">device</text>` +
+        pairs.map((p) =>
+          `<circle cx="${x(p.usgs)}" cy="${y(p.dev)}" r="4" fill="${dev}"
+                   fill-opacity=".55" stroke="${dev}"/>`).join('') +
+        (pairs.length ? '' :
+          `<text x="${(W + P) / 2}" y="${(H - P) / 2}" fill="${muted}" font-size="10.5"
+                 text-anchor="middle">no confirmed earthquake yet</text>`);
     }
 
     function fillPanel(s) {
       const c = s.calibration || {};
       document.getElementById('status').innerHTML =
-        `Last update <b>${day(s.updated)} ${clock(s.updated)}</b><br>` +
-        (c.ready ? `Calibrated on <b>${c.n_points}</b> confirmed earthquakes.`
-                 : `Learning: <b>${c.n_points ?? 0}</b> of ${c.min_points ?? '?'} confirmed earthquakes.`);
+        `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b><br>` +
+        (c.ready
+          ? `Calibrated on <b>${c.n_points}</b> confirmed earthquakes.`
+          : `Still learning: <b>${c.n_points ?? 0}</b> of ${c.min_points ?? '?'} confirmed earthquakes.`);
 
       const dets = (s.detections || []).slice(0, LISTED);
       const list = document.getElementById('list');
@@ -277,10 +309,11 @@
         el.className = 'det' + (d.match ? ' quake' : '');
         const said = e ? `<span class="dev">~M${e.mag}</span> at ~${e.distance_km} km`
                        : '<span class="dev">shake detected</span>';
-        const truth = d.match ? `USGS: M${d.match.magnitude.toFixed(1)} at ${d.match.distance_km} km`
-                              : 'no earthquake in the catalogue';
+        const truth = d.match
+          ? `USGS: M${d.match.magnitude.toFixed(1)} at ${d.match.distance_km} km`
+          : 'nothing in the catalogue &mdash; traffic, a door, a footstep';
         el.innerHTML =
-          `<div class="top"><span class="who">${d.match ? 'Earthquake' : 'Unmatched'}</span>` +
+          `<div class="top"><span class="who">${d.match ? 'Earthquake' : 'Not an earthquake'}</span>` +
           `<span class="when">${day(d.recv_time)} ${clock(d.recv_time)}</span></div>` +
           `<div class="vals">${said}</div>` +
           `<div class="top"><span class="who">${truth}</span></div>`;
@@ -288,41 +321,48 @@
       });
     }
 
-    function offline() {
-      devLayer.clearLayers();
-      const b = document.getElementById('badge');
-      b.textContent = 'no device data';
-      b.className = 'badge';
-    }
-
     let fitted = false;
     async function refresh() {
-      let home = { ...HOME };
+      let radius = LA.radius_km;
+      const felt = new Map();
+
       try {
         const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
         if (!r.ok) throw 0;
         const s = await r.json();
-        if (s.station && s.station.lat != null) {
-          home = { lat: s.station.lat, lon: s.station.lon,
-                   radius_km: (s.config || {}).radius_km || HOME.radius_km };
-        }
-        const n = drawDevice(s);
+        radius = (s.config || {}).radius_km || radius;
+
+        const pairs = [];
+        (s.detections || []).forEach((d) => {
+          if (!d.match || !d.device_est) return;
+          felt.set(d.match.event_id, d.device_est);
+          pairs.push({ usgs: d.match.magnitude, dev: d.device_est.mag });
+        });
+
         fillPanel(s);
+        drawChart(pairs);
         const b = document.getElementById('badge');
-        b.textContent = n ? `${n} recent estimates` : 'device online';
+        b.textContent = pairs.length
+          ? `${pairs.length} earthquakes recognised` : 'device reporting';
         b.className = 'badge on';
-      } catch (e) { offline(); }
+      } catch (e) {
+        drawChart([]);
+        const b = document.getElementById('badge');
+        b.textContent = 'no device data';
+        b.className = 'badge';
+      }
 
       try {
-        const r = await fetch(usgsUrl(home), { cache: 'no-store' });
-        const pts = drawUSGS((await r.json()).features || []);
+        const r = await fetch(usgsUrl(radius), { cache: 'no-store' });
+        const pts = drawUSGS((await r.json()).features || [], felt);
         if (!fitted && pts.length) {
-          map.fitBounds(L.latLngBounds(pts.concat([[home.lat, home.lon]])).pad(.2));
+          map.fitBounds(L.latLngBounds(pts.concat([[LA.lat, LA.lon]])).pad(.2));
           fitted = true;
         }
       } catch (e) { /* keep what is drawn */ }
     }
 
+    drawChart([]);
     refresh();
     setInterval(refresh, 60000);
   </script>

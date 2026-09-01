@@ -236,14 +236,21 @@ UNO Q gotchas we learned the hard way (details in
 
 The station needs only WiFi and USB-C power — no attached computer. Beyond its
 local dashboard, `python/main.py` can push a JSON snapshot (detections, estimates,
-calibration state) to a remote site every minute (`publish:` block in
+calibration state) to a remote site on a timer (`publish:` block in
 `config.yaml`: HTTP POST, file write, or any upload command such as `scp`).
-The static page [`web-remote/index.html`](web-remote/index.html) overlays that
-snapshot on the live USGS map, and this repository publishes it at
+The static page [`web-remote/index.html`](web-remote/index.html) reads that
+snapshot, and this repository publishes it at
 **<https://medialoco.github.io/sismo-la/>**. No backend, no build step, nothing
-to pay for. If `station.json` is missing or the station is down, the page shows
-the USGS catalogue alone and marks itself offline, rather than breaking — which
-is what it is doing right now.
+to pay for. If `station.json` is missing, the page shows the USGS catalogue
+alone rather than breaking — which is what it is doing right now.
+
+**The published snapshot carries no coordinates.** The public page outlines the
+catalogued events the station recognised and plots the magnitude it read against
+the magnitude the USGS published; none of that needs to know where the box sits.
+This also removes a dishonesty: a single station measures a distance, never a
+bearing, so the earlier red epicenter marker only landed somewhere because it
+borrowed the direction from the event it was supposed to be estimating. Set
+`publish.include_location: true` to put the station back on the public map.
 
 ## Repository layout
 
