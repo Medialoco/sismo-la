@@ -51,6 +51,44 @@ calibration:
   distance_state_file: distance_state.json
   min_points: 8         # number of points before estimating a magnitude
 
+# Continuous envelope: the peak and the rms of the same 0.7-12 Hz signal the
+# trigger uses, one value a second, written to one file per UTC day. About
+# 1.6 MB a day. It exists so a cataloged earthquake can be looked for at the
+# instant it must have arrived, instead of having to shout loudly enough to trip
+# the blind trigger on its own.
+envelope:
+  enabled: true
+  directory: envelope
+  # Enforced on every day rollover. The board this runs on has ~950 MB free,
+  # 10% of its disk, so this is a real limit and not a formality: 14 days is
+  # ~23 MB. Raising it buys a longer retroactive reach and nothing else.
+  retention_days: 14
+
+# Retrospective search. See python/retro.py for what it is and, more
+# importantly, what it is not: a shake found here was found because the catalog
+# said where to look, so it is never counted as an autonomous detection.
+retro:
+  enabled: true
+  state_file: retro_state.json
+  interval_s: 900        # how often to re-scan
+  # How far back each scan reaches. Worth more than a single pass: the USGS
+  # revises magnitudes and locations for hours after an event, and a scan run a
+  # minute after the origin time uses a distance that may still change.
+  lookback_hours: 72
+  # Significance required, in units of the LOCAL dispersion measured over the
+  # minutes before the arrival. Calibrated against the null distribution of the
+  # estimator itself — `python3 tools/retro-gain.py` prints it. At 4.0 the
+  # measured false-confirmation rate on the station's own noise is under 1e-3
+  # per event, i.e. ~1% over a fortnight.
+  z_min: 4.0
+  # Whether a retrospective confirmation may feed the amplitude and distance
+  # models. OFF, and not merely out of caution. These points are selected for
+  # being large excursions at a threshold close to the noise, so their
+  # amplitudes are biased upward by the selection itself, and fitting a
+  # magnitude law to them would bake that bias in. Turn it on only with a
+  # comfortable margin above z_min and with the bias in mind.
+  feed_calibration: false
+
 # Autonomous mode: periodically publish the station snapshot (JSON) so the
 # public page (web-remote/index.html) can display it. That page reads
 # station.json from beside itself, so on GitHub Pages the target is

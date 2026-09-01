@@ -51,6 +51,8 @@ import usgs
 from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
 import eventlog
+import retro
+from envelope import EnvelopeStore
 from eventlog import EventLog
 from pipeline import (
     find_match,
@@ -104,8 +106,13 @@ class SharedState:
 
     def __init__(self, station: dict, usgs_cfg: dict, model: CalibrationModel,
                  clf: QuakeNoiseClassifier, dist_model: DistanceModel,
-                 mode: str = "live"):
+                 mode: str = "live", store: EnvelopeStore | None = None,
+                 retro_log: "retro.RetroLog | None" = None):
         self._lock = threading.Lock()
+        self._store = store
+        self._retro = retro_log
+        self._retro_last: datetime | None = None
+        self._retro_scanned = 0
         self._station = station
         self._usgs_cfg = usgs_cfg
         self._model = model
@@ -159,6 +166,48 @@ class SharedState:
     def note_loop_restart(self) -> None:
         with self._lock:
             self._loop_restarts += 1
+
+    def note_retro_scan(self, scanned: int) -> None:
+        with self._lock:
+            self._retro_last = datetime.now(timezone.utc)
+            self._retro_scanned = scanned
+
+    def _retro_block(self) -> dict:
+        """What the retrospective search has found, kept apart from detections.
+
+        A separate block rather than extra fields on ``detections``, because
+        every consumer then has to decide explicitly which of the two it is
+        showing. A flag on a shared list is the shape that eventually gets
+        summed.
+        """
+        if self._retro is None:
+            return {"enabled": False}
+        found = self._retro.confirmed()
+        return {
+            "enabled": True,
+            "n_confirmed": len(found),
+            "n_scanned": len(self._retro.findings),
+            "last_scan": self._retro_last.isoformat() if self._retro_last else None,
+            "scanned_last_pass": self._retro_scanned,
+            "z_min": retro.Z_MIN,
+            "confirmed": [
+                {
+                    "event_id": f["event_id"],
+                    "origin_time": f["origin_time"],
+                    "magnitude": f["magnitude"],
+                    "place": f["place"],
+                    "distance_km": f["distance_km"],
+                    "z": f["z"],
+                    "window_s": f["window_s"],
+                    "peak_g": f["peak_g"],
+                    "rms_g": f["rms_g"],
+                    "baseline_g": f["baseline_g"],
+                    "lag_s": f["lag_s"],
+                }
+                for f in found[-20:]
+            ],
+            "envelope": self._store.coverage() if self._store else None,
+        }
 
     def _health(self, now: datetime) -> dict:
         mcu_silent = ((now - self._mcu_last_seen).total_seconds()
@@ -315,7 +364,11 @@ class SharedState:
                     }
                     for q in self._quakes
                 ],
+                # Two categories, never one list. `detections` is what the
+                # station triggered on by itself; `retro` is what it confirmed
+                # at an instant the catalog supplied. See python/retro.py.
                 "detections": list(self._detections),
+                "retro": self._retro_block(),
                 "updated": self._updated.isoformat(),
             }
 
@@ -452,6 +505,62 @@ def usgs_poll_loop(cfg: dict, state: SharedState) -> None:
         time.sleep(interval)
 
 
+def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
+               retro_log: "retro.RetroLog", journal: EventLog) -> None:
+    """Re-scan the recent catalog against the stored envelope, on a timer.
+
+    Runs on its own thread and never touches the detection path. It reads the
+    envelope files and the catalog, and writes only to ``retro_state.json`` and
+    to the journal — so a bug here can lose a confirmation but cannot cost the
+    station a trigger or corrupt the calibration.
+
+    Every pass re-scans the whole lookback rather than only what is new. The USGS
+    revises magnitudes and locations for hours, sometimes days; the arrival
+    window is computed from the distance, so a scan run one minute after the
+    origin time is provisional. ``RetroLog`` is keyed by event id, so re-scanning
+    updates a finding instead of duplicating it, and only a transition to
+    confirmed appends to the journal.
+    """
+    st = cfg["station"]
+    us = cfg["usgs"]
+    rcfg = cfg.get("retro") or {}
+    interval = float(rcfg.get("interval_s", 900))
+    lookback_h = float(rcfg.get("lookback_hours", 72))
+    z_min = float(rcfg.get("z_min", retro.Z_MIN))
+    feed = bool(rcfg.get("feed_calibration", False))
+    print(f"[retro] search on: every {interval:.0f}s over the last "
+          f"{lookback_h:.0f}h, z_min={z_min}, "
+          f"{'FEEDS' if feed else 'does not feed'} the calibration", flush=True)
+
+    while True:
+        try:
+            quakes = usgs.fetch_recent(
+                st["lat"], st["lon"], us["radius_km"], us["min_magnitude"],
+                lookback_minutes=int(lookback_h * 60),
+            )
+            scanned = 0
+            for quake in quakes:
+                finding = retro.scan_quake(store, quake, z_min=z_min)
+                if finding is None:
+                    continue          # no envelope covering that instant
+                scanned += 1
+                if retro_log.record(finding):
+                    journal.append_retro(finding)
+                    print(f"[retro] CONFIRMED M{quake.magnitude} @ "
+                          f"{quake.distance_km:.0f}km ({quake.place}) "
+                          f"z={finding['z']} over {finding['window_s']:.0f}s, "
+                          f"{finding['peak_g']*1000:.2f} mg peak vs "
+                          f"{finding['baseline_g']*1000:.3f} mg baseline "
+                          f"- NOT an autonomous detection", flush=True)
+            retro_log.save()
+            state.note_retro_scan(scanned)
+            print(f"[retro] scanned {scanned} of {len(quakes)} cataloged events "
+                  f"against the envelope; {retro_log.status()}", flush=True)
+        except Exception as e:
+            print(f"[retro] scan failed: {e}", flush=True)
+        time.sleep(interval)
+
+
 def supervise(name: str, target, state: SharedState, *args) -> None:
     """Run ``target`` forever, surviving any exception it raises.
 
@@ -477,7 +586,8 @@ def supervise(name: str, target, state: SharedState, *args) -> None:
 
 def detection_loop(cfg: dict, mode: str, state: SharedState,
                    model: CalibrationModel, clf: QuakeNoiseClassifier,
-                   dist_model: DistanceModel) -> None:
+                   dist_model: DistanceModel,
+                   store: EnvelopeStore | None = None) -> None:
     st = cfg["station"]
     us = cfg["usgs"]
     corr = cfg["correlation"]
@@ -494,7 +604,11 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
         events = iter_mock_events()
         print("[Sismo-LA] source = MOCK")
     elif cfg["source"]["type"] == "bridge":
-        events = iter_bridge_events(on_mcu_activity=state.note_mcu_activity)
+        on_envelope = None
+        if store is not None and store.enabled:
+            on_envelope = store.append_batch
+        events = iter_bridge_events(on_mcu_activity=state.note_mcu_activity,
+                                    on_envelope=on_envelope)
         print("[Sismo-LA] source = Bridge RPC (MCU notifications)")
     elif cfg["source"]["type"] == "monitor":
         cmd = cfg["source"].get("monitor_command", "arduino-app-cli monitor")
@@ -612,6 +726,15 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
                 snapshot["recent"] = eventlog.recent_events(
                     journal_path, days=window_days
                 )
+                # A third list, and it stays a third list all the way to the
+                # public page: cataloged earthquakes found in the stored
+                # envelope at their computed arrival time. Real ground motion,
+                # not an autonomous detection. `history` and `recent` already
+                # filter it out at source (eventlog.kind_of), so nothing here
+                # can leak into the autonomous record by omission.
+                snapshot["confirmed"] = eventlog.confirmed_events(
+                    journal_path, days=window_days
+                )
                 snapshot["window_days"] = window_days
             except OSError as e:
                 print(f"[publish] could not read journal: {e}")
@@ -711,9 +834,29 @@ def main() -> None:
     )
     dist_model.load()
 
+    # The continuous envelope and the retrospective search over it. Both are
+    # live-only: in mock and replay the "sensor" is a random number generator,
+    # so there is no ground motion to record and confirming a cataloged
+    # earthquake against synthetic noise would be theatre.
     mode = "replay" if args.replay else ("mock" if args.mock else "live")
+    envcfg = cfg.get("envelope") or {}
+    store = None
+    if mode == "live" and envcfg.get("enabled", True):
+        store = EnvelopeStore(envcfg.get("directory", "envelope"),
+                              retention_days=envcfg.get("retention_days", 14))
+        store.purge()
+        print(f"[Sismo-LA] envelope -> {store.directory} "
+              f"({store.coverage()['days']} day files, keeping "
+              f"{store.retention_days})")
+    retro_log = None
+    if store is not None and (cfg.get("retro") or {}).get("enabled", True):
+        retro_log = retro.RetroLog(
+            (cfg.get("retro") or {}).get("state_file", "retro_state.json"))
+        retro_log.load()
+        print(f"[Sismo-LA] {retro_log.status()}")
+
     state = SharedState(cfg["station"], cfg["usgs"], model, clf, dist_model,
-                        mode=mode)
+                        mode=mode, store=store, retro_log=retro_log)
 
     # Startup catalog check, so the station knows its seismic context before the
     # first shake arrives and the dashboard is not empty on first load.
@@ -735,13 +878,21 @@ def main() -> None:
     threading.Thread(
         target=supervise,
         args=("detection", detection_loop, state,
-              cfg, mode, state, model, clf, dist_model),
+              cfg, mode, state, model, clf, dist_model, store),
         daemon=True,
     ).start()
     threading.Thread(
         target=supervise, args=("usgs", usgs_poll_loop, state, cfg, state),
         daemon=True,
     ).start()
+    if retro_log is not None:
+        journal = EventLog(calcfg.get("journal_file", "event_log.jsonl"))
+        threading.Thread(
+            target=supervise,
+            args=("retro", retro_loop, state, cfg, state, store, retro_log,
+                  journal),
+            daemon=True,
+        ).start()
 
     pub_cfg = cfg.get("publish") or {}
     if pub_cfg.get("enabled"):

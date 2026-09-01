@@ -44,6 +44,43 @@ communicate over the Arduino Bridge (RPC):
 8. **Presentation (MPU)** — web dashboard (App Lab brick): live acceleration,
    local events, recent USGS earthquakes, calibration state, estimated magnitude.
 
+## The second channel: retrospective search
+
+Steps 1–8 describe a station that waits to trigger. That path tests on the order
+of 170,000 windows a day, and the false-alarm budget that implies is what sets
+its threshold — well above the noise floor. Alongside it runs a channel that
+works the other way round:
+
+A. **Continuous envelope (MCU)** — independently of any trigger, the band-passed
+   signal is reduced to one peak and one rms per second and shipped in batches of
+   ten (`mcu_envelope`). A few bytes a second.
+
+B. **Absolute dating (MPU)** — `python/envelope.py` writes those samples to
+   `envelope/YYYY-MM-DD.csv`, one file per UTC day, purged past a retention
+   window. **Each batch is dated on arrival, from the NTP-synced host clock**;
+   the MCU's `millis()` only spaces the ten samples inside the batch. This is not
+   a detail: that oscillator was measured 1099 ppm slow, which is 10 s of error
+   in three hours — the width of the search window itself.
+
+C. **Search at a known instant (MPU)** — `python/retro.py` takes each cataloged
+   event, propagates P and S arrivals to the station (`pipeline.travel_time_window`),
+   and compares the envelope inside that window against the dispersion of the
+   preceding minutes, measured with a median and a MAD so a single spike cannot
+   set the bar. Above a threshold in units of that local dispersion, the event is
+   marked confirmed.
+
+Testing a handful of windows per earthquake instead of 170,000 a day buys the
+same confidence far closer to the noise: a factor 7 to 8 in amplitude, one
+magnitude unit.
+
+**These two channels are different claims and the code never merges them.** The
+journal tags each record (`eventlog.kind_of`), `matched_pairs` and
+`recent_events` return autonomous triggers only, confirmations have their own
+accessor and their own key in the published snapshot, `audit.py` excludes them
+from scoring by default, and neither the dashboard nor the public page shows them
+in the same list. A confirmation is real ground motion; it is not a detection the
+station made, because the catalog is what said where to look.
+
 ## Note on time synchronization
 
 This is the tricky part. The MCU has no absolute time; the MPU does (NTP over

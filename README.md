@@ -23,9 +23,11 @@ runs on its own power with no shell and no attached computer, detects shakes,
 correlates them against USGS, publishes a snapshot every 20 minutes, and came
 back by itself after a real power cut. The measuring half is not: **it has yet
 to recognize a single genuine earthquake — 0 of the 8 matches** its amplitude
-model needs. What changed this week is that the gap stopped being a mystery.
-The detection threshold is now measured, so the missing part has a number
-attached to it rather than a shrug.
+model needs. What changed this week is that the gap stopped being a mystery:
+the detection threshold is now measured, and measuring it showed that what held
+the station back was not the sensor but the cost of watching blindly. Asking the
+catalog *when* to look instead is worth a full magnitude unit, and it took the
+odds of feeling a real earthquake before the deadline from 6–28% to 28–70%.
 
 ![Sismo-LA dashboard — device estimates in red vs USGS ground truth](docs/images/dashboard-replay.png)
 
@@ -177,19 +179,48 @@ window. Through the refit law, that floor becomes a required magnitude, ±0.45
 
 | | 10 km | 30 km | 50 km | 100 km | 160 km |
 |---|---|---|---|---|---|
-| M needed | 3.3 | 4.1 | 4.5 | 5.1 | 5.5 |
+| Blind trigger needs | 3.1 | 3.9 | 4.3 | 4.9 | 5.3 |
+| Retrospective search needs | 2.1 | 2.9 | 3.3 | 3.9 | 4.3 |
 
-Crossed with the real catalog — 2,184 events of M ≥ 2 within 160 km over five
-years — and converting the 0.39 log10 scatter into a per-event probability, this
-station should see **1.3 to 6.6 genuine earthquakes a year** (the range is
-unknown site amplification, ×1 to ×4). A mean wait of 56 to 279 days for **one**
-of the 8 points it needs. Only 9 of those 2,184 events had a better than even
-chance of being felt, and 2,082 had less than 1%: the station is not waiting for
-"an earthquake", it is waiting for one of a handful of specific ones.
+Crossed with the real catalog — 2,185 events of M ≥ 2 within 160 km over five
+years — and converting the 0.39 log10 scatter into a per-event probability, the
+blind trigger alone should see **2.0 to 9.8 genuine earthquakes a year** (the
+range is unknown site amplification, ×1 to ×4). That is a mean wait of 37 to 184
+days for **one** of the 8 points it needs, and a **6 to 28%** chance of a first
+one before 13 September. The station is not waiting for "an earthquake"; it is
+waiting for one of a handful of specific ones.
 
-**Probability of a first genuine detection before the contest deadline on
-13 September: 4 to 19%.** Probably not, in other words. That is stated here
-rather than discovered by a juror.
+**Which is why the trigger stopped being the only way in.** A blind detector has
+to be right about roughly 170,000 windows a day, and that is what forces its
+threshold so far above the noise — not the sensor. But the USGS publishes the
+origin time of every earthquake, so the station now also records a continuous
+envelope of the ground motion and goes back to look at the instant the waves must
+have arrived. A handful of windows per earthquake instead of 170,000 a day buys
+the same confidence much closer to the noise, and the test can average over the
+whole wavetrain instead of reacting inside half a second. Measured on this
+station's own noise: **a factor 7 to 8 in amplitude, one full magnitude unit** —
+five times what the seismic band-pass was worth, for no hardware and no money.
+
+| | earthquakes felt per year | mean wait | before 13 September |
+|---|---|---|---|
+| Blind trigger only | 2.0 – 9.8 | 37–184 days | 6–28% |
+| **Plus retrospective search** | **9.9 – 36.9** | **10–37 days** | **28–70%** |
+
+**And the two are not the same claim, so this repository never merges them.**
+A shake the station triggered on by itself is a detection. A shake found because
+the catalog said which second to examine is a *confirmation* — real evidence that
+the ground moved, but the station did not find it unaided. The journal tags every
+record, the dashboard and the public page show two categories, and the 0-of-8
+calibration count admits only the first kind. The distinction is what makes the
+approach defensible; erasing it would make the numbers a lie.
+
+Two limits travel with those figures. The retrospective threshold is only
+reachable when the site is at rest — measured, the envelope wanders by a factor
+4 during a busy hour and by 3% during a quiet one — and this site is at rest
+about half the time, which is what the table above assumes. And the search cannot
+reach back before it was installed: the station kept no continuous record until
+1 September, only the shakes that crossed the trigger, which are precisely the
+wrong ones.
 
 Other limits, briefly: it **detects, it does not predict** — it says nothing
 about earthquakes that have not happened. Calibration belongs to one spot;
@@ -317,6 +348,8 @@ sismo-la/
 │   ├── usgs.py                # USGS FDSN client
 │   ├── calibration.py         # amplitude model + distance model (persisted)
 │   ├── classifier.py          # online quake-vs-noise logistic regression
+│   ├── envelope.py            # continuous envelope, one CSV per UTC day
+│   ├── retro.py               # search at the arrival time the catalog implies
 │   ├── audit.py               # out-of-sample scoring from the journal
 │   └── dashboard/index.html   # operator dashboard
 ├── sketch/                    # runs on the STM32U585 MCU (Zephyr)
@@ -331,8 +364,13 @@ sismo-la/
 - [x] Survives a power cut without a human (4 min 24 s to a serving dashboard).
 - [x] Detection threshold measured, and the expected detection rate with it.
 - [x] Attenuation law refitted on 12,324 real ShakeMap amplitudes.
+- [x] Continuous envelope recorded, and searched retrospectively at the arrival
+      time the catalog implies — a factor 7 to 8 in amplitude, kept strictly
+      apart from what the station triggers on by itself.
 - [ ] **First genuine earthquake recognized — 0 of 8.** Everything else waits
       on this.
+- [ ] First retrospective confirmation — 0 so far, the search went live on
+      1 September and has no earlier envelope to read.
 - [ ] Calibration curve from real recordings, with held-out residuals.
 - [ ] Contest video: replay mode plus a live tap.
 

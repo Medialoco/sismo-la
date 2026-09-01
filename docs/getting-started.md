@@ -47,6 +47,39 @@ map needs WiFi (Leaflet + tiles + USGS). Display vs correlation thresholds are
 split in `config.yaml`: `usgs.display_min_magnitude` controls the map, while
 `usgs.min_magnitude` (M2) gates calibration matches.
 
+### Retrospective search (on by default)
+
+Besides waiting to trigger, the station records a continuous envelope of the
+ground motion and re-reads it at the arrival time each cataloged earthquake
+implies. That is worth about a magnitude unit over the blind trigger; the method
+and its caveats are in `AGENTS.md`, "Retrospective search". Two config blocks
+control it, both defaulted so a fresh clone just works:
+
+```yaml
+envelope:
+  enabled: true
+  directory: envelope      # one CSV per UTC day, ~1.6 MB/day
+  retention_days: 14       # older files are deleted on the day rollover
+
+retro:
+  enabled: true
+  interval_s: 900          # rescan the catalog every 15 min
+  lookback_hours: 72       # how far back a newly published event may be
+  z_min: 4.0               # local dispersions above the trailing baseline
+  feed_calibration: false  # leave this off, see below
+```
+
+Two things to know before changing any of it. **Retention costs disk**: 14 days
+is ~23 MB, and the board ships 90% full, so raising it buys retroactive reach
+against free space you may not have. And **`feed_calibration` is off on
+purpose** — a confirmation is selected for being a large excursion at a
+threshold close to the noise, so its amplitude is biased upward by the selection
+itself, and fitting the magnitude law to those points would bake that bias in.
+Everything downstream keeps the two channels apart: the journal tags each record,
+the dashboard and the public page list them separately, and `audit.py` needs an
+explicit `--include-retro` to score them at all. A confirmation is evidence the
+ground moved; it is not a detection the station made on its own.
+
 ### Autonomous mode: publish to a remote site
 The device can run headless (WiFi + USB-C power only) and push its snapshot to
 a public website every minute. Enable the `publish:` block in `config.yaml`:

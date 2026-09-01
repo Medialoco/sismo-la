@@ -225,6 +225,41 @@ const unsigned long HEARTBEAT_MS = 10000;
 unsigned long lastHeartbeatMs = 0;
 unsigned long sampleCount = 0;
 
+// --- Continuous envelope ---
+//
+// The STA/LTA trigger above has to decide, unaided, tens of thousands of times
+// a day, whether the last half second was an earthquake. That is what forces it
+// to demand a large signal-to-noise ratio: every window it examines is another
+// chance to be wrong, so the threshold has to sit far out in the tail of the
+// noise. Measured on this station the amplitude it needs is ~2 mg for an
+// earthquake-shaped wavetrain, which is M3.9 at 30 km.
+//
+// The catalog, however, publishes the origin time of every earthquake. Looking
+// at a KNOWN instant is a completely different statistical problem: a handful
+// of windows per earthquake instead of ~170000 a day, so the same false-alarm
+// budget is met at a far lower threshold, and the test can average over the
+// whole wavetrain instead of reacting inside half a second. Measured gain on
+// this station's own noise: x7.7 in amplitude, i.e. 1.0 magnitude unit.
+//
+// All that costs is keeping a record of how much the ground moved, second by
+// second, so there is something to go back and look at. That is this block: per
+// second, the peak and the rms of the same 0.7-12 Hz signal the trigger uses,
+// batched to keep the Bridge quiet. 2 numbers a second, ~1.6 MB a day on the
+// Linux side.
+//
+// This is NOT a second detector and must never be presented as one. A shake
+// found this way was found because the catalog said where to look; the
+// distinction is carried all the way to the published snapshot.
+const unsigned long ENV_BUCKET_MS = 1000;   // one envelope sample per second
+const int ENV_BATCH = 10;                   // one notification per 10 samples
+unsigned long envBucketStartMs = 0;
+float envPeak = 0.0f;
+float envSumSq = 0.0f;
+unsigned long envSamples = 0;
+unsigned long envPkUg[ENV_BATCH];
+unsigned long envRmsUg[ENV_BATCH];
+int envFilled = 0;
+
 bool sensorOk = false;
 
 // Status goes out on both transports for the same reason events do: the Bridge
@@ -390,6 +425,68 @@ void setup() {
 
   lastHeartbeatMs = millis();
   sampleCount = 0;
+  envBucketStartMs = lastHeartbeatMs;
+}
+
+// Accumulate one sample into the current one-second envelope bucket, and ship a
+// batch once ENV_BATCH buckets are closed.
+//
+// Runs unconditionally, event or no event: the whole point is a continuous
+// record, and an earthquake that never reached TRIGGER_ON is exactly the case
+// this is for.
+void updateEnvelope(float band, unsigned long nowMs) {
+  if (band > envPeak) envPeak = band;
+  envSumSq += band * band;
+  envSamples++;
+
+  if (nowMs - envBucketStartMs < ENV_BUCKET_MS) return;
+
+  const float rms = (envSamples > 0) ? sqrtf(envSumSq / (float)envSamples) : 0.0f;
+  if (envFilled < ENV_BATCH) {
+    // Micro-g integers: the floor is ~360 ug and the largest shake ever
+    // recorded here 1.83 g, so one unit of quantisation is 0.3% of the floor
+    // and the range needs seven digits. Integers also keep this off newlib's
+    // floating-point printf, which this platform is not built with.
+    envPkUg[envFilled] = (unsigned long)(envPeak * 1e6f + 0.5f);
+    envRmsUg[envFilled] = (unsigned long)(rms * 1e6f + 0.5f);
+    envFilled++;
+  }
+  envPeak = 0.0f;
+  envSumSq = 0.0f;
+  envSamples = 0;
+  envBucketStartMs = nowMs;
+
+  if (envFilled >= ENV_BATCH) {
+    emitEnvelope(nowMs, envFilled);
+    envFilled = 0;
+  }
+}
+
+// One notification per batch, as a compact string.
+//
+// A string rather than N numeric arguments because the batch length is a tuning
+// knob and an RPC signature is not: changing ENV_BATCH must not require a
+// matching change in the Python handler's parameter list.
+//
+// `tEndMs` is the MCU clock at the end of the LAST bucket. The Python half
+// re-anchors the batch on its own NTP-synced wall clock and uses these
+// millisecond values only for the offsets WITHIN the batch. That is not a
+// detail: this MCU's clock runs 1099 ppm slow against Linux (measured over a
+// 2.6 h run), so an absolute time derived from millis() drifts by 10 s in three
+// hours, which is the width of the arrival window the search uses. Within one
+// 10 s batch the same drift is 11 ms.
+void emitEnvelope(unsigned long tEndMs, int n) {
+  char payload[220];
+  int at = 0;
+  for (int i = 0; i < n; i++) {
+    const int wrote = snprintf(payload + at, sizeof(payload) - at,
+                               (i == 0) ? "%lu:%lu" : ",%lu:%lu",
+                               envPkUg[i], envRmsUg[i]);
+    if (wrote <= 0 || at + wrote >= (int)sizeof(payload)) break;
+    at += wrote;
+  }
+  payload[at] = '\0';
+  Bridge.notify("mcu_envelope", tEndMs, (unsigned long)n, ENV_BUCKET_MS, payload);
 }
 
 void loop() {
@@ -397,6 +494,7 @@ void loop() {
 
   const Reading r = readSample();
   sampleCount++;
+  updateEnvelope(r.band, millis());
 
   // Update the averages (the LTA is frozen during an event so it does not get
   // self-contaminated by the seismic signal).

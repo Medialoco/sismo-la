@@ -213,20 +213,58 @@ becomes a required magnitude, ±0.45 at 1σ, extrapolated below M3:
 
 | | 10 km | 30 km | 50 km | 100 km | 160 km |
 |---|---|---|---|---|---|
-| M needed | 3.3 | 4.1 | 4.5 | 5.1 | 5.5 |
+| M needed | 3.1 | 3.9 | 4.3 | 4.9 | 5.3 |
 
-Crossed with the real catalog — 2,184 events of M ≥ 2 within 160 km over five
+Crossed with the real catalog — 2,185 events of M ≥ 2 within 160 km over five
 years — and converting the fit's 0.39 log10 scatter into a per-event
-probability, this station should feel **1.3 to 6.6 genuine earthquakes a year**
-(the range is unknown site amplification, ×1 to ×4). That is a mean wait of 56
-to 279 days for *one* of the 8 points. Only 9 of those 2,184 events had a better
-than even chance of being felt; 2,082 had less than 1%. The station is not
-waiting for "an earthquake", it is waiting for one of a handful of specific
-ones.
+probability, this station should feel **2.0 to 9.8 genuine earthquakes a year**
+(the range is unknown site amplification, ×1 to ×4). That is a mean wait of 37
+to 184 days for *one* of the 8 points, and a 6 to 28% chance of a first one
+before 13 September. The station is not waiting for "an earthquake", it is
+waiting for one of a handful of specific ones.
 
-**So: probability of a first genuine detection before the deadline on
-13 September: 4 to 19%.** Probably not. I would rather write that here than have
-you wonder why the calibration counter still reads zero.
+### Then measuring it showed what was actually in the way
+
+Chasing that threshold, I kept assuming the obstacle was the sensor. It is not,
+or not only. A detector that watches blindly has to be right about roughly
+**170,000 windows a day**, and every one of them is a chance to cry wolf. That
+false-alarm budget — not the noise — is what forces the threshold so far above
+the floor.
+
+But the USGS publishes the origin time of every earthquake within minutes. So
+the station stopped only *waiting* to be shaken. It now records a continuous
+envelope of the ground motion, a peak and an rms every second, and when the
+catalog announces an event it computes when the waves must have arrived and goes
+back to read that instant. A handful of windows per earthquake instead of
+170,000 a day buys the same statistical confidence far closer to the noise, and
+the test can average over the whole wavetrain instead of having to react inside
+half a second.
+
+Measured on this station's own noise, both detectors simulated on the same
+signals: **a factor 7 to 8 in amplitude, a full magnitude unit** — five times
+what the band-pass filter was worth, for no hardware and no money.
+
+| | earthquakes felt per year | mean wait | before 13 September |
+|---|---|---|---|
+| Blind trigger only | 2.0 – 9.8 | 37–184 days | 6–28% |
+| **Plus retrospective search** | **9.9 – 36.9** | **10–37 days** | **28–70%** |
+
+**And these are two different claims, so this project never merges them.** A
+shake the station triggered on by itself is a detection. A shake found because
+the catalog said which second to examine is a **confirmation** — real evidence
+that the ground moved under the box, but the station did not find it unaided.
+The journal tags every record, the dashboard and the public page keep two
+separate lists, and the 0-of-8 counter admits only the first kind. Blurring that
+line would make the whole write-up worthless, and it would be easy to do
+accidentally, which is why the separation is enforced in the data structures
+rather than in the prose.
+
+Two limits travel with those figures. The low threshold is only reachable when
+the site is at rest — measured, the envelope wanders by a factor 4 during a busy
+hour and by 3% during a quiet one — and this site is at rest about half the time,
+which is what the table assumes. And the search cannot reach backwards: the
+station kept no continuous record before 1 September, only the shakes that
+crossed the trigger, which are exactly the wrong ones.
 
 The honest summary of the feasibility question is therefore: **the difficult
 half of the condition is already met** — autonomy, self-calibration, continuous

@@ -90,6 +90,38 @@
     .progress { height: 5px; border-radius: 3px; background: #202834; margin-top: 6px; overflow: hidden; }
     .progress > div { height: 100%; border-radius: 3px; background: var(--blue); transition: width .5s; }
 
+    /* ---- The two channels ----
+       Solid marker = the station triggered by itself. Dashed = the catalog
+       supplied the instant and the envelope was re-read there. Same colour,
+       because both are events the station recognised; different shape,
+       because only one of them is a detection. */
+    .cat { display: flex; align-items: center; gap: 7px; }
+    .cat .sw { flex: none; width: 11px; height: 11px; border-radius: 50%;
+               border: 2px solid var(--red); }
+    .cat .sw.dash { border-style: dashed; }
+
+    /* ---- Retrospective search ---- */
+    .pill.bad { background: rgba(255,90,90,.18); color: #ff8080; }
+    .pill.off { background: rgba(139,152,165,.2); color: var(--muted); }
+    /* The envelope dying is invisible from anywhere else: the trigger keeps
+       working, the dashboard keeps answering, and the retrospective search
+       just silently stops having anything to search. */
+    .warn { display: none; margin-top: 9px; padding: 7px 9px; border-radius: 6px;
+            font-size: 12px; font-weight: 600; color: #ff8080;
+            background: rgba(255,90,90,.16); border: 1px solid rgba(255,90,90,.35); }
+    .warn.show { display: block; }
+    .warn .detail { font-weight: 400; opacity: .85; }
+    .conf {
+      border: 1px solid var(--line); border-left: 3px dashed var(--red);
+      border-radius: 9px; padding: 8px 10px; margin: 8px 0; font-size: 12.5px;
+    }
+    #retro-card .stat-row span:last-child { font-variant-numeric: tabular-nums; }
+    .conf { font-variant-numeric: tabular-nums; }
+    .conf .time { float: right; color: var(--muted); font-size: 11px; }
+    .conf .z { color: var(--red); font-weight: 600; }
+    .conf .place { color: var(--muted); margin-top: 4px; }
+    .conf .raw { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
     /* ---- Detections ---- */
     .det {
       border: 1px solid var(--line); border-radius: 9px;
@@ -177,8 +209,36 @@
         </div>
       </div>
 
+      <div class="card" id="retro-card" style="display:none">
+        <h2 class="cat"><span class="sw dash"></span>Confirmed &middot; known time
+          (<span id="retro-count">0</span>)</h2>
+        <div class="stat-row">
+          <span>Retrospective search</span><span id="retro-pill" class="pill wait">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Confirms above</span><span id="retro-z">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Cataloged events scanned</span><span id="retro-scanned">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Last scan</span><span id="retro-last">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Envelope held</span><span id="retro-env">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Last envelope write</span><span id="retro-write">--</span>
+        </div>
+        <div id="retro-warn" class="warn"></div>
+        <div id="retro-list"></div>
+        <div class="note">The catalog supplied the instant, so nothing here is a
+          detection the station made on its own.</div>
+      </div>
+
       <div class="card">
-        <h2>Sensor detections (<span id="det-count">0</span>)</h2>
+        <h2 class="cat"><span class="sw"></span>Triggered &middot; autonomous
+          (<span id="det-count">0</span>)</h2>
         <div id="det-list"><div class="empty">Waiting for the ground to shake…</div></div>
       </div>
 
@@ -369,8 +429,99 @@
       } else {
         s.detections.forEach((d) => list.appendChild(detCard(d)));
       }
+      renderRetro(s);
       renderHealth(s);
       document.getElementById("updated").textContent = "updated " + fmtTime(s.updated);
+    }
+
+    const mg = (v) => (typeof v === "number" ? (v * 1000).toFixed(2) : "—");
+    const num = (v, d) => (typeof v === "number" ? v.toFixed(d) : "—");
+    function ageOf(iso) {
+      const t = new Date(iso).getTime();
+      return isFinite(t) ? (Date.now() - t) / 1000 : null;
+    }
+
+    /* The retrospective channel, kept in its own card because it is not a
+       detection: the catalog said where to look. It runs on a continuous
+       envelope the MCU sends once a second, and when that stream dies nothing
+       else on this page changes — the trigger still fires and the dashboard
+       still answers, exactly the shape of failure this station has been bitten
+       by before. So the envelope is watched here rather than inferred. */
+    let envSeen, envSeenAt = 0;
+
+    function renderRetro(s) {
+      const card = document.getElementById("retro-card");
+      const r = s.retro;
+      if (!r) { card.style.display = "none"; return; }
+      card.style.display = "";
+
+      const found = r.confirmed || [];
+      const env = r.envelope || {};
+      const wAge = env.last_write ? ageOf(env.last_write) : null;
+
+      document.getElementById("retro-count").textContent = r.n_confirmed ?? found.length;
+      document.getElementById("retro-z").textContent =
+        r.z_min != null ? `z ${r.z_min.toFixed(1)}` : "—";
+      document.getElementById("retro-scanned").textContent = r.n_scanned == null
+        ? "—" : `${r.n_scanned} (${r.scanned_last_pass ?? 0} last pass)`;
+      document.getElementById("retro-last").textContent =
+        r.last_scan ? fmtAge(ageOf(r.last_scan)) + " ago" : "never";
+      document.getElementById("retro-env").textContent = env.days
+        ? `${env.days}/${env.retention_days} days · ${(env.bytes / 1024).toFixed(0)} kB`
+        : "nothing";
+      document.getElementById("retro-write").textContent = wAge == null
+        ? "never" : `${fmtAge(wAge)} ago · ${env.samples_written ?? 0} samples`;
+
+      // The counter standing still is the same fault seen from the other side,
+      // and it catches the case where a day file left over from yesterday keeps
+      // the coverage figures looking plausible.
+      if (env.samples_written !== envSeen) {
+        envSeen = env.samples_written;
+        envSeenAt = Date.now();
+      }
+      const stalled = (Date.now() - envSeenAt) / 1000;
+
+      const bits = [];
+      if (r.enabled) {
+        if (!env.days) bits.push("no envelope file");
+        if (wAge == null) bits.push("never written");
+        else if (wAge > 90) bits.push("last write " + fmtAge(wAge) + " ago");
+        if (env.samples_written != null && stalled > 90) {
+          bits.push("stuck at " + env.samples_written + " samples");
+        }
+      }
+
+      const pill = document.getElementById("retro-pill");
+      if (!r.enabled) { pill.textContent = "off"; pill.className = "pill off"; }
+      else if (bits.length) { pill.textContent = "blind"; pill.className = "pill bad"; }
+      else { pill.textContent = "watching"; pill.className = "pill ok"; }
+
+      const warn = document.getElementById("retro-warn");
+      if (bits.length) {
+        warn.innerHTML = "NO ENVELOPE FROM THE MCU"
+          + '<div class="detail">' + bits.join(" &middot; ")
+          + " &middot; nothing left to search</div>";
+        warn.classList.add("show");
+      } else {
+        warn.classList.remove("show");
+      }
+
+      const list = document.getElementById("retro-list");
+      list.innerHTML = found.length
+        ? "" : '<div class="empty">Nothing confirmed yet.</div>';
+      found.slice().reverse().forEach((f) => {
+        const el = document.createElement("div");
+        el.className = "conf";
+        el.innerHTML =
+          `<div><b>M${num(f.magnitude, 1)}</b> at ${num(f.distance_km, 0)} km` +
+          ` · <span class="z">z ${num(f.z, 1)}</span>` +
+          `<span class="time">${fmtTime(f.origin_time)}</span></div>` +
+          `<div class="place">${f.place || ""}</div>` +
+          `<div class="raw">peak ${mg(f.peak_g)} mg · rms ${mg(f.rms_g)} mg · ` +
+          `baseline ${mg(f.baseline_g)} mg · ${num(f.window_s, 0)} s window ` +
+          `· +${num(f.lag_s, 0)} s</div>`;
+        list.appendChild(el);
+      });
     }
 
     // The banner is the only thing on this page that reports on the page's own

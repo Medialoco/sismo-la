@@ -23,6 +23,12 @@ distance_state.json
 # Replay it with `python audit.py`; do not commit it.
 event_log.jsonl
 events_log.jsonl
+# Findings of the retrospective search, keyed by USGS event id. Rebuilt by
+# rescanning the envelope, so it is a cache, not a record.
+retro_state.json
+# The continuous envelope: ~1.6 MB per day per station, and meaningless
+# anywhere but the site that recorded it.
+envelope/
 
 # OS / editors
 .DS_Store

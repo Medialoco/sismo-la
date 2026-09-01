@@ -88,8 +88,13 @@ def _same_but_for_time(old: bytes, new: bytes) -> bool:
     USGS on a timer, so both change without the station having observed
     anything. What matters is what the device did: its detections, its
     confirmed history, and the state of the models.
+
+    ``confirmed`` is in the list because a retrospective confirmation is news --
+    arguably the most interesting news this station can produce -- and it does
+    not touch any of the other keys. Left out, a station whose only event of the
+    week was found retrospectively would publish nothing at all.
     """
-    keep = ("recent", "detections", "history", "calibration", "ai")
+    keep = ("recent", "detections", "history", "confirmed", "calibration", "ai")
     try:
         a, b = json.loads(old), json.loads(new)
     except (ValueError, TypeError):

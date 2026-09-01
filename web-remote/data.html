@@ -4,14 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sismo-LA — the numbers</title>
-  <meta name="description" content="Every reading the Sismo-LA station published: confirmed earthquakes, unmatched shakes, and the CSV behind them." />
+  <meta name="description" content="Every reading the Sismo-LA station published: the earthquakes it caught, everything else it felt, the ones found afterwards at a known time, and the CSV behind them." />
   <!--
     The tables behind the map. Reads the same station.json as index.html, so
     it needs no server of its own and stays correct when the device is offline.
 
-    Two tables on purpose:
+    Three tables on purpose:
       - the calibration record, which accumulates and never expires;
-      - a rolling window of everything felt, most of which is not an earthquake.
+      - a rolling window of everything felt, most of which is not an earthquake;
+      - the earthquakes found afterwards at the instant the catalogue supplied.
+    The first two are the autonomous channel and never contain a row from the
+    third: the station triggered on those by itself. The third one it did not
+    notice at all. They are counted apart because they mean different things.
+
     CSV is generated in the browser from the same data, so a download can never
     disagree with what is on screen.
   -->
@@ -63,6 +68,15 @@
     main { max-width: 940px; margin: 0 auto; padding: 26px 16px 64px; }
     section + section { margin-top: 36px; }
     h2 { font-size: 15px; font-weight: 600; letter-spacing: -.005em; margin: 0; }
+    /* Which channel a table belongs to, in the same solid/dashed shorthand the
+       map uses. The swatch is red because these are events the station
+       recognised; the label itself is chrome and stays neutral. */
+    .cat { display: inline-flex; align-items: center; gap: 6px; flex: none;
+           font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+           color: var(--muted); }
+    .cat .sw { flex: none; width: 11px; height: 11px; border-radius: 50%;
+               border: 2px solid var(--dev); }
+    .cat .sw.known { border-style: dashed; }
     .note { color: var(--muted); font-size: 13px; margin: 0 0 12px; max-width: 66ch; }
     .bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 6px; }
     .count { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums;
@@ -111,7 +125,8 @@
   <main>
     <section>
       <div class="bar">
-        <h2>Confirmed earthquakes</h2>
+        <h2>Earthquakes it caught</h2>
+        <span class="cat"><span class="sw"></span>Triggered &middot; autonomous</span>
         <span class="count" id="hcount"></span>
         <button type="button" class="csv" id="hcsv" disabled>Download CSV</button>
       </div>
@@ -130,6 +145,7 @@
     <section>
       <div class="bar">
         <h2 id="rtitle">Everything felt</h2>
+        <span class="cat"><span class="sw"></span>Triggered &middot; autonomous</span>
         <span class="count" id="rcount"></span>
         <button type="button" class="csv" id="rcsv" disabled>Download CSV</button>
       </div>
@@ -142,6 +158,29 @@
           <th>PGA g</th><th>Duration ms</th><th>Freq Hz</th>
           <th>Device Mw</th><th>Device km</th>
           <th class="l">Catalogue</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section id="csection" style="display:none">
+      <div class="bar">
+        <h2>Earthquakes found afterwards</h2>
+        <span class="cat"><span class="sw known"></span>Confirmed &middot; known time</span>
+        <span class="count" id="ccount"></span>
+        <button type="button" class="csv" id="ccsv" disabled>Download CSV</button>
+      </div>
+      <p class="note">The catalogue supplied the instant; the station never
+        triggered on these. <b>z</b> is how far its recorded envelope stood above
+        the local noise of the preceding three minutes<span id="czmin"></span>.
+        Peak, rms and baseline are in g.</p>
+      <div class="wrap"><table id="ctable">
+        <thead><tr>
+          <th class="l">When (LA)</th>
+          <th>USGS Mw</th><th>USGS km</th>
+          <th>z</th><th>Window s</th><th>Lag s</th>
+          <th>Peak g</th><th>RMS g</th><th>Baseline g</th>
+          <th class="l">Place</th>
         </tr></thead>
         <tbody></tbody>
       </table></div>
@@ -254,6 +293,40 @@
           d.usgs ?? '', d.usgs_km ?? '', d.place ?? '', d.p ?? '']));
     }
 
+    /* The third channel. Kept in its own table with its own CSV: these rows are
+       not detections and must never be countable together with the two above.
+       A snapshot from a station without the retrospective search has no such
+       key, and the section then stays hidden. */
+    function fillConfirmed(confirmed, retro) {
+      if (!confirmed) return;
+      document.getElementById('csection').style.display = '';
+      const body = document.querySelector('#ctable tbody');
+      document.getElementById('ccount').textContent =
+        confirmed.length ? `${confirmed.length} events` : '';
+      const z = retro && typeof retro.z_min === 'number' ? retro.z_min : null;
+      document.getElementById('czmin').textContent =
+        z != null ? `, and confirmed above ${z.toFixed(1)}` : '';
+
+      if (!confirmed.length) {
+        body.innerHTML = '<tr><td colspan="10" class="empty">' +
+          (hasSnapshot ? 'Nothing confirmed yet.' : 'No snapshot.') +
+          '</td></tr>';
+        return;
+      }
+      body.innerHTML = confirmed.map((c) =>
+        '<tr>' + cell(stamp(c.t), 'l') +
+        cell(num(c.usgs, 1)) + cell(num(c.usgs_km, 1)) +
+        cell(num(c.z, 1), 'dev') + cell(num(c.win, 0)) + cell(num(c.lag, 0)) +
+        cell(num(c.pga, 5), 'dev') + cell(num(c.rms, 5)) + cell(num(c.base, 5)) +
+        cell(c.place || '—', c.place ? 'l' : 'l off') + '</tr>').join('');
+
+      wire(document.getElementById('ccsv'), 'sismo-la-confirmed.csv',
+        ['time_utc', 'event_id', 'usgs_mw', 'usgs_km', 'place', 'z', 'window_s',
+         'lag_s', 'peak_g', 'rms_g', 'baseline_g'],
+        confirmed.map((c) => [c.t, c.id ?? '', c.usgs, c.usgs_km, c.place ?? '',
+          c.z, c.win, c.lag, c.pga, c.rms, c.base]));
+    }
+
     let hasSnapshot = true;
 
     const ago = (ms) => {
@@ -302,6 +375,10 @@
       markFreshness(s);
       fillHistory(s.history || []);
       fillRecent(shakes(s), s.window_days || 7);
+      fillConfirmed(
+        Array.isArray(s.confirmed) ? s.confirmed
+          : (s.retro && s.retro.enabled ? [] : null),
+        s.retro);
     })();
   </script>
 </body>

@@ -35,6 +35,29 @@ from datetime import datetime, timedelta, timezone
 # definition alongside the new one so the two can still be related.
 SCHEMA = 2
 
+# Every record carries a `kind`, and the two values are not interchangeable.
+#
+#   TRIGGERED - the station's own STA/LTA fired. Nobody told it to look. This is
+#               the only kind that counts as a detection the station made.
+#   RETRO     - the USGS published an origin time, the arrival instant was
+#               computed from it, and the recorded envelope was found to be
+#               significantly elevated there. Real evidence that the ground
+#               moved, and NOT an autonomous detection: without the catalog
+#               there would have been nothing to look at.
+#
+# Records written before 2026-09-01 have no `kind` field; `kind_of` reads those
+# as TRIGGERED, which is what they were — the retrospective path did not exist.
+# Every reader in this module filters on kind, so the two can never be pooled by
+# accident, and neither can a caller that forgets: `matched_pairs` and
+# `recent_events` return TRIGGERED only, and confirmations have their own
+# accessor.
+TRIGGERED = "triggered"
+RETRO = "retro"
+
+
+def kind_of(record: dict) -> str:
+    return record.get("kind") or TRIGGERED
+
 
 class EventLog:
     """Journal writer. Never raises: losing a log line must not kill the run."""
@@ -55,6 +78,7 @@ class EventLog:
 
         record = {
             "schema": SCHEMA,
+            "kind": TRIGGERED,
             "wall_time": _iso(evt.get("recv_time")),
             "mcu_t_ms": evt.get("t_ms"),
             "pga_g": evt.get("pga_g"),
@@ -65,6 +89,30 @@ class EventLog:
             "prior": prior,
             "match": _match_record(evt, match),
         }
+        try:
+            directory = os.path.dirname(self.path)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
+        except OSError as e:
+            print(f"[journal] could not append: {e}", flush=True)
+
+    def append_retro(self, finding: dict) -> None:
+        """Record one retrospective confirmation.
+
+        Deliberately a different shape from a triggered record, not the same
+        shape with a flag: there is no ``pga_g`` here because nothing crossed a
+        trigger, and there is a ``z`` because significance against the local
+        noise is the whole content of the claim. Anything that tried to read one
+        as the other would fail loudly rather than quietly average them.
+        """
+        if not self.enabled:
+            return
+        record = dict(finding)
+        record["schema"] = SCHEMA
+        record["kind"] = RETRO
+        record["wall_time"] = record.get("scanned")
         try:
             directory = os.path.dirname(self.path)
             if directory:
@@ -117,9 +165,16 @@ def matched_pairs(path: str, limit: int = 400) -> list[dict]:
     honest out-of-sample estimate, not the training residual the dashboard
     quotes about itself. Replay matches are excluded: they are true by
     construction and would flatter the record. See the module docstring.
+
+    Retrospective confirmations are excluded too, for the harder reason: they
+    are real, but the station did not find them by itself. Mixing them into the
+    scatter that documents autonomous performance would make it say something it
+    does not measure. They have their own accessor, ``confirmed_events``.
     """
     out: list[dict] = []
     for r in read(path):
+        if kind_of(r) != TRIGGERED:
+            continue
         m, p = r.get("match"), r.get("prior") or {}
         if not m or m.get("synthetic"):
             continue
@@ -151,6 +206,8 @@ def recent_events(path: str, days: float = 30.0, limit: int = 300) -> list[dict]
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     out: list[dict] = []
     for r in read(path):
+        if kind_of(r) != TRIGGERED:
+            continue
         when = _parse(r.get("wall_time"))
         if when is None or when < cutoff:
             continue
@@ -172,6 +229,44 @@ def recent_events(path: str, days: float = 30.0, limit: int = 300) -> list[dict]
             entry["usgs_km"] = _round(m.get("distance_km"), 1)
             entry["place"] = m.get("place") or ""
         out.append(entry)
+    out.reverse()
+    return out[:limit]
+
+
+def confirmed_events(path: str, days: float = 30.0, limit: int = 200) -> list[dict]:
+    """Cataloged earthquakes found at their computed arrival time, newest first.
+
+    A separate list from ``recent_events`` on purpose, and it must stay separate
+    everywhere it is displayed. These are not shakes the station noticed; they
+    are shakes the station had recorded without noticing, which the catalog then
+    pointed at. Both facts matter and neither survives being merged with the
+    other.
+
+    ``z`` travels with every entry because it is the claim: how far the envelope
+    stood above the local noise of the preceding minutes. An entry without it
+    would be an assertion instead of a measurement.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    out: list[dict] = []
+    for r in read(path):
+        if kind_of(r) != RETRO or not r.get("confirmed"):
+            continue
+        when = _parse(r.get("origin_time"))
+        if when is None or when < cutoff:
+            continue
+        out.append({
+            "t": r.get("origin_time"),
+            "id": r.get("event_id") or "",
+            "usgs": _round(r.get("magnitude"), 2),
+            "usgs_km": _round(r.get("distance_km"), 1),
+            "place": r.get("place") or "",
+            "z": _round(r.get("z"), 1),
+            "win": r.get("window_s"),
+            "lag": _round(r.get("lag_s"), 1),
+            "pga": r.get("peak_g"),
+            "rms": r.get("rms_g"),
+            "base": r.get("baseline_g"),
+        })
     out.reverse()
     return out[:limit]
 

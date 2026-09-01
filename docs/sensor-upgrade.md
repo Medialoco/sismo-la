@@ -5,10 +5,24 @@ carries the date it was read, because all three move.
 
 The station's at-rest noise floor was measured that morning to be the
 LSM6DSOX's own electrical noise, in two independent bands, to within 4-10% of
-the datasheet white-noise line (see `AGENTS.md`, "The seismic band-pass"). The
-software has run out of room. This document answers the only question left:
-**which quieter accelerometer can be plugged into this board, at what cost in
-hand-work, and what does it buy in detections per year.**
+the datasheet white-noise line (see `AGENTS.md`, "The seismic band-pass"). No
+*filter* can go further: the noise is white and inside the seismic band, so the
+only bandwidth left to remove is bandwidth an earthquake needs. This document
+answers the question that follows: **which quieter accelerometer can be plugged
+into this board, at what cost in hand-work, and what does it buy in detections
+per year.**
+
+One correction to the framing, made the same afternoon. An earlier version of
+this paragraph said "the software has run out of room", and that was wrong by
+one word. The filter had; the *blind trigger* had not, because its threshold is
+set by a false-alarm budget rather than by the noise. Spending that budget
+differently — recording a continuous envelope and re-reading it at the arrival
+time the USGS catalog implies — is worth a factor 7 to 8 in amplitude, a full
+magnitude unit, and it is already deployed (`AGENTS.md`, "Retrospective
+search"). Everything below still stands, because that trick needs the catalog to
+say when to look and therefore cannot make the station detect anything *on its
+own*. A quieter sensor is still the only route to a lower autonomous threshold,
+and the two gains multiply rather than overlap.
 
 Scope note: the question asked was specifically about *pluggable* boards, not a
 soldering-and-PCB-design project. That constraint is respected below, and it

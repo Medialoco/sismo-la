@@ -72,6 +72,13 @@ def main() -> None:
              "quakes they are matched to, so the result exercises the code but "
              "measures nothing physical. Off by default, on purpose.",
     )
+    parser.add_argument(
+        "--include-retro", action="store_true",
+        help="also score retrospective confirmations. They are real ground "
+             "motion, but the catalog is what said where to look, and they are "
+             "selected for being large excursions near the noise, so their "
+             "amplitudes are biased upward. Off by default, on purpose.",
+    )
     args = parser.parse_args()
 
     records = eventlog.read(args.journal)
@@ -81,15 +88,37 @@ def main() -> None:
               "running to accumulate them.")
         return
 
-    matched = [r for r in records if r.get("match")]
+    # Two populations, and the whole point of the split is that they answer
+    # different questions. `triggered` is what the station found on its own and
+    # is the only material that says anything about autonomous performance.
+    # `retro` records are cataloged earthquakes located in the stored envelope
+    # at their computed arrival time: real ground motion, found because the
+    # catalog said where to look.
+    triggered = [r for r in records if eventlog.kind_of(r) == eventlog.TRIGGERED]
+    retro = [r for r in records if eventlog.kind_of(r) == eventlog.RETRO]
+    retro_ok = [r for r in retro if r.get("confirmed")]
+
+    matched = [r for r in triggered if r.get("match")]
     synthetic = [r for r in matched if r["match"].get("synthetic")]
     real = [r for r in matched if not r["match"].get("synthetic")]
 
     print(f"[audit] {args.journal}")
-    print(f"  detections            {len(records)}")
+    print(f"  autonomous triggers   {len(triggered)}")
     print(f"  matched to USGS       {len(matched)}"
           f"  (real {len(real)}, synthetic/replay {len(synthetic)})")
-    print(f"  unmatched             {len(records) - len(matched)}")
+    print(f"  unmatched             {len(triggered) - len(matched)}")
+    if retro:
+        print(f"  retro confirmations   {len(retro_ok)} confirmed of "
+              f"{len(retro)} scanned")
+        print("      ^ NOT autonomous detections: the catalog supplied the "
+              "instant to look at.")
+        for r in retro_ok[-5:]:
+            print(f"        M{r.get('magnitude')} @ "
+                  f"{r.get('distance_km')} km  z={r.get('z')} "
+                  f"win={r.get('window_s')}s  {r.get('place', '')}")
+    if retro and not args.include_retro:
+        print("      They are excluded from every figure below. Pass "
+              "--include-retro to score them.")
 
     if args.include_synthetic:
         scored_set = matched
@@ -132,14 +161,33 @@ def main() -> None:
     print(f"    distance                    {_fmt(_rmse(distance_log10), 'log10 km')}"
           f"   n={len(distance_log10)}")
 
-    rmse, n = in_sample_magnitude_rmse(scored_set)
+    fit_set = list(scored_set)
+    if args.include_retro and retro_ok:
+        # Only the in-sample fit can take these: a retrospective confirmation
+        # has no `prior`, because no model was asked to predict anything before
+        # it — the catalog handed over the answer along with the question. So
+        # there is no prequential residual to compute, by construction.
+        for r in retro_ok:
+            fit_set.append({
+                "pga_g": r.get("peak_g"),
+                "match": {"distance_km": r.get("distance_km"),
+                          "magnitude": r.get("magnitude")},
+            })
+        print(f"\n  *** --include-retro: {len(retro_ok)} retrospective "
+              "confirmations added to the\n  *** in-sample fit below. Their "
+              "amplitudes are selected for being large\n  *** excursions close "
+              "to the noise floor, so they are biased upward.")
+
+    rmse, n = in_sample_magnitude_rmse(fit_set)
     print("\n  In-sample (refit on all points, scored on those same points)")
     print(f"    magnitude                   {_fmt(rmse, 'Mw')}   n={n}")
     print("      ^ what the dashboard reports. Compare it with the first "
           "number above.")
 
     # --- Noise filter, scored before it learned each label ------------------
-    scored = [r for r in records if r.get("p_quake_prior") is not None]
+    # Triggered records only: the classifier never sees a retrospective
+    # confirmation, so scoring it on one would be meaningless.
+    scored = [r for r in triggered if r.get("p_quake_prior") is not None]
     if scored:
         correct = sum(
             1 for r in scored

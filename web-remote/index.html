@@ -19,6 +19,11 @@
     the very event it was supposed to be estimating. The comparison below is
     what the device actually produces.
 
+    Two channels, kept apart everywhere they appear: a solid red outline is a
+    shake the station triggered on by itself and then matched, a dashed one is
+    an earthquake it recorded without noticing, found again at the instant the
+    catalogue supplied. Only the first is a detection the station made.
+
     No station.json is a normal state; the page then shows the catalogue alone.
   -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -88,6 +93,17 @@
     #status { font-size: 13px; color: var(--muted); margin-bottom: 22px;
               font-variant-numeric: tabular-nums; }
     #status b { color: var(--text); font-weight: 600; }
+    /* The two channels, never one figure. Solid marker: the station triggered
+       by itself. Dashed: the catalogue supplied the instant. Same red, because
+       both are events the station recognised; the shape carries the route, the
+       way the map already uses shape for a point against a ring. */
+    #status .cat { margin-top: 11px; padding-left: 9px;
+                   border-left: 2px solid var(--dev); }
+    #status .cat.known { border-left-style: dashed; }
+    #status .cat .k { display: block; font-size: 10.5px; text-transform: uppercase;
+                      letter-spacing: .08em; }
+    #status .cat .v { color: var(--text); }
+    #status .cal { margin-top: 13px; }
 
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
@@ -177,6 +193,7 @@
                   background: #fec44f; }
     .legend .sw.usgs { box-shadow: inset 0 0 0 1px rgba(0,0,0,.28); }
     .legend .sw.felt { border: 2px solid var(--dev); }
+    .legend .sw.known { border: 2px dashed var(--dev); }
     .legend .scale { display: flex; gap: 3px; align-items: center; color: var(--muted); }
     .legend .scale i { width: 15px; height: 9px; border-radius: 2px;
                        box-shadow: inset 0 0 0 1px rgba(0,0,0,.16); }
@@ -228,7 +245,9 @@
           <span>M&lt;2 &middot; 2 &middot; 3 &middot; 4 &middot; 5+</span>
         </div>
         <div class="line"><span class="sw felt"></span>
-          <b>felt by the station</b></div>
+          <b>triggered</b> &middot; autonomous</div>
+        <div class="line"><span class="sw known"></span>
+          <b>confirmed</b> &middot; known time</div>
       </div>
     </div>
 
@@ -328,23 +347,36 @@
     };
     const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
 
+    const mg = (v) => (typeof v === 'number' ? (v * 1000).toFixed(2) : '—');
+
     /* The device has no map presence of its own. Where it recognised an event,
-       that event is outlined and carries what the device read. */
-    function drawUSGS(features, felt) {
+       that event is outlined and carries what the device read.
+
+       Two outlines, because there are two ways it got there. A solid ring is a
+       shake the station triggered on by itself and then matched. A dashed ring
+       is an earthquake it did not notice: the catalogue gave the instant, and
+       the recorded envelope was read again at that instant. Both are real, only
+       the first is a detection, and a solid ring wins when an event is both. */
+    function drawUSGS(features, felt, known) {
       usgsLayer.clearLayers();
       const dev = css('--dev') || '#c62b39';
       const pts = [];
       features.forEach((f) => {
         const p = f.properties || {}, [lon, lat] = f.geometry.coordinates, m = p.mag ?? 0;
         const mine = felt.get(f.id);
+        const seen = known.get(f.id);
         L.circleMarker([lat, lon], {
           radius: magRadius(m),
-          color: mine ? dev : '#6b6358', weight: mine ? 2.5 : .8,
+          color: mine || seen ? dev : '#6b6358', weight: mine || seen ? 2.5 : .8,
+          dashArray: !mine && seen ? '4,4' : null,
           fillColor: magColor(m), fillOpacity: .7,
         }).bindPopup(
           `<b>USGS M${m.toFixed(1)}</b><br>${p.place || ''}<br>${day(p.time)} ${clock(p.time)}` +
-          (mine ? `<br><b style="color:${dev}">The station read ~M${mine.dev}` +
-                  `, ${mine.dev_km} km away</b>` : '')
+          (mine ? `<br><b style="color:${dev}">Triggered &middot; autonomous</b>` +
+                  `<br>read ~M${mine.dev}, ${mine.dev_km} km away` : '') +
+          (seen ? `<br><b style="color:${dev}">Confirmed &middot; known time</b>` +
+                  `<br>z ${seen.z} over ${seen.win} s` +
+                  `<br>peak ${mg(seen.pga)} mg, noise ${mg(seen.base)} mg` : '')
         ).addTo(usgsLayer);
         pts.push([lat, lon]);
       });
@@ -404,16 +436,29 @@
                    fill-opacity=".4" stroke="${dev}" stroke-width="1.3"/>`).join('') +
         (pairs.length ? '' :
           `<text x="${mid}" y="${T + S / 2}" fill="${muted}" font-size="10.5"
-                 text-anchor="middle">no confirmed earthquake yet</text>`);
+                 text-anchor="middle">no earthquake caught yet</text>`);
     }
 
-    function fillPanel(s) {
+    /* Only a station running the retrospective search publishes this key, so a
+       snapshot without it shows the one channel it has. */
+    const confirmedOf = (s) => (Array.isArray(s.confirmed) ? s.confirmed : null);
+
+    function fillPanel(s, pairs) {
       const c = s.calibration || {};
+      const known = confirmedOf(s);
       document.getElementById('status').innerHTML =
-        `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b><br>` +
+        `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b>` +
+        `<div class="cat"><span class="k">Triggered &middot; autonomous</span>` +
+        `<span class="v"><b>${pairs.length}</b> earthquakes</span></div>` +
+        (known
+          ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
+            `<span class="v"><b>${known.length}</b> earthquakes</span></div>`
+          : '') +
+        '<div class="cal">' +
         (c.ready
           ? `Calibrated &middot; <b>${c.n_points}</b> earthquakes`
-          : `Calibration <b>${c.n_points ?? 0}</b>/${c.min_points ?? '?'} earthquakes`);
+          : `Calibration <b>${c.n_points ?? 0}</b>/${c.min_points ?? '?'} earthquakes`) +
+        '</div>';
     }
 
     const ago = (ms) => {
@@ -510,11 +555,15 @@
     }
 
     async function loadUSGS() {
-      const felt = new Map();
-      if (snap) within(shakes(snap), days).forEach((d) => { if (d.id) felt.set(d.id, d); });
+      const felt = new Map(), known = new Map();
+      if (snap) {
+        within(shakes(snap), days).forEach((d) => { if (d.id) felt.set(d.id, d); });
+        within(confirmedOf(snap) || [], days)
+          .forEach((c) => { if (c.id) known.set(c.id, c); });
+      }
       try {
         const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
-        const pts = drawUSGS((await r.json()).features || [], felt);
+        const pts = drawUSGS((await r.json()).features || [], felt, known);
         if (!fitted && pts.length) {
           map.fitBounds(L.latLngBounds(pts.concat([[LA.lat, LA.lon]])), {
             padding: [24, 24],
@@ -542,13 +591,17 @@
         if (days > max) days = max;
         slider.value = days;
 
-        // The scatter is not windowed: it is every earthquake ever confirmed.
+        // The scatter is not windowed: it is every earthquake the station
+        // triggered on and matched, ever. Retrospective confirmations are not
+        // in it and must not be -- the device never put a magnitude on those.
         const pairs = (snap.history || []).map((h) => ({ usgs: h.usgs, dev: h.dev }));
-        fillPanel(snap);
+        fillPanel(snap, pairs);
         drawChart(pairs);
+        const known = confirmedOf(snap);
         const bad = staleness(snap);
-        b.innerHTML = bad || (pairs.length
-          ? `${pairs.length} earthquakes caught` : 'device reporting');
+        b.innerHTML = bad || (known
+          ? `${pairs.length} triggered &middot; ${known.length} confirmed`
+          : (pairs.length ? `${pairs.length} earthquakes caught` : 'device reporting'));
         b.className = bad ? 'badge bad' : 'badge on';
       } catch (e) {
         snap = null;
