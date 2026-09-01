@@ -15,10 +15,12 @@ We fill this page in as the project progresses.
 
 ## Quality checklist (Content Guidelines)
 
-- [ ] **Name**: a complete sentence, describing *what it does*, catchy, no URL.
+- [x] **Name**: a complete sentence, describing *what it does*, catchy, no URL.
       (Not "Arduino UNO Q project" but e.g. "A neighborhood seismograph that
-      learns from real Los Angeles earthquakes".)
-- [ ] **Pitch**: a single sentence, does not duplicate the name, no URL.
+      learns from real Los Angeles earthquakes".) → drafted in
+      `hackster-story.md`, with two alternates.
+- [x] **Pitch**: a single sentence, does not duplicate the name, no URL.
+      → drafted; shares no significant word with the name.
 - [ ] **Cover image**: high resolution, good lighting, **no text**, shows the end
       result (not a tangle of breadboard wires). 4:3 format.
 - [ ] **Difficulty**: accurate.

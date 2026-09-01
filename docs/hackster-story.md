@@ -7,13 +7,24 @@ Draft for the project page on hackster.io, following the structure in
 
 ## Name
 
-**Sismo-LA: a seismograph that learns from real Los Angeles earthquakes**
+**This seismograph calibrates itself on real Los Angeles earthquakes**
+
+> The rules ask for a sentence that says *what it does*, not a label. The old
+> title ("Sismo-LA: a seismograph that learns…") led with a project codename,
+> which means nothing to a juror scrolling a list. Alternates, same idea:
+> - *A neighborhood seismograph that learns its own scale from every quake it feels*
+> - *It feels the ground, asks the USGS what really happened, and grades itself*
 
 ## Pitch
 
-A self-calibrating earthquake sensor for the Arduino UNO Q: it compares every
-shake it feels with the official USGS catalog, learns its own transfer
-function, and gets more accurate with every quake — no lab equipment needed.
+A cheap accelerometer can feel the ground move but has no idea how big the
+earthquake was — so this Arduino UNO Q checks every shake against the USGS
+catalog, works out the conversion on its own, and keeps that ability when the
+network goes away.
+
+> Deliberately avoids repeating the name, states the problem before the
+> solution, and claims nothing the code does not do: it measures a quake that
+> has already happened, it never forecasts one.
 
 ## Categories (max 3)
 
