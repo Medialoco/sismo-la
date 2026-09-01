@@ -321,8 +321,29 @@ class SharedState:
 
 
 def synth_event_from_quake(q: usgs.Quake) -> dict:
-    """Synthesize a plausible sensor reading for a real cataloged quake, using
-    standard attenuation shapes + noise. Used by the replay demo mode."""
+    """Synthesize a sensor reading for a real cataloged quake. Replay mode only.
+
+    The amplitude below comes from `0.7*M - 1.3*log10 R - 1.9`, which is NOT the
+    reference law and is known to be wrong: measured against 12324 PGA values
+    recorded by USGS ShakeMap stations during 40 southern-California
+    earthquakes, it over-predicts ground motion by 37.9x. The law fitted to
+    those records is `REF_GMPE` in pipeline.py; that is the one to use for
+    anything physical, and the two must not be reconciled without reading this.
+
+    The divergence is deliberate. Corrected amplitudes would put nearly every
+    cataloged quake below this station's measured trigger floor (~0.0044 g), so
+    a physically honest replay would show an empty dashboard. Replay is a
+    demonstration of the software, not of the instrument, and it is allowed to
+    be generous because nothing physical is claimed from it.
+
+    Consequence: replay amplitudes are not physical, and no sensitivity or
+    "what can it feel" statement may be derived from a replay run. What replay
+    does exercise is the chain — matching, fitting, persistence, inference —
+    and even that is circular, since the calibration fits the inverse of the law
+    used here. Note also that these events bypass `find_match` entirely (main()
+    pairs them with their source quake), so the plausibility veto built on
+    REF_GMPE never sees them.
+    """
     r = max(q.distance_km, 5.0)
     log_pga = 0.7 * q.magnitude - 1.3 * math.log10(r) - 1.9 + random.gauss(0, 0.15)
     pga = max(10 ** log_pga, 1e-5)

@@ -24,6 +24,12 @@ Equally: when the replay timelapse is on screen, the narration must already
 have said it is a replay. Showing a converging calibration without that word is
 the one thing that would make the whole project look dishonest.
 
+Two words, not one: **"a replay, and its shaking levels are synthetic and
+deliberately too large"**. The replay generator keeps an attenuation law
+measured to over-predict by 38×, because at real amplitudes almost nothing in
+the catalog would trigger. So any shot cut from replay shows the software
+working and must never be offered as evidence of what the sensor can feel.
+
 ---
 
 ## Shot 1 — Hook (0:00–0:15)
@@ -72,8 +78,11 @@ desk. Wait for the heartbeat line first so the noise floor is visible.
 *On screen:* `docs/video/calibration-timelapse.mp4`.
 
 > This next part is a replay, not a live recording. It feeds the last day of
-> real cataloged quakes through the pipeline as synthetic shakes, so you can
-> watch in thirty seconds what takes weeks in the field.
+> real cataloged quakes through the pipeline as synthetic shakes, so thirty
+> seconds stand in for weeks.
+>
+> Their amplitudes are deliberately unrealistic: this shows the software
+> working, not what the sensor can feel.
 >
 > Red is what the device thinks. Colour is what really happened. The dashed
 > line between them is its error, and it shrinks as the calibration learns.

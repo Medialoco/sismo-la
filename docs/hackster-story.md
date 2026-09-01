@@ -187,7 +187,8 @@ bin. Refitting the same form on that dataset gives
 `0.867·M − 1.740·log10 R − 3.305`, scatter 0.390 log10, R² = 0.80. Consequence:
 every "what could this feel" estimate I had made before that check was
 optimistic by about two magnitude units. The corrected law is what section 6
-uses.
+uses. The demo replay still runs on the old one, on purpose — see the caveat
+below.
 
 ### 6. Results: half the condition is met, and the other half is measured
 
@@ -237,9 +238,12 @@ then the trigger, then the site.
 
 One more caveat I will state myself. The `--replay` mode, used for the demo
 video, synthesizes sensor readings from cataloged magnitude and distance through
-an attenuation law, and the calibration then fits the inverse of that same law.
-It proves the *software* is correct — matching, fitting, persistence, inference
-— and it is circular by construction. It measures nothing about the instrument.
+the *uncorrected* law — the one that over-predicts by 38× — and the calibration
+then fits the inverse of that same law. Its amplitudes are therefore not
+physical, and that is deliberate: at corrected amplitudes almost every cataloged
+quake falls under the trigger floor and the demo shows an empty screen. Replay
+proves the *software* is correct — matching, fitting, persistence, inference.
+It measures nothing about the instrument.
 
 ### 7. What three of these would add
 

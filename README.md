@@ -31,7 +31,8 @@ attached to it rather than a shrug.
 
 *The operator dashboard. Left, USGS events as colored circles — the answer key;
 the device's own estimates in red. Right, the three models learning. Figures in
-this screenshot come from replay mode and measure the software, not the sensor;
+this screenshot come from replay mode, whose amplitudes are synthetic and 38×
+too large by design; they measure the software, not the sensor;
 [see below](#what-is-established-and-what-is-not).*
 
 ## What a node costs
@@ -145,9 +146,12 @@ score itself out-of-sample instead of quoting training residuals.
 matches so far, and that is not a correlation bug — it is the threshold.
 
 *Replay figures measure the software, not the instrument.* In `--replay` the
-readings are synthesized from cataloged magnitude and distance through an
-attenuation law, and the calibration then fits the inverse of that same law. It
-proves the pipeline is correct and stable; it is circular by construction. The
+readings are synthesized from cataloged magnitude and distance through the
+pre-refit law above, so its amplitudes are 38× too large — kept deliberately,
+since corrected ones would sit under the trigger floor and the demo would show
+nothing — and the calibration then fits the inverse of that same law. It proves
+the pipeline is correct and stable; it is circular by construction and its
+amplitudes are not physical. The
 dashboard's RMSE is worse than that: an in-sample training residual computed
 with the *true* catalog distance, while live operation feeds it an *estimated*
 one. `python audit.py` replays the journal for genuine out-of-sample residuals:
@@ -215,7 +219,8 @@ zero earthquakes, and nothing in that figure was measured or simulated.
 ## Run it in two minutes
 
 No hardware needed. Replay mode pulls the genuine catalog for the last 24 hours
-and drives the full pipeline with it.
+and drives the full pipeline with it, on synthetic amplitudes that are not
+physical.
 
 ```bash
 cd python

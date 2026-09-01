@@ -37,6 +37,11 @@ dist ~84 vs 83 km`), the calibration converging, and the AI filter rejecting
 noise events (`AI 0% quake`) while confirming real ones (`AI 95%+`). This is
 the shot for the contest video.
 
+The amplitudes are synthetic and not physical: the generator keeps an
+attenuation law measured to over-predict by 38×, deliberately, because corrected
+ones would fall under the trigger floor and nothing would fire. See
+`synth_event_from_quake` in `python/main.py`.
+
 On the board, run the same command without `--mock` (serial/Bridge source). The
 map needs WiFi (Leaflet + tiles + USGS). Display vs correlation thresholds are
 split in `config.yaml`: `usgs.display_min_magnitude` controls the map, while

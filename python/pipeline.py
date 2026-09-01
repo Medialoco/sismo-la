@@ -218,6 +218,11 @@ TIMING_MARGIN_S = 15.0
 # of the scatter is station-to-station rather than event-to-event (0.347 vs
 # 0.198 log10), i.e. site response dominates, which is precisely the term an
 # unknown indoor mount makes unknowable. Hence the generous allowances below.
+#
+# This is not the law `main.py:synth_event_from_quake` uses to generate replay
+# amplitudes. That one over-predicts by 37.9x and is kept on purpose, because a
+# corrected replay would trigger on almost nothing; see its docstring before
+# changing either.
 REF_GMPE = (0.8668, -1.7400, -3.3053)
 REF_GMPE_SIGMA = 0.3903
 # Both allowances are deliberately generous. Being wrong in this direction
