@@ -28,11 +28,19 @@
       --bg: #f5f0e6; --soft: #efeae0; --card: #fbf8f2;
       --text: #4a443a; --muted: #7a7266; --border: #e0d9ce;
       --dev: #c62b39; --shadow: rgba(15,23,42,.10);
+      /* Neutral chrome. Red is reserved for the two things it means here:
+         an event the station recognised, and a station that is not reporting.
+         Controls therefore borrow the text colour, never the red. */
+      --ui: #3b3630; --ui-strong: #1c1a16; --track: #ddd5c8;
+      --ring: rgba(74,68,58,.22); --glass: rgba(251,248,242,.92);
+      --r: 8px; --r-sm: 6px;
     }
     [data-theme="dark"] {
       --bg: #1a1a1a; --soft: #222; --card: #262626;
       --text: #d6d9dd; --muted: #9ca3af; --border: #3a3f47;
       --dev: #ff5c66; --shadow: rgba(0,0,0,.4);
+      --ui: #cfd3d8; --ui-strong: #fff; --track: #464c55;
+      --ring: rgba(207,211,216,.24); --glass: rgba(38,38,38,.92);
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -40,30 +48,34 @@
       display: flex; flex-direction: column;
       font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
       background: var(--bg); color: var(--text);
+      -webkit-font-smoothing: antialiased;
     }
+    :focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
 
     header {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 14px;
       padding: 10px 16px; background: var(--soft); border-bottom: 1px solid var(--border);
     }
-    .logo { font-weight: 700; }
+    .logo { font-weight: 700; letter-spacing: -.01em; }
     .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .badge { padding: 2px 9px; border-radius: 999px; font-size: 12px;
-             border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+    .badge { padding: 3px 10px; border-radius: 999px; font-size: 12px; line-height: 1.35;
+             border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+             font-variant-numeric: tabular-nums; }
     .badge.on { border-color: var(--dev); color: var(--dev); }
     /* Freshness is the one thing no figure here can show, so it gets the badge. */
     .badge.bad { border-color: var(--dev); background: var(--dev); color: #fff; }
     header a { color: var(--muted); font-size: 13px; text-decoration: none; }
     header a:hover { color: var(--text); }
     .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
-               background: none; border: 1px solid var(--border); border-radius: 7px;
-               display: inline-flex; align-items: center; justify-content: center; }
-    .iconbtn:hover { color: var(--text); }
+               background: none; border: 1px solid var(--border); border-radius: var(--r-sm);
+               display: inline-flex; align-items: center; justify-content: center;
+               transition: color .12s, border-color .12s; }
+    .iconbtn:hover { color: var(--text); border-color: var(--muted); }
 
     #content { display: flex; flex: 1; min-height: 0; }
     #map { flex: 1; position: relative; background: var(--soft); }
-    #panel { width: 300px; overflow-y: auto; padding: 14px;
+    #panel { width: 316px; flex: none; overflow-y: auto; padding: 16px;
              background: var(--soft); border-left: 1px solid var(--border); }
     @media (max-width: 860px) {
       #content { flex-direction: column; }
@@ -71,56 +83,120 @@
       #panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
     }
 
-    h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+    h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
          color: var(--muted); font-weight: 600; margin: 0 0 8px; }
-    #status { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+    #status { font-size: 13px; color: var(--muted); margin-bottom: 22px;
+              font-variant-numeric: tabular-nums; }
     #status b { color: var(--text); font-weight: 600; }
 
     /* device magnitude against catalogue magnitude */
-    #chart { width: 100%; height: auto; display: block; margin-bottom: 6px; }
-    #chartnote { font-size: 11.5px; color: var(--muted); margin-bottom: 18px; }
+    /* max-width, because when the panel stacks under the map on a narrow
+       screen it is full width, and a square plot would then be enormous. */
+    #chart { width: 100%; max-width: 300px; height: auto; display: block; margin-bottom: 7px; }
+    #chartnote { font-size: 11.5px; line-height: 1.45; color: var(--muted); margin-bottom: 22px; }
 
-    .det { border-left: 3px solid var(--border); padding: 2px 0 2px 9px; margin: 0 0 12px; }
+    #list { margin-bottom: 4px; }
+    .det { border-left: 2px solid var(--border); padding: 1px 0 1px 10px; margin: 0 0 14px; }
     .det.quake { border-left-color: var(--dev); }
     .det .top { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
     .det .who { color: var(--muted); }
-    .det .when { color: var(--muted); font-size: 11px; white-space: nowrap; }
-    .det .vals { font-size: 13px; margin-top: 2px; }
+    .det .when { color: var(--muted); font-size: 11px; white-space: nowrap;
+                 font-variant-numeric: tabular-nums; }
+    .det .vals { font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
     .dev { color: var(--dev); font-weight: 600; }
     .empty { color: var(--muted); font-size: 13px; }
-    .more { display: inline-block; margin-top: 2px; font-size: 12.5px;
-            color: var(--dev); text-decoration: none; }
-    .more:hover { text-decoration: underline; }
+    .more { display: inline-block; margin-top: 6px; font-size: 12.5px;
+            color: var(--text); text-decoration: none;
+            border-bottom: 1px solid var(--border); padding-bottom: 1px; }
+    .more:hover { border-bottom-color: var(--text); }
 
-    .window {
-      position: absolute; right: 12px; bottom: 22px; z-index: 500;
-      display: flex; align-items: center; gap: 10px;
-      background: var(--card); border: 1px solid var(--border); border-radius: 9px;
-      padding: 7px 13px; box-shadow: 0 4px 14px var(--shadow);
+    /* The two panels floating over the map share one surface. */
+    .float {
+      position: absolute; bottom: 24px; z-index: 500;
+      background: var(--glass); border: 1px solid var(--border); border-radius: var(--r);
+      box-shadow: 0 1px 2px var(--shadow), 0 8px 20px -8px var(--shadow);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     }
-    .window label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .window b { color: var(--text); }
-    .window input { width: 190px; display: block; accent-color: var(--dev); cursor: pointer; }
-    @media (max-width: 620px) { .window input { width: 120px; } }
 
-    .legend {
-      position: absolute; left: 12px; bottom: 22px; z-index: 500;
-      background: var(--card); border: 1px solid var(--border); border-radius: 9px;
-      padding: 9px 11px; font-size: 12px; box-shadow: 0 4px 14px var(--shadow);
+    .window { right: 14px; display: flex; align-items: center; gap: 12px; padding: 8px 12px; }
+    .window label { font-size: 12px; color: var(--muted); white-space: nowrap;
+                    /* Fixed width: without it the box resizes under the cursor
+                       as "24 hours" becomes "7 days" and the slider drifts. */
+                    min-width: 82px; font-variant-numeric: tabular-nums; }
+    .window b { color: var(--text); font-weight: 600; }
+
+    .window input[type=range] {
+      -webkit-appearance: none; appearance: none; display: block;
+      width: 172px; height: 16px; margin: 0; padding: 0;
+      background: none; cursor: pointer;
     }
-    .legend .line { display: flex; align-items: center; gap: 7px; margin: 5px 0; }
-    .legend .sw { flex: none; width: 13px; height: 13px; border-radius: 50%; }
+    .window input[type=range]::-webkit-slider-runnable-track {
+      height: 4px; border-radius: 2px;
+      background: linear-gradient(to right,
+        var(--ui) 0 var(--pct, 20%), var(--track) var(--pct, 20%) 100%);
+    }
+    .window input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
+      background: var(--ui); border: 2px solid var(--card);
+      box-shadow: 0 0 0 1px var(--ui), 0 1px 2px var(--shadow);
+      transition: background-color .12s, box-shadow .12s;
+    }
+    .window input[type=range]::-moz-range-track {
+      height: 4px; border-radius: 2px; background: var(--track);
+    }
+    .window input[type=range]::-moz-range-progress {
+      height: 4px; border-radius: 2px; background: var(--ui);
+    }
+    .window input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--card);
+      background: var(--ui); box-shadow: 0 0 0 1px var(--ui), 0 1px 2px var(--shadow);
+    }
+    .window input[type=range]:hover::-webkit-slider-thumb { background: var(--ui-strong); }
+    .window input[type=range]:hover::-moz-range-thumb { background: var(--ui-strong); }
+    .window input[type=range]:focus { outline: none; }
+    .window input[type=range]:focus-visible::-webkit-slider-thumb,
+    .window input[type=range]:active::-webkit-slider-thumb {
+      background: var(--ui-strong); box-shadow: 0 0 0 1px var(--ui), 0 0 0 5px var(--ring);
+    }
+    .window input[type=range]:focus-visible::-moz-range-thumb,
+    .window input[type=range]:active::-moz-range-thumb {
+      background: var(--ui-strong); box-shadow: 0 0 0 1px var(--ui), 0 0 0 5px var(--ring);
+    }
+    /* The legend and this box are the first things to collide as the map
+       narrows, so the track gives ground before they touch. */
+    @media (max-width: 1000px) { .window input[type=range] { width: 130px; } }
+    @media (max-width: 620px) { .window input[type=range] { width: 110px; } }
+
+    .legend { left: 14px; padding: 9px 12px; font-size: 12px; }
+    .legend .line { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .legend .line:first-child { margin-top: 1px; }
+    .legend .line:last-child { margin-bottom: 1px; }
+    .legend b { font-weight: 600; }
+    .legend .sw { flex: none; width: 13px; height: 13px; border-radius: 50%;
+                  background: #fec44f; }
+    .legend .sw.usgs { box-shadow: inset 0 0 0 1px rgba(0,0,0,.28); }
+    .legend .sw.felt { border: 2px solid var(--dev); }
     .legend .scale { display: flex; gap: 3px; align-items: center; color: var(--muted); }
-    .legend .scale i { width: 15px; height: 9px; border-radius: 2px; }
+    .legend .scale i { width: 15px; height: 9px; border-radius: 2px;
+                       box-shadow: inset 0 0 0 1px rgba(0,0,0,.16); }
 
     .leaflet-container { background: var(--soft); font-family: inherit; }
     .leaflet-popup-content-wrapper, .leaflet-popup-tip {
       background: var(--card); color: var(--text); border: 1px solid var(--border);
     }
-    .leaflet-popup-content { margin: 9px 12px; font-size: 12.5px; }
-    .leaflet-control-attribution { background: var(--card) !important; color: var(--muted) !important; }
+    .leaflet-popup-content-wrapper { border-radius: var(--r); box-shadow: 0 8px 24px -8px var(--shadow); }
+    .leaflet-popup-content { margin: 10px 13px; font-size: 12.5px; line-height: 1.45; }
+    .leaflet-control-attribution { background: var(--glass) !important; color: var(--muted) !important;
+                                   border-top-left-radius: var(--r-sm); padding: 0 6px; }
     .leaflet-control-attribution a { color: var(--muted) !important; }
-    .leaflet-bar a { background: var(--card); color: var(--text); border-color: var(--border); }
+    /* Zoom buttons on the same 14px inset as the two floating panels. */
+    .leaflet-top.leaflet-left .leaflet-control { margin: 14px 0 0 14px; }
+    .leaflet-bar { border: 1px solid var(--border); border-radius: var(--r-sm);
+                   box-shadow: 0 1px 2px var(--shadow); overflow: hidden; }
+    .leaflet-bar a, .leaflet-bar a:hover { background: var(--glass); color: var(--text);
+                                           border-bottom-color: var(--border); }
+    .leaflet-bar a:hover { color: var(--ui-strong); background: var(--card); }
   </style>
 </head>
 <body>
@@ -138,20 +214,20 @@
 
   <div id="content">
     <div id="map">
-      <div class="window">
+      <div class="float window">
         <input type="range" id="days" min="1" max="30" step="1" value="7"
                aria-label="How many days to show" />
         <label for="days"><b id="dayslabel">last 7 days</b></label>
       </div>
 
-      <div class="legend">
-        <div class="line"><span class="sw" style="background:#fec44f;border:1px solid #8a7a4a"></span>
+      <div class="float legend">
+        <div class="line"><span class="sw usgs"></span>
           <b>USGS catalogue</b></div>
         <div class="line scale">
           <i style="background:#fff7bc"></i><i style="background:#fee391"></i><i style="background:#fec44f"></i><i style="background:#fe9929"></i><i style="background:#cc4c02"></i>
           <span>M&lt;2 &middot; 2 &middot; 3 &middot; 4 &middot; 5+</span>
         </div>
-        <div class="line"><span class="sw" style="background:#fec44f;border:2px solid #c62b39"></span>
+        <div class="line"><span class="sw felt"></span>
           <b>felt by the station</b></div>
       </div>
     </div>
@@ -161,7 +237,7 @@
       <div id="status">USGS catalogue only.</div>
 
       <h2>Its reading vs the record</h2>
-      <svg id="chart" viewBox="0 0 220 214" role="img"
+      <svg id="chart" viewBox="0 0 216 215" role="img"
            aria-label="Magnitude read by the device against magnitude published by the USGS"></svg>
       <div id="chartnote">Each dot is what it read <b>before</b> being told the answer.</div>
 
@@ -284,8 +360,8 @@
       const border = css('--border') || '#ddd';
       // Square plot area: the whole point is reading a dot against the y = x
       // line, which only looks like agreement if both axes have equal scale.
-      const S = 180, L = 32, T = 8, B = 26;
-      const W = L + S + 8, H = T + S + B;
+      const S = 180, L = 26, T = 10, B = 25;
+      const W = L + S + 10, H = T + S + B;
       // Fit the axes to the data, but never below a 2-unit span: LA's small
       // quakes would otherwise crowd one corner of a mostly empty square.
       const vals = pairs.flatMap((p) => [p.usgs, p.dev]);
@@ -300,29 +376,31 @@
       const ticks = [];
       for (let m = Math.ceil(lo); m <= hi; m += 1) ticks.push(m);
 
-      // Grid first, so the diagonal and the dots sit on top of it.
+      // Axis titles echo the panel's uppercase labels rather than inventing a
+      // second typographic register.
+      const cap = `fill="${muted}" font-size="8" letter-spacing=".09em"`;
+      const num = `fill="${muted}" font-size="9.5" font-variant-numeric="tabular-nums"`;
+
+      // Grid first, so the diagonal and the dots sit on top of it. crispEdges
+      // because the whole plot is scaled up to the panel width, and a 1px line
+      // at a fractional scale otherwise renders as two grey pixels.
       svg.innerHTML =
+        `<g shape-rendering="crispEdges" stroke="${border}" stroke-width="1">` +
         ticks.map((m) =>
-          `<line x1="${x(m)}" y1="${T}" x2="${x(m)}" y2="${T + S}"
-                 stroke="${border}" stroke-width="1"/>` +
-          `<line x1="${L}" y1="${y(m)}" x2="${L + S}" y2="${y(m)}"
-                 stroke="${border}" stroke-width="1"/>`).join('') +
+          `<line x1="${x(m)}" y1="${T}" x2="${x(m)}" y2="${T + S}"/>` +
+          `<line x1="${L}" y1="${y(m)}" x2="${L + S}" y2="${y(m)}"/>`).join('') +
+        `<rect x="${L}" y="${T}" width="${S}" height="${S}" fill="none"/></g>` +
         `<line x1="${x(lo)}" y1="${y(lo)}" x2="${x(hi)}" y2="${y(hi)}"
-               stroke="${muted}" stroke-width="1.2" stroke-dasharray="4,4" opacity=".8"/>` +
-        `<rect x="${L}" y="${T}" width="${S}" height="${S}" fill="none"
-               stroke="${border}" stroke-width="1"/>` +
+               stroke="${muted}" stroke-width="1" stroke-dasharray="3,3" opacity=".6"/>` +
         ticks.map((m) =>
-          `<text x="${x(m)}" y="${T + S + 12}" fill="${muted}" font-size="9"
-                 text-anchor="middle">${m}</text>` +
-          `<text x="${L - 6}" y="${y(m) + 3}" fill="${muted}" font-size="9"
-                 text-anchor="end">${m}</text>`).join('') +
-        `<text x="${mid}" y="${H - 3}" fill="${muted}" font-size="9.5"
-               text-anchor="middle">USGS magnitude</text>` +
-        `<text x="10" y="${T + S / 2}" fill="${muted}" font-size="9.5"
-               text-anchor="middle" transform="rotate(-90 10 ${T + S / 2})">device</text>` +
+          `<text x="${x(m)}" y="${T + S + 13}" ${num} text-anchor="middle">${m}</text>` +
+          `<text x="${L - 7}" y="${y(m) + 3.2}" ${num} text-anchor="end">${m}</text>`).join('') +
+        `<text x="${mid}" y="${H - 2}" ${cap} text-anchor="middle">USGS MAGNITUDE</text>` +
+        `<text x="7" y="${T + S / 2}" ${cap}
+               text-anchor="middle" transform="rotate(-90 7 ${T + S / 2})">DEVICE</text>` +
         pairs.map((p) =>
-          `<circle cx="${x(p.usgs)}" cy="${y(p.dev)}" r="4" fill="${dev}"
-                   fill-opacity=".55" stroke="${dev}"/>`).join('') +
+          `<circle cx="${x(p.usgs)}" cy="${y(p.dev)}" r="3.8" fill="${dev}"
+                   fill-opacity=".4" stroke="${dev}" stroke-width="1.3"/>`).join('') +
         (pairs.length ? '' :
           `<text x="${mid}" y="${T + S / 2}" fill="${muted}" font-size="10.5"
                  text-anchor="middle">no confirmed earthquake yet</text>`);
@@ -414,6 +492,13 @@
 
     function label() {
       dayslabel.textContent = days === 1 ? 'last 24 hours' : `last ${days} days`;
+      // Only Firefox fills the track by itself (::-moz-range-progress); in
+      // WebKit the filled part is a gradient the slider has to be told about.
+      // In px, not %: the thumb travels its own width less than the track, so
+      // a percentage fill visibly misses the thumb centre at the ends.
+      const lo = +slider.min, hi = +slider.max, w = slider.clientWidth || 172;
+      const f = hi > lo ? (days - lo) / (hi - lo) : 0;
+      slider.style.setProperty('--pct', (f * (w - 14) + 7).toFixed(1) + 'px');
     }
 
     /* Redraw everything that depends on the window, without touching the

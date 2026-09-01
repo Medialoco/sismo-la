@@ -20,61 +20,73 @@
       --bg: #f5f0e6; --soft: #efeae0; --card: #fbf8f2;
       --text: #4a443a; --muted: #7a7266; --border: #e0d9ce;
       --dev: #c62b39; --shadow: rgba(15,23,42,.10);
+      /* Same rule as the map page: red means an event the station recognised,
+         or a station that is not reporting. Controls stay neutral. */
+      --ui: #3b3630; --ui-strong: #1c1a16;
+      --r: 8px; --r-sm: 6px;
     }
     [data-theme="dark"] {
       --bg: #1a1a1a; --soft: #222; --card: #262626;
       --text: #d6d9dd; --muted: #9ca3af; --border: #3a3f47;
       --dev: #ff5c66; --shadow: rgba(0,0,0,.4);
+      --ui: #cfd3d8; --ui-strong: #fff;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; }
     body {
       font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
       background: var(--bg); color: var(--text);
+      -webkit-font-smoothing: antialiased;
     }
+    :focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
     header {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 14px;
       padding: 10px 16px; background: var(--soft); border-bottom: 1px solid var(--border);
     }
-    .logo { font-weight: 700; }
+    .logo { font-weight: 700; letter-spacing: -.01em; }
     .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* Shown only when there is something to say: these tables carry no clue
        of their own age, and an eight-hour-old table looks exactly like a live one. */
-    .badge { display: none; padding: 2px 9px; border-radius: 999px; font-size: 12px;
-             white-space: nowrap; border: 1px solid var(--dev);
-             background: var(--dev); color: #fff; }
+    .badge { display: none; padding: 3px 10px; border-radius: 999px; font-size: 12px;
+             line-height: 1.35; white-space: nowrap; border: 1px solid var(--dev);
+             background: var(--dev); color: #fff; font-variant-numeric: tabular-nums; }
     .badge.show { display: inline-block; }
     header a { color: var(--muted); font-size: 13px; text-decoration: none; }
     header a:hover { color: var(--text); }
     .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
-               background: none; border: 1px solid var(--border); border-radius: 7px;
-               display: inline-flex; align-items: center; justify-content: center; }
-    .iconbtn:hover { color: var(--text); }
+               background: none; border: 1px solid var(--border); border-radius: var(--r-sm);
+               display: inline-flex; align-items: center; justify-content: center;
+               transition: color .12s, border-color .12s; }
+    .iconbtn:hover { color: var(--text); border-color: var(--muted); }
 
-    main { max-width: 940px; margin: 0 auto; padding: 22px 16px 60px; }
-    section { margin-bottom: 38px; }
-    h2 { font-size: 15px; margin: 0 0 3px; }
+    main { max-width: 940px; margin: 0 auto; padding: 26px 16px 64px; }
+    section + section { margin-top: 36px; }
+    h2 { font-size: 15px; font-weight: 600; letter-spacing: -.005em; margin: 0; }
     .note { color: var(--muted); font-size: 13px; margin: 0 0 12px; max-width: 66ch; }
-    .bar { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
-    .count { color: var(--muted); font-size: 12.5px; }
+    .bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 6px; }
+    .count { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums;
+             margin-right: auto; }
     button.csv {
-      font: inherit; font-size: 12.5px; cursor: pointer; color: var(--dev);
+      font: inherit; font-size: 12.5px; cursor: pointer; color: var(--text);
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 7px; padding: 3px 10px;
+      border-radius: var(--r-sm); padding: 4px 11px;
+      transition: color .12s, border-color .12s;
     }
-    button.csv:hover { border-color: var(--dev); }
-    button.csv[disabled] { color: var(--muted); cursor: default; border-color: var(--border); }
+    button.csv:hover { color: var(--ui-strong); border-color: var(--muted); }
+    button.csv[disabled] { color: var(--muted); cursor: default; border-color: var(--border);
+                           opacity: .7; }
 
-    .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 9px;
+    .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r);
             background: var(--card); }
-    table { border-collapse: collapse; width: 100%; font-size: 13px; }
-    th, td { padding: 7px 11px; text-align: right; white-space: nowrap;
+    table { border-collapse: collapse; width: 100%; font-size: 13px;
+            font-variant-numeric: tabular-nums; }
+    th, td { padding: 8px 12px; text-align: right; white-space: nowrap;
              border-bottom: 1px solid var(--border); }
     th:first-child, td:first-child, th.l, td.l { text-align: left; }
     th { position: sticky; top: 0; background: var(--soft); font-weight: 600;
-         font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
-         color: var(--muted); }
+         font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+         color: var(--muted); padding-top: 7px; padding-bottom: 7px; }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover { background: var(--soft); }
     td.dev { color: var(--dev); font-weight: 600; }
