@@ -203,15 +203,23 @@ S_SPEED_KM_S = 2.5    # slow end of crustal S: latest arrival that is plausible
 # the Python half, and the board's NTP clock error.
 TIMING_MARGIN_S = 15.0
 
-# Ground-motion reference, fitted by least squares to 6941 PGA values actually
-# recorded by USGS ShakeMap stations during 24 Los Angeles earthquakes
-# (M3.0-5.5, 3-200 km):
-#     log10(PGA_g) = 0.822*M - 1.741*log10(R_hypo_km) - 3.133
-# with 0.413 log10 units of scatter. This is used ONLY as a veto on absurd
-# pairings, never to estimate anything: the amplitude law the station reports is
-# still the one it learns for itself. Below M3 it is an extrapolation.
-REF_GMPE = (0.8220, -1.7409, -3.1327)
-REF_GMPE_SIGMA = 0.4127
+# Ground-motion reference, fitted by least squares to 12324 PGA values actually
+# recorded by USGS ShakeMap stations during 40 southern-California earthquakes
+# (M3.03-5.51, 3-200 km, 1006 distinct stations):
+#     log10(PGA_g) = 0.867*M - 1.740*log10(R_hypo_km) - 3.305
+# with 0.390 log10 units of scatter (R^2=0.80). This is used ONLY as a veto on
+# absurd pairings, never to estimate anything: the amplitude law the station
+# reports is still the one it learns for itself.
+#
+# Two caveats that matter for how far to trust it. The smallest earthquake in
+# the data is M3.03, so every value below that is extrapolation, and the
+# magnitude slope is itself unsettled — it moves from 0.87 to 1.00 when the fit
+# is restricted to M<4.5, which is the range this station cares about. And most
+# of the scatter is station-to-station rather than event-to-event (0.347 vs
+# 0.198 log10), i.e. site response dominates, which is precisely the term an
+# unknown indoor mount makes unknowable. Hence the generous allowances below.
+REF_GMPE = (0.8668, -1.7400, -3.3053)
+REF_GMPE_SIGMA = 0.3903
 # Both allowances are deliberately generous. Being wrong in this direction
 # discards the genuine matches the whole project is waiting for, so the veto is
 # tuned to reject only the physically absurd: together they permit an observed
