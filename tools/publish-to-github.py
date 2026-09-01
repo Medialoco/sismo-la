@@ -16,7 +16,8 @@ revoked without touching anything else.
 
 Wired in through the ``publish.command`` block of ``python/config.yaml``.
 Every snapshot is a commit that redeploys the page, so keep ``interval_s``
-generous -- a quarter of an hour, not a minute.
+generous -- half an hour, not a minute. A snapshot whose only difference is
+the clock is skipped, so a quiet station stops committing altogether.
 """
 
 import base64
@@ -39,6 +40,22 @@ def _request(url: str, token: str, method: str = "GET", payload: dict | None = N
         req.add_header("Content-Type", "application/json")
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read() or b"{}")
+
+
+def _same_but_for_time(old: bytes, new: bytes) -> bool:
+    """True when two snapshots carry the same news.
+
+    ``updated`` moves on its own, and the catalog block is refetched from the
+    USGS on a timer, so both change without the station having observed
+    anything. What matters is what the device did: its detections, its
+    confirmed history, and the state of the models.
+    """
+    keep = ("detections", "history", "calibration", "ai")
+    try:
+        a, b = json.loads(old), json.loads(new)
+    except (ValueError, TypeError):
+        return False
+    return all(a.get(k) == b.get(k) for k in keep)
 
 
 def main() -> int:
@@ -67,12 +84,23 @@ def main() -> int:
     # Updating a file requires the blob SHA of the version being replaced; its
     # absence simply means the file does not exist yet, which is the first run.
     sha = None
+    current = None
     try:
-        sha = _request(f"{url}?ref={branch}", token).get("sha")
+        info = _request(f"{url}?ref={branch}", token)
+        sha = info.get("sha")
+        if info.get("encoding") == "base64":
+            current = base64.b64decode(info.get("content", ""))
     except urllib.error.HTTPError as exc:
         if exc.code != 404:
             print(f"publish-to-github: cannot read current file: {exc}", file=sys.stderr)
             return 1
+
+    # A station that detects nothing for a week would otherwise commit an
+    # identical snapshot every half hour, purely because the clock moved. Two
+    # snapshots that differ only by their timestamp are not news.
+    if current is not None and _same_but_for_time(current, body):
+        print("publish-to-github: unchanged since last snapshot, not committing")
+        return 0
 
     payload = {
         "message": "Publish station snapshot",

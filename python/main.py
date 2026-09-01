@@ -50,6 +50,7 @@ import requests
 import usgs
 from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
+import eventlog
 from eventlog import EventLog
 from pipeline import (
     find_match,
@@ -437,7 +438,8 @@ def strip_location(snapshot: dict) -> dict:
     return out
 
 
-def publisher_loop(pub_cfg: dict, state: SharedState) -> None:
+def publisher_loop(pub_cfg: dict, state: SharedState,
+                   journal_path: str = "") -> None:
     """Periodically publish the station snapshot to a remote site, so the
     device is fully autonomous and a public web page can display its data.
 
@@ -456,6 +458,14 @@ def publisher_loop(pub_cfg: dict, state: SharedState) -> None:
         snapshot = state.snapshot()
         if not with_location:
             snapshot = strip_location(snapshot)
+        # The in-memory detection list is short and dies with the process. The
+        # journal is the thing that accumulates, so the published record is
+        # rebuilt from it every time rather than from what is still in RAM.
+        if journal_path:
+            try:
+                snapshot["history"] = eventlog.matched_pairs(journal_path)
+            except OSError as e:
+                print(f"[publish] could not read journal: {e}")
         payload = json.dumps(snapshot).encode("utf-8")
         try:
             if method == "post":
@@ -565,7 +575,9 @@ def main() -> None:
     pub_cfg = cfg.get("publish") or {}
     if pub_cfg.get("enabled"):
         pub = threading.Thread(
-            target=publisher_loop, args=(pub_cfg, state), daemon=True
+            target=publisher_loop,
+            args=(pub_cfg, state, calcfg.get("journal_file", "event_log.jsonl")),
+            daemon=True,
         )
         pub.start()
         print(f"[Sismo-LA] publisher on ({pub_cfg.get('method', 'post')}, "

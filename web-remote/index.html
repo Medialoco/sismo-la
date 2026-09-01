@@ -139,10 +139,11 @@
       <div id="status">No snapshot yet. Showing the USGS record alone.</div>
 
       <h2>Its reading vs the record</h2>
-      <svg id="chart" viewBox="0 0 260 180" role="img"
+      <svg id="chart" viewBox="0 0 220 214" role="img"
            aria-label="Magnitude read by the device against magnitude published by the USGS"></svg>
-      <div id="chartnote">Each dot is one earthquake. On the line means the
-        device got the magnitude right.</div>
+      <div id="chartnote">One dot per earthquake, every one it has ever caught.
+        Each is what the station worked out <b>before</b> being told the answer.
+        On the line means it got the magnitude right.</div>
 
       <h2>Recent shakes</h2>
       <div id="list"><div class="empty">Nothing yet.</div></div>
@@ -257,7 +258,10 @@
       const svg = document.getElementById('chart');
       const dev = css('--dev') || '#c62b39', muted = css('--muted') || '#888';
       const border = css('--border') || '#ddd';
-      const W = 260, H = 180, P = 30;
+      // Square plot area: the whole point is reading a dot against the y = x
+      // line, which only looks like agreement if both axes have equal scale.
+      const S = 180, L = 32, T = 8, B = 26;
+      const W = L + S + 8, H = T + S + B;
       // Fit the axes to the data, but never below a 2-unit span: LA's small
       // quakes would otherwise crowd one corner of a mostly empty square.
       const vals = pairs.flatMap((p) => [p.usgs, p.dev]);
@@ -265,8 +269,9 @@
       let hi = vals.length ? Math.max(...vals) + .3 : 4;
       if (hi - lo < 2) { const mid = (lo + hi) / 2; lo = mid - 1; hi = mid + 1; }
       lo = Math.floor(lo * 2) / 2; hi = Math.ceil(hi * 2) / 2;
-      const x = (m) => P + (m - lo) / (hi - lo) * (W - P - 10);
-      const y = (m) => H - P - (m - lo) / (hi - lo) * (H - P - 12);
+      const x = (m) => L + (m - lo) / (hi - lo) * S;
+      const y = (m) => T + S - (m - lo) / (hi - lo) * S;
+      const mid = L + S / 2;
 
       const ticks = [];
       for (let m = Math.ceil(lo); m <= hi; m += 1) ticks.push(m);
@@ -274,22 +279,22 @@
       svg.innerHTML =
         `<line x1="${x(lo)}" y1="${y(lo)}" x2="${x(hi)}" y2="${y(hi)}"
                stroke="${muted}" stroke-width="1" stroke-dasharray="4,4" opacity=".7"/>` +
-        `<line x1="${P}" y1="${H - P}" x2="${W - 8}" y2="${H - P}" stroke="${border}"/>` +
-        `<line x1="${P}" y1="10" x2="${P}" y2="${H - P}" stroke="${border}"/>` +
+        `<line x1="${L}" y1="${T + S}" x2="${L + S}" y2="${T + S}" stroke="${border}"/>` +
+        `<line x1="${L}" y1="${T}" x2="${L}" y2="${T + S}" stroke="${border}"/>` +
         ticks.map((m) =>
-          `<text x="${x(m)}" y="${H - P + 13}" fill="${muted}" font-size="9"
+          `<text x="${x(m)}" y="${T + S + 12}" fill="${muted}" font-size="9"
                  text-anchor="middle">${m}</text>` +
-          `<text x="${P - 6}" y="${y(m) + 3}" fill="${muted}" font-size="9"
+          `<text x="${L - 6}" y="${y(m) + 3}" fill="${muted}" font-size="9"
                  text-anchor="end">${m}</text>`).join('') +
-        `<text x="${(W + P) / 2}" y="${H - 4}" fill="${muted}" font-size="9.5"
+        `<text x="${mid}" y="${H - 3}" fill="${muted}" font-size="9.5"
                text-anchor="middle">USGS magnitude</text>` +
-        `<text x="11" y="${(H - P) / 2}" fill="${muted}" font-size="9.5"
-               text-anchor="middle" transform="rotate(-90 11 ${(H - P) / 2})">device</text>` +
+        `<text x="10" y="${T + S / 2}" fill="${muted}" font-size="9.5"
+               text-anchor="middle" transform="rotate(-90 10 ${T + S / 2})">device</text>` +
         pairs.map((p) =>
           `<circle cx="${x(p.usgs)}" cy="${y(p.dev)}" r="4" fill="${dev}"
                    fill-opacity=".55" stroke="${dev}"/>`).join('') +
         (pairs.length ? '' :
-          `<text x="${(W + P) / 2}" y="${(H - P) / 2}" fill="${muted}" font-size="10.5"
+          `<text x="${mid}" y="${T + S / 2}" fill="${muted}" font-size="10.5"
                  text-anchor="middle">no confirmed earthquake yet</text>`);
     }
 
@@ -332,18 +337,19 @@
         const s = await r.json();
         radius = (s.config || {}).radius_km || radius;
 
-        const pairs = [];
+        // The scatter comes from the journal, not from the detection list:
+        // the list only holds the last few and starts empty after a restart,
+        // while "history" is every earthquake the station ever confirmed.
+        const pairs = (s.history || []).map((h) => ({ usgs: h.usgs, dev: h.dev }));
         (s.detections || []).forEach((d) => {
-          if (!d.match || !d.device_est) return;
-          felt.set(d.match.event_id, d.device_est);
-          pairs.push({ usgs: d.match.magnitude, dev: d.device_est.mag });
+          if (d.match && d.device_est) felt.set(d.match.event_id, d.device_est);
         });
 
         fillPanel(s);
         drawChart(pairs);
         const b = document.getElementById('badge');
         b.textContent = pairs.length
-          ? `${pairs.length} earthquakes recognised` : 'device reporting';
+          ? `${pairs.length} earthquakes caught` : 'device reporting';
         b.className = 'badge on';
       } catch (e) {
         drawChart([]);

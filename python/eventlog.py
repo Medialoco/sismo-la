@@ -93,6 +93,39 @@ def read(path: str) -> list[dict]:
     return records
 
 
+def matched_pairs(path: str, limit: int = 400) -> list[dict]:
+    """Every confirmed earthquake the station ever caught, oldest first.
+
+    Compact on purpose: this travels in the published snapshot so a public page
+    can show the whole record instead of whatever happens to be in memory. The
+    in-memory detection list is short and dies with the process, while this
+    survives restarts and reinstalls as long as the journal file does.
+
+    The magnitude reported here is the one from ``prior``, i.e. what the model
+    predicted BEFORE this earthquake was folded into it. It is therefore an
+    honest out-of-sample estimate, not the training residual the dashboard
+    quotes about itself. Replay matches are excluded: they are true by
+    construction and would flatter the record. See the module docstring.
+    """
+    out: list[dict] = []
+    for r in read(path):
+        m, p = r.get("match"), r.get("prior") or {}
+        if not m or m.get("synthetic"):
+            continue
+        dev, usgs_mag = p.get("magnitude_operational"), m.get("magnitude")
+        if dev is None or usgs_mag is None:
+            continue
+        entry = {
+            "t": r.get("wall_time"),
+            "usgs": round(usgs_mag, 2),
+            "dev": round(dev, 2),
+            "usgs_km": round(m["distance_km"], 1) if m.get("distance_km") else None,
+            "dev_km": round(p["distance_km"], 1) if p.get("distance_km") else None,
+        }
+        out.append(entry)
+    return out[-limit:]
+
+
 def _iso(value) -> str | None:
     if isinstance(value, datetime):
         return value.astimezone(timezone.utc).isoformat()

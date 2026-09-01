@@ -244,6 +244,13 @@ snapshot, and this repository publishes it at
 to pay for. If `station.json` is missing, the page shows the USGS catalogue
 alone rather than breaking — which is what it is doing right now.
 
+Nothing the station learns lives only in memory. Every shake is appended to
+`event_log.jsonl` the moment it is handled, next to the three model state files,
+and on the board that directory is the host's filesystem rather than the
+container's — so the record survives restarts, reboots and reinstalls. The
+published snapshot rebuilds its history from that journal, which is why the
+scatter on the public page keeps growing instead of resetting.
+
 **The published snapshot carries no coordinates.** The public page outlines the
 catalogued events the station recognised and plots the magnitude it read against
 the magnitude the USGS published; none of that needs to know where the box sits.
