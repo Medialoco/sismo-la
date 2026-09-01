@@ -172,7 +172,7 @@
       </div>
       <p class="note">The catalogue supplied the instant; the station never
         triggered on these. <b>z</b> is how far its recorded envelope stood above
-        the local noise of the preceding three minutes<span id="czmin"></span>.
+        the local noise of the preceding three minutes.<span id="czmin"></span>
         Peak, rms and baseline are in g.</p>
       <div class="wrap"><table id="ctable">
         <thead><tr>
@@ -240,7 +240,7 @@
         history.length ? `${history.length} events` : '';
       if (!history.length) {
         body.innerHTML = '<tr><td colspan="7" class="empty">' +
-          (hasSnapshot ? 'No confirmed earthquake yet.' : 'No snapshot.') +
+          (hasSnapshot ? 'No earthquake caught yet.' : 'No snapshot.') +
           '</td></tr>';
         return;
       }
@@ -305,7 +305,7 @@
         confirmed.length ? `${confirmed.length} events` : '';
       const z = retro && typeof retro.z_min === 'number' ? retro.z_min : null;
       document.getElementById('czmin').textContent =
-        z != null ? `, and confirmed above ${z.toFixed(1)}` : '';
+        z != null ? ` Confirmed above ${z.toFixed(1)}.` : '';
 
       if (!confirmed.length) {
         body.innerHTML = '<tr><td colspan="10" class="empty">' +

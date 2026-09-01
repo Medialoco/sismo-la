@@ -210,8 +210,8 @@
       </div>
 
       <div class="card" id="retro-card" style="display:none">
-        <h2 class="cat"><span class="sw dash"></span>Confirmed &middot; known time
-          (<span id="retro-count">0</span>)</h2>
+        <h2 class="cat"><span class="sw dash"></span><span>Confirmed &middot;
+          known time (<span id="retro-count">0</span>)</span></h2>
         <div class="stat-row">
           <span>Retrospective search</span><span id="retro-pill" class="pill wait">--</span>
         </div>
@@ -237,8 +237,8 @@
       </div>
 
       <div class="card">
-        <h2 class="cat"><span class="sw"></span>Triggered &middot; autonomous
-          (<span id="det-count">0</span>)</h2>
+        <h2 class="cat"><span class="sw"></span><span>Triggered &middot;
+          autonomous (<span id="det-count">0</span>)</span></h2>
         <div id="det-list"><div class="empty">Waiting for the ground to shake…</div></div>
       </div>
 
@@ -518,8 +518,9 @@
           `<span class="time">${fmtTime(f.origin_time)}</span></div>` +
           `<div class="place">${f.place || ""}</div>` +
           `<div class="raw">peak ${mg(f.peak_g)} mg · rms ${mg(f.rms_g)} mg · ` +
-          `baseline ${mg(f.baseline_g)} mg · ${num(f.window_s, 0)} s window ` +
-          `· +${num(f.lag_s, 0)} s</div>`;
+          `baseline ${mg(f.baseline_g)} mg</div>` +
+          `<div class="raw">${num(f.window_s, 0)} s window, ` +
+          `+${num(f.lag_s, 0)} s after the origin time</div>`;
         list.appendChild(el);
       });
     }

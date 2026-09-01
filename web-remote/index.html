@@ -375,7 +375,7 @@
           (mine ? `<br><b style="color:${dev}">Triggered &middot; autonomous</b>` +
                   `<br>read ~M${mine.dev}, ${mine.dev_km} km away` : '') +
           (seen ? `<br><b style="color:${dev}">Confirmed &middot; known time</b>` +
-                  `<br>z ${seen.z} over ${seen.win} s` +
+                  `<br>z ${seen.z ?? '—'} over ${seen.win ?? '—'} s` +
                   `<br>peak ${mg(seen.pga)} mg, noise ${mg(seen.base)} mg` : '')
         ).addTo(usgsLayer);
         pts.push([lat, lon]);
