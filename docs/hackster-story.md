@@ -50,6 +50,8 @@ professional station, a lab.
 
 ### 2. The key idea: the ground truth is free
 
+![How Sismo-LA calibrates itself](images/how-it-works.png)
+
 In Los Angeles, the reference already exists and it is free: the **USGS
 earthquake catalog**, updated within minutes, with magnitude, location and
 depth for every event. So instead of calibrating the sensor in a lab, the
@@ -211,5 +213,9 @@ best possible test city.
 - [ ] Macro photo: Modulino on Qwiic.
 - [ ] Fritzing schematic.
 - [ ] Video: tap the desk → detection appears on the dashboard (live mode).
-- [ ] Video: replay mode filling the map (for the main demo).
-- [ ] Screenshot: a real USGS-correlated event in the side panel.
+- [x] Video: replay mode filling the map — `video/calibration-timelapse.mp4`
+      (and `.gif`), narration in `video-script.md` + `video/narration.srt`.
+- [x] Screenshot: a USGS-correlated event in the side panel —
+      `images/timelapse-4-calibrated.jpg`. Replayed catalog data, and the
+      badge in the corner says so; do not present it as a live recording.
+- [x] Diagram of the principle — `images/how-it-works.png`.
