@@ -1,76 +1,82 @@
 #!/bin/sh
 # Make the Sismo-LA station come back on its own after a reboot or a power cut.
 #
-# App Lab has no autostart: `arduino-app-cli app start` creates the container
-# with RestartPolicy=no, and the arduino-app-cli daemon does not re-launch the
-# apps that were running before. Without this, an unattended station dies at
-# the first power cut and nobody notices.
+# WHAT ACTUALLY GOES WRONG, measured on the reference board 2026-08-31:
 #
-# This script needs NO root, which matters because the board's sudo password
-# is easy to lose: `adb` logs in as the unprivileged `arduino` user and
-# `adb root` is refused by the image.
+#   02:37:12  dockerd starts
+#   02:37:17  dockerd finishes loading containers and STARTS sismo-la-main-1
+#   02:37:17  arduino-app-cli.service starts
+#   02:37:18  something sends SIGTERM to the container
+#   02:37:28  it has not exited, so dockerd forces it -- exit 137
+#             "ShouldRestart failed, container will not be restarted
+#              ... hasBeenManuallyStopped=true"
 #
-# READ THIS BEFORE TRUSTING THE CRON HALF. On the reference board the
-# `arduino` account's password is EXPIRED, and PAM refuses to run cron jobs
-# for such an account:
+# So the Docker restart policy is not ignored, it works: the container is
+# started at boot. The App Lab daemon then stops it, because App Lab has no
+# notion of an app that should still be running. Worse, Docker records that as
+# a deliberate stop, and "unless-stopped" means exactly "restart unless someone
+# stopped it on purpose" -- so from the NEXT boot on, the container is not even
+# started. That is why the station stayed dead through two power cycles.
 #
-#   CRON[391]: pam_unix(cron:account): expired password for user arduino
-#              Authentication token is no longer valid; new one required
+# Cron would be the natural place to start the app a bit later, and it is
+# unusable here: the `arduino` account's password is expired, so PAM refuses
+# every job it owns ("pam_unix(cron:account): expired password for user
+# arduino"). The @reboot entry fires and does nothing -- not even creating its
+# log file. Resetting that password needs a console or root, which we do not
+# have; `adb` logs in unprivileged and `adb root` is refused by the image.
 #
-# The @reboot entry then fires and does nothing at all -- not even creating
-# its log file, because the command never runs. A real power cut on
-# 2026-08-31 left the board booted and on WiFi with the app down. So the
-# Docker restart policy below is not the "fast path", it is the ONLY path
-# until that password is reset, and the check at the end of this script tells
-# you which situation you are in.
-#
-# deploy/sismo-la.service does the same job through systemd, is cleaner, and
-# does not care about the password -- but installing it needs root.
+# What is left is Docker itself: dockerd starts as root at boot and never
+# consults PAM. This installs a small sidecar container with
+# "--restart always" that waits out the App Lab reconcile and then keeps the
+# station up. No root, no password, no cron.
 #
 # Run it ON the board:  sh deploy/install-autostart.sh
 set -e
 
 APP_DIR=${1:-/home/arduino/ArduinoApps/sismo-la}
-CLI=/usr/bin/arduino-app-cli
-LOG=/home/arduino/sismo-la-boot.log
+WATCHDOG=sismo-la-watchdog
 
-# 1. Docker restarts the container by itself at boot, as root, without PAM in
-#    the way. "unless-stopped" keeps the semantics of `arduino-app-cli app
-#    stop` -- a deliberate stop stays a stop.
-#    CAUTION: `arduino-app-cli app start|restart` RECREATES the container and
-#    the new one carries the compose policy, which is "no". Re-run this script
-#    after every deploy; it is idempotent.
-container=$(docker ps -a --filter "name=sismo-la" --format '{{.Names}}' | head -1)
-if [ -n "$container" ]; then
-  docker update --restart unless-stopped "$container" >/dev/null
-  echo "docker: $container -> restart=unless-stopped"
-else
-  echo "docker: no sismo-la container yet, skipping (start the app once first)"
+container=$(docker ps -a --filter "name=sismo-la-main" --format '{{.Names}}' | head -1)
+if [ -z "$container" ]; then
+  echo "error: no sismo-la container. Start the app once first:"
+  echo "  arduino-app-cli app start $APP_DIR"
+  exit 1
 fi
 
-# 2. Cron covers what Docker cannot: if the container was removed or the image
-#    rebuilt, only app-cli can recreate it. `app restart` starts a stopped app
-#    and restarts a running one, so running both mechanisms is harmless.
-#    The delay lets docker, the router and the app-cli daemon settle first.
-entry="@reboot sleep 90 && $CLI app restart $APP_DIR >> $LOG 2>&1"
-(crontab -l 2>/dev/null | grep -v 'sismo-la' || true; echo "$entry") | crontab -
-echo "cron:   $(crontab -l | grep -c 'sismo-la') @reboot entry installed"
+# 1. Keep the restart policy anyway. It is not sufficient -- see above -- but it
+#    is what recovers the station when dockerd alone is restarted, and it costs
+#    nothing. "always" rather than "unless-stopped" precisely because App Lab's
+#    stop is recorded as manual and "unless-stopped" would honour it forever.
+#    CAUTION: `arduino-app-cli app start|restart` RECREATES the container with
+#    the compose policy, which is "no". Re-run this script after every deploy;
+#    it is idempotent.
+docker update --restart always "$container" >/dev/null
+echo "docker:   $container -> restart=always"
 
-# 3. Say plainly whether that cron entry can actually run. An expired password
-#    makes it inert, and an autostart you believe in but that does not fire is
-#    worse than none at all.
-echo
-if passwd --status "$(id -un)" 2>/dev/null | awk '{exit ($2=="P")?0:1}'; then
-  echo "cron:   password looks usable, both mechanisms should work"
-else
-  echo "WARNING: this account's password is expired or unset, so PAM will"
-  echo "         refuse the cron job and the @reboot entry above will never"
-  echo "         run. The Docker policy is then your only autostart."
-  echo "         Reset it (needs a console or root) to get cron back."
-fi
+# 2. The sidecar. It needs the Docker socket (group-only access, so pass the
+#    group in) and the app folder, read-only, for the script and the opt-out
+#    file. The image is the app's own, which is already on the board -- nothing
+#    is pulled, so this still works when the boot comes up without a network.
+image=$(docker inspect -f '{{.Config.Image}}' "$container")
+gid=$(getent group docker | cut -d: -f3)
+
+docker rm -f "$WATCHDOG" >/dev/null 2>&1 || true
+docker run -d \
+  --name "$WATCHDOG" \
+  --restart always \
+  --group-add "$gid" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$APP_DIR":/station:ro \
+  -e SISMO_CONTAINER="$container" \
+  --entrypoint python3 \
+  "$image" /station/deploy/watchdog.py >/dev/null
+echo "watchdog: $WATCHDOG running on $image (docker gid $gid)"
 
 echo
-echo "The ONLY conclusive test is a real power cut. After it comes back:"
-echo "  arduino-app-cli app list | grep sismo-la     # expect: running"
-echo "  docker inspect sismo-la-main-1 --format '{{.HostConfig.RestartPolicy.Name}}'"
-echo "  cat $LOG                                     # empty file = cron never ran"
+echo "To stop the station on purpose without the watchdog undoing it:"
+echo "  touch $APP_DIR/.autostart-disabled"
+echo
+echo "The ONLY conclusive test is a real reboot or power cut. After it:"
+echo "  docker ps --format '{{.Names}} {{.Status}}'   # both containers up"
+echo "  docker logs $WATCHDOG                         # what it decided"
+echo "  curl -sf http://<board>:8000/api/state >/dev/null && echo dashboard ok"
