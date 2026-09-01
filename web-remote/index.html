@@ -91,14 +91,15 @@
     .more:hover { text-decoration: underline; }
 
     .window {
-      position: absolute; right: 12px; top: 12px; z-index: 500;
+      position: absolute; right: 12px; bottom: 22px; z-index: 500;
+      display: flex; align-items: center; gap: 10px;
       background: var(--card); border: 1px solid var(--border); border-radius: 9px;
-      padding: 8px 12px 6px; box-shadow: 0 4px 14px var(--shadow);
+      padding: 7px 13px; box-shadow: 0 4px 14px var(--shadow);
     }
-    .window label { display: block; font-size: 11px; color: var(--muted);
-                    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-    .window b { color: var(--text); font-size: 12.5px; text-transform: none; letter-spacing: 0; }
-    .window input { width: 150px; display: block; accent-color: var(--dev); cursor: pointer; }
+    .window label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .window b { color: var(--text); }
+    .window input { width: 190px; display: block; accent-color: var(--dev); cursor: pointer; }
+    @media (max-width: 620px) { .window input { width: 120px; } }
 
     .legend {
       position: absolute; left: 12px; bottom: 22px; z-index: 500;
@@ -136,9 +137,9 @@
   <div id="content">
     <div id="map">
       <div class="window">
-        <label for="days">Showing <b id="dayslabel">the last 7 days</b></label>
         <input type="range" id="days" min="1" max="30" step="1" value="7"
                aria-label="How many days to show" />
+        <label for="days"><b id="dayslabel">last 7 days</b></label>
       </div>
 
       <div class="legend">
@@ -299,11 +300,17 @@
       const ticks = [];
       for (let m = Math.ceil(lo); m <= hi; m += 1) ticks.push(m);
 
+      // Grid first, so the diagonal and the dots sit on top of it.
       svg.innerHTML =
+        ticks.map((m) =>
+          `<line x1="${x(m)}" y1="${T}" x2="${x(m)}" y2="${T + S}"
+                 stroke="${border}" stroke-width="1"/>` +
+          `<line x1="${L}" y1="${y(m)}" x2="${L + S}" y2="${y(m)}"
+                 stroke="${border}" stroke-width="1"/>`).join('') +
         `<line x1="${x(lo)}" y1="${y(lo)}" x2="${x(hi)}" y2="${y(hi)}"
-               stroke="${muted}" stroke-width="1" stroke-dasharray="4,4" opacity=".7"/>` +
-        `<line x1="${L}" y1="${T + S}" x2="${L + S}" y2="${T + S}" stroke="${border}"/>` +
-        `<line x1="${L}" y1="${T}" x2="${L}" y2="${T + S}" stroke="${border}"/>` +
+               stroke="${muted}" stroke-width="1.2" stroke-dasharray="4,4" opacity=".8"/>` +
+        `<rect x="${L}" y="${T}" width="${S}" height="${S}" fill="none"
+               stroke="${border}" stroke-width="1"/>` +
         ticks.map((m) =>
           `<text x="${x(m)}" y="${T + S + 12}" fill="${muted}" font-size="9"
                  text-anchor="middle">${m}</text>` +
@@ -379,11 +386,19 @@
 
     const slider = document.getElementById('days');
     const dayslabel = document.getElementById('dayslabel');
+
+    // These panels sit inside the Leaflet container, so without this a drag on
+    // the slider is also a drag on the map, and a scroll over the legend zooms.
+    document.querySelectorAll('.window, .legend').forEach((el) => {
+      L.DomEvent.disableClickPropagation(el);
+      L.DomEvent.disableScrollPropagation(el);
+    });
+
     let days = +(localStorage.getItem('sismo-days') || WINDOW_DAYS);
     let snap = null, radius = LA.radius_km, fitted = false;
 
     function label() {
-      dayslabel.textContent = days === 1 ? 'the last 24 hours' : `the last ${days} days`;
+      dayslabel.textContent = days === 1 ? 'last 24 hours' : `last ${days} days`;
     }
 
     /* Redraw everything that depends on the window, without touching the
