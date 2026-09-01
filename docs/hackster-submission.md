@@ -66,7 +66,10 @@ We fill this page in as the project progresses.
       say **no text** on it — so no dashboard export can serve as the cover,
       it has to be the physical station.
 - [ ] Macro photo of the UNO Q + IMU assembly.
-- [ ] Fritzing schematic.
+- [x] Schematic — `docs/images/wiring.png` (and `.jpg`), source `wiring.svg`.
+      Not Fritzing: there is nothing to breadboard, so it shows the single
+      Qwiic link and the signal path instead, and prints the one trap worth
+      printing (the Qwiic port is `Wire1`, not `Wire`).
 - [ ] GIF/video of a detection (tap the desk -> trigger).
 - [x] Dashboard screenshot — `docs/images/timelapse-4-calibrated.jpg`, and
       `dashboard-1920x1080.jpg` for a 16:9 slot (padded, nothing cropped).

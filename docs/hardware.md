@@ -39,6 +39,8 @@ The recommended sensor is the same family used in real low-cost seismic projects
 
 ## Wiring
 
+![The whole build: a Modulino Movement joined to the Arduino UNO Q by a single Qwiic cable, and the path a shake takes from the desk to the dashboard](images/wiring.png)
+
 ### Option A — Modulino Movement over Qwiic (recommended, no soldering)
 
 1. Take the **Qwiic cable**.

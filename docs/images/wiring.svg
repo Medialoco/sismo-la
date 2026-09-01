@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="790" viewBox="0 0 1200 790" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a3"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="790" fill="#f7f8fa"/>
+
+  <text x="40" y="54" font-size="30" font-weight="700" fill="#1c2430">Sismo-LA &#8212; the whole build</text>
+  <text x="40" y="86" font-size="16" fill="#6b7684">One board, one sensor, one cable. No breadboard, no soldering, no external components.</text>
+
+  <!-- ================= physical assembly ================= -->
+  <rect x="40" y="116" width="1120" height="320" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <text x="72" y="150" font-size="15" font-weight="700" fill="#1c2430">The assembly</text>
+
+  <!-- Modulino board -->
+  <rect x="110" y="225" width="190" height="130" rx="10" fill="#0d5c63"/>
+  <rect x="98" y="279" width="14" height="22" rx="3" fill="#eef2f5" stroke="#b9c3cc"/>
+  <rect x="298" y="279" width="14" height="22" rx="3" fill="#eef2f5" stroke="#b9c3cc"/>
+  <rect x="182" y="248" width="46" height="34" rx="4" fill="#062f33"/>
+  <text x="205" y="269" font-size="9" fill="#7fb8bd" text-anchor="middle">LSM6DSOX</text>
+  <text x="205" y="308" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">Modulino Movement</text>
+  <text x="205" y="326" font-size="11" fill="#a8d5d8" text-anchor="middle">6-axis MEMS accelerometer</text>
+  <text x="205" y="342" font-size="10" fill="#7fb8bd" text-anchor="middle">two Qwiic ports, either one works</text>
+  <text x="205" y="205" font-size="11" fill="#6b7684" text-anchor="middle">the sensor</text>
+
+  <!-- Qwiic cable, 4 conductors -->
+  <path d="M 312 281 C 420 281 520 235 632 235" fill="none" stroke="#2b2b2b" stroke-width="3"/>
+  <path d="M 312 287 C 420 287 520 241 632 241" fill="none" stroke="#d64545" stroke-width="3"/>
+  <path d="M 312 293 C 420 293 520 247 632 247" fill="none" stroke="#3b7dd8" stroke-width="3"/>
+  <path d="M 312 299 C 420 299 520 253 632 253" fill="none" stroke="#e0a020" stroke-width="3"/>
+
+  <text x="470" y="200" font-size="12" font-weight="600" fill="#4a5563" text-anchor="middle">Qwiic cable (JST-SH, 4 pins)</text>
+  <text x="470" y="218" font-size="11" fill="#8a94a3" text-anchor="middle">supplied with the Modulino</text>
+
+  <rect x="352" y="330" width="236" height="26" rx="6" fill="#f7f8fa" stroke="#e4e8ee"/>
+  <rect x="364" y="339" width="10" height="8" fill="#2b2b2b"/>
+  <text x="380" y="347" font-size="10.5" fill="#4a5563">GND</text>
+  <rect x="418" y="339" width="10" height="8" fill="#d64545"/>
+  <text x="434" y="347" font-size="10.5" fill="#4a5563">3.3 V</text>
+  <rect x="474" y="339" width="10" height="8" fill="#3b7dd8"/>
+  <text x="490" y="347" font-size="10.5" fill="#4a5563">SDA</text>
+  <rect x="524" y="339" width="10" height="8" fill="#e0a020"/>
+  <text x="540" y="347" font-size="10.5" fill="#4a5563">SCL</text>
+
+  <!-- the one gotcha worth printing on the schematic -->
+  <rect x="352" y="366" width="236" height="44" rx="8" fill="#fff8e8" stroke="#f0dcae"/>
+  <text x="366" y="384" font-size="11" font-weight="700" fill="#8a6a12">Careful: the Qwiic port is Wire1</text>
+  <text x="366" y="400" font-size="10.5" fill="#8a6a12">On the UNO Q it is not the default Wire bus.</text>
+
+  <!-- UNO Q board -->
+  <rect x="640" y="180" width="420" height="222" rx="10" fill="#00878F"/>
+  <rect x="632" y="229" width="14" height="28" rx="3" fill="#eef2f5" stroke="#b9c3cc"/>
+  <text x="660" y="210" font-size="15" font-weight="700" fill="#ffffff">Arduino UNO Q</text>
+
+  <path d="M 1002 206 a 16 16 0 0 1 22 0" fill="none" stroke="#bde6e8" stroke-width="2.5"/>
+  <path d="M 1007 213 a 9 9 0 0 1 12 0" fill="none" stroke="#bde6e8" stroke-width="2.5"/>
+  <circle cx="1013" cy="220" r="2.5" fill="#bde6e8"/>
+  <text x="1013" y="236" font-size="9.5" fill="#bde6e8" text-anchor="middle">Wi-Fi</text>
+
+  <rect x="660" y="248" width="182" height="98" rx="8" fill="#006D73"/>
+  <text x="674" y="270" font-size="12" font-weight="700" fill="#ffffff">STM32 microcontroller</text>
+  <text x="674" y="290" font-size="10.5" fill="#c3e6e8">Reads the IMU at 100 Hz and</text>
+  <text x="674" y="306" font-size="10.5" fill="#c3e6e8">runs the STA/LTA trigger.</text>
+  <text x="674" y="322" font-size="10.5" fill="#c3e6e8">Nothing else &#8212; it must never</text>
+  <text x="674" y="338" font-size="10.5" fill="#c3e6e8">miss a sample.</text>
+
+  <rect x="858" y="248" width="182" height="98" rx="8" fill="#006D73"/>
+  <text x="872" y="270" font-size="12" font-weight="700" fill="#ffffff">Dragonwing MPU</text>
+  <text x="872" y="290" font-size="10.5" fill="#c3e6e8">Runs Debian Linux: Wi-Fi,</text>
+  <text x="872" y="306" font-size="10.5" fill="#c3e6e8">the USGS queries, the</text>
+  <text x="872" y="322" font-size="10.5" fill="#c3e6e8">calibration and the web</text>
+  <text x="872" y="338" font-size="10.5" fill="#c3e6e8">dashboard.</text>
+
+  <path d="M 848 288 L 840 293 L 848 298" fill="none" stroke="#bde6e8" stroke-width="1.6"/>
+  <path d="M 852 288 L 860 293 L 852 298" fill="none" stroke="#bde6e8" stroke-width="1.6"/>
+  <text x="850" y="368" font-size="10.5" fill="#bde6e8" text-anchor="middle">the two halves talk over the Arduino router bridge</text>
+
+  <rect x="820" y="396" width="70" height="12" rx="5" fill="#d8eef0"/>
+  <text x="855" y="388" font-size="10" fill="#bde6e8" text-anchor="middle">USB-C power</text>
+
+  <text x="850" y="164" font-size="11" fill="#6b7684" text-anchor="middle">one board, two brains</text>
+
+  <!-- ================= signal path ================= -->
+  <rect x="40" y="466" width="1120" height="256" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <text x="72" y="500" font-size="15" font-weight="700" fill="#1c2430">From the desk to the dashboard</text>
+
+  <rect x="72" y="524" width="184" height="150" rx="10" fill="#f7f8fa" stroke="#e4e8ee"/>
+  <rect x="72" y="524" width="184" height="3" rx="1.5" fill="#8a94a3"/>
+  <text x="88" y="552" font-size="12" font-weight="700" fill="#1c2430">Something shakes</text>
+  <text x="88" y="576" font-size="10.5" fill="#6b7684">An earthquake, a truck,</text>
+  <text x="88" y="592" font-size="10.5" fill="#6b7684">a slammed door. At this</text>
+  <text x="88" y="608" font-size="10.5" fill="#6b7684">point they are all the</text>
+  <text x="88" y="624" font-size="10.5" fill="#6b7684">same thing.</text>
+
+  <rect x="290" y="524" width="184" height="150" rx="10" fill="#f7f8fa" stroke="#e4e8ee"/>
+  <rect x="290" y="524" width="184" height="3" rx="1.5" fill="#0d5c63"/>
+  <text x="306" y="552" font-size="12" font-weight="700" fill="#1c2430">The sensor measures</text>
+  <text x="306" y="576" font-size="10.5" fill="#6b7684">The IMU is read 100 times</text>
+  <text x="306" y="592" font-size="10.5" fill="#6b7684">a second over I&#178;C. Gravity</text>
+  <text x="306" y="608" font-size="10.5" fill="#6b7684">is removed; what is left</text>
+  <text x="306" y="624" font-size="10.5" fill="#6b7684">is ground motion.</text>
+
+  <rect x="508" y="524" width="184" height="150" rx="10" fill="#f7f8fa" stroke="#e4e8ee"/>
+  <rect x="508" y="524" width="184" height="3" rx="1.5" fill="#00878F"/>
+  <text x="524" y="552" font-size="12" font-weight="700" fill="#1c2430">The MCU decides</text>
+  <text x="524" y="576" font-size="10.5" fill="#6b7684">STA/LTA: the energy of the</text>
+  <text x="524" y="592" font-size="10.5" fill="#6b7684">last 0.5 s against that of</text>
+  <text x="524" y="608" font-size="10.5" fill="#6b7684">the last 10 s. Above a ratio</text>
+  <text x="524" y="624" font-size="10.5" fill="#6b7684">of 4, it calls it an event.</text>
+  <text x="524" y="648" font-size="10" fill="#8a94a3">Sends peak, duration, frequency.</text>
+
+  <rect x="726" y="524" width="184" height="150" rx="10" fill="#f7f8fa" stroke="#e4e8ee"/>
+  <rect x="726" y="524" width="184" height="3" rx="1.5" fill="#2f9e44"/>
+  <text x="742" y="552" font-size="12" font-weight="700" fill="#1c2430">Linux checks and learns</text>
+  <text x="742" y="576" font-size="10.5" fill="#6b7684">Was there a real quake?</text>
+  <text x="742" y="592" font-size="10.5" fill="#6b7684">The USGS catalog answers.</text>
+  <text x="742" y="608" font-size="10.5" fill="#6b7684">Yes refits the calibration,</text>
+  <text x="742" y="624" font-size="10.5" fill="#6b7684">no trains the noise filter.</text>
+
+  <rect x="944" y="524" width="184" height="150" rx="10" fill="#f7f8fa" stroke="#e4e8ee"/>
+  <rect x="944" y="524" width="184" height="3" rx="1.5" fill="#e63946"/>
+  <text x="960" y="552" font-size="12" font-weight="700" fill="#1c2430">It comes out</text>
+  <text x="960" y="576" font-size="10.5" fill="#6b7684">A live map on port 8000,</text>
+  <text x="960" y="592" font-size="10.5" fill="#6b7684">a station.json for the</text>
+  <text x="960" y="608" font-size="10.5" fill="#6b7684">public page, and a journal</text>
+  <text x="960" y="624" font-size="10.5" fill="#6b7684">of every event for audit.</text>
+
+  <line x1="262" y1="599" x2="284" y2="599" stroke="#8a94a3" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="480" y1="599" x2="502" y2="599" stroke="#8a94a3" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="698" y1="599" x2="720" y2="599" stroke="#8a94a3" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="916" y1="599" x2="938" y2="599" stroke="#8a94a3" stroke-width="2" marker-end="url(#a)"/>
+
+  <text x="72" y="700" font-size="10.5" fill="#8a94a3">The split matters: a missed sample cannot be recovered, so the microcontroller does nothing but sample and trigger, while Linux does everything that can wait.</text>
+
+  <text x="40" y="762" font-size="11" fill="#8a94a3">Sismo-LA &#183; wiring and signal path &#183; editable source: docs/images/wiring.svg</text>
+</svg>

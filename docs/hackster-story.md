@@ -92,6 +92,8 @@ on real recordings is the next step, and it is the honest crux of the project.
 
 ### 3. Hardware: two brains, one Qwiic cable, zero soldering
 
+![The whole build and the path a shake takes through it](images/wiring.png)
+
 The Arduino UNO Q is two computers on one board:
 
 - an **STM32U585 MCU** (Zephyr RTOS) — the real-time brain that never misses
