@@ -239,10 +239,11 @@ local dashboard, `python/main.py` can push a JSON snapshot (detections, estimate
 calibration state) to a remote site every minute (`publish:` block in
 `config.yaml`: HTTP POST, file write, or any upload command such as `scp`).
 The static page [`web-remote/index.html`](web-remote/index.html) overlays that
-snapshot on the live USGS map. It has no backend and no build step, and this
-repository publishes it on GitHub Pages, so the station's public face costs
-nothing to host. If `station.json` is missing or the station is down, the page
-shows the USGS catalogue alone and says so, rather than breaking.
+snapshot on the live USGS map, and this repository publishes it at
+**<https://medialoco.github.io/sismo-la/>**. No backend, no build step, nothing
+to pay for. If `station.json` is missing or the station is down, the page shows
+the USGS catalogue alone and marks itself offline, rather than breaking — which
+is what it is doing right now.
 
 ## Repository layout
 
