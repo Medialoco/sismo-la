@@ -244,6 +244,13 @@ snapshot, and this repository publishes it at
 to pay for. If `station.json` is missing, the page shows the USGS catalogue
 alone rather than breaking — which is what it is doing right now.
 
+The site is two pages. The map shows a rolling week — the USGS catalogue, and
+the events the station recognised outlined in red — next to a scatter of the
+magnitude it read against the magnitude the catalogue published.
+[`data.html`](web-remote/data.html) holds the numbers behind it: the full
+calibration record with signed errors, every shake of the last week including
+the ones that were only a passing truck, and a CSV of each.
+
 Nothing the station learns lives only in memory. Every shake is appended to
 `event_log.jsonl` the moment it is handled, next to the three model state files,
 and on the board that directory is the host's filesystem rather than the

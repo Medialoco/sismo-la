@@ -56,6 +56,10 @@ publish:
   # the published distances to several known epicenters still trilaterate the
   # station roughly, so this hides an address, it does not anonymize.
   include_location: false
+  # Rolling window, in days, for the "recent shakes" list and the data page.
+  # The calibration history is NOT windowed: it is the whole point that it
+  # accumulates.
+  window_days: 7
   # method: post  -> HTTP POST to this endpoint (optional bearer token)
   url: https://example.org/api/station
   token: ""

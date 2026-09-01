@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 SCHEMA = 1
 
@@ -124,6 +124,59 @@ def matched_pairs(path: str, limit: int = 400) -> list[dict]:
         }
         out.append(entry)
     return out[-limit:]
+
+
+def recent_events(path: str, days: float = 7.0, limit: int = 120) -> list[dict]:
+    """Everything the station felt in a rolling window, newest first.
+
+    Read from the journal rather than from the in-memory deque, which holds
+    only the last few and restarts empty. Unmatched shakes are kept: a list of
+    confirmed earthquakes alone would hide how much of the day is traffic and
+    footsteps, which is most of it.
+
+    Keys are terse because this travels in a snapshot that is committed to a
+    repository every time it changes.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    out: list[dict] = []
+    for r in read(path):
+        when = _parse(r.get("wall_time"))
+        if when is None or when < cutoff:
+            continue
+        m, p = r.get("match"), r.get("prior") or {}
+        entry = {
+            "t": r.get("wall_time"),
+            "pga": r.get("pga_g"),
+            "dur": r.get("dur_ms"),
+            "hz": r.get("dom_hz"),
+            "dev": _round(p.get("magnitude_operational"), 2),
+            "dev_km": _round(p.get("distance_km"), 1),
+            "p": _round(r.get("p_quake_prior"), 2),
+        }
+        if m and not m.get("synthetic"):
+            # Kept so a page can tie this reading to the exact catalog event
+            # it recognised, rather than guessing from magnitude and time.
+            entry["id"] = m.get("event_id") or ""
+            entry["usgs"] = _round(m.get("magnitude"), 2)
+            entry["usgs_km"] = _round(m.get("distance_km"), 1)
+            entry["place"] = m.get("place") or ""
+        out.append(entry)
+    out.reverse()
+    return out[:limit]
+
+
+def _round(value, digits: int):
+    return round(value, digits) if isinstance(value, (int, float)) else None
+
+
+def _parse(value) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        when = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
 def _iso(value) -> str | None:

@@ -79,7 +79,7 @@ def _same_but_for_time(old: bytes, new: bytes) -> bool:
     anything. What matters is what the device did: its detections, its
     confirmed history, and the state of the models.
     """
-    keep = ("detections", "history", "calibration", "ai")
+    keep = ("recent", "detections", "history", "calibration", "ai")
     try:
         a, b = json.loads(old), json.loads(new)
     except (ValueError, TypeError):

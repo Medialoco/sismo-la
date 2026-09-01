@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sismo-LA — the numbers</title>
+  <meta name="description" content="Every reading the Sismo-LA station published: confirmed earthquakes, unmatched shakes, and the CSV behind them." />
+  <!--
+    The tables behind the map. Reads the same station.json as index.html, so
+    it needs no server of its own and stays correct when the device is offline.
+
+    Two tables on purpose:
+      - the calibration record, which accumulates and never expires;
+      - a rolling window of everything felt, most of which is not an earthquake.
+    CSV is generated in the browser from the same data, so a download can never
+    disagree with what is on screen.
+  -->
+  <style>
+    :root, [data-theme="light"] {
+      --bg: #f5f0e6; --soft: #efeae0; --card: #fbf8f2;
+      --text: #4a443a; --muted: #7a7266; --border: #e0d9ce;
+      --dev: #c62b39; --shadow: rgba(15,23,42,.10);
+    }
+    [data-theme="dark"] {
+      --bg: #1a1a1a; --soft: #222; --card: #262626;
+      --text: #d6d9dd; --muted: #9ca3af; --border: #3a3f47;
+      --dev: #ff5c66; --shadow: rgba(0,0,0,.4);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; background: var(--soft); border-bottom: 1px solid var(--border);
+    }
+    .logo { font-weight: 700; }
+    .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    header a { color: var(--muted); font-size: 13px; text-decoration: none; }
+    header a:hover { color: var(--text); }
+    .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
+               background: none; border: 1px solid var(--border); border-radius: 7px;
+               display: inline-flex; align-items: center; justify-content: center; }
+    .iconbtn:hover { color: var(--text); }
+
+    main { max-width: 940px; margin: 0 auto; padding: 22px 16px 60px; }
+    section { margin-bottom: 38px; }
+    h2 { font-size: 15px; margin: 0 0 3px; }
+    .note { color: var(--muted); font-size: 13px; margin: 0 0 12px; max-width: 66ch; }
+    .bar { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+    .count { color: var(--muted); font-size: 12.5px; }
+    button.csv {
+      font: inherit; font-size: 12.5px; cursor: pointer; color: var(--dev);
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 7px; padding: 3px 10px;
+    }
+    button.csv:hover { border-color: var(--dev); }
+    button.csv[disabled] { color: var(--muted); cursor: default; border-color: var(--border); }
+
+    .wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 9px;
+            background: var(--card); }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { padding: 7px 11px; text-align: right; white-space: nowrap;
+             border-bottom: 1px solid var(--border); }
+    th:first-child, td:first-child, th.l, td.l { text-align: left; }
+    th { position: sticky; top: 0; background: var(--soft); font-weight: 600;
+         font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+         color: var(--muted); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--soft); }
+    td.dev { color: var(--dev); font-weight: 600; }
+    td.off { color: var(--muted); }
+    .empty { padding: 16px; color: var(--muted); font-size: 13px; }
+    .quiet { color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="logo">Sismo-LA</span>
+    <span class="sub">Every reading the station published, and the CSV behind it.</span>
+    <a href="index.html">&larr; map</a>
+    <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
+    <button type="button" id="theme" class="iconbtn" aria-label="Light or dark">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section>
+      <div class="bar">
+        <h2>Confirmed earthquakes</h2>
+        <span class="count" id="hcount"></span>
+        <button type="button" class="csv" id="hcsv" disabled>Download CSV</button>
+      </div>
+      <p class="note">Every earthquake the station has ever recognised, oldest
+        first. This table does not expire &mdash; it is the calibration record.
+        The magnitude and distance in the device columns are what it worked out
+        <b>before</b> this earthquake was folded into its models, so the error
+        column is an honest out-of-sample miss rather than a training residual.
+        Replayed events are excluded: they are correct by construction.</p>
+      <div class="wrap"><table id="htable">
+        <thead><tr>
+          <th class="l">When (LA)</th>
+          <th>Device Mw</th><th>USGS Mw</th><th>Error</th>
+          <th>Device km</th><th>USGS km</th><th>Error km</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <div class="bar">
+        <h2 id="rtitle">Everything felt</h2>
+        <span class="count" id="rcount"></span>
+        <button type="button" class="csv" id="rcsv" disabled>Download CSV</button>
+      </div>
+      <p class="note">A rolling window of every shake that crossed the trigger,
+        newest first. Most rows are not earthquakes &mdash; a door, a truck, a
+        footstep &mdash; and that is the point: the noise filter learns from
+        them. PGA is peak ground acceleration in g, and the frequency is a
+        zero-crossing rate on a rectified signal, so it runs about twice the
+        true ground-motion frequency.</p>
+      <div class="wrap"><table id="rtable">
+        <thead><tr>
+          <th class="l">When (LA)</th>
+          <th>PGA g</th><th>Duration ms</th><th>Freq Hz</th>
+          <th>Device Mw</th><th>Device km</th>
+          <th class="l">Catalogue</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <p class="note quiet">The station publishes a snapshot on a timer, so these
+      tables are as fresh as the last push, not live. Raw journal lines never
+      leave the device; what you see here is what it chose to publish.</p>
+  </main>
+
+  <script>
+    const STATION_URL = 'station.json';
+
+    const root = document.documentElement;
+    const saved = localStorage.getItem('sismo-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+    document.getElementById('theme').onclick = () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      localStorage.setItem('sismo-theme', next);
+    };
+
+    const stamp = (t) => {
+      if (!t) return '';
+      try {
+        return new Date(t).toLocaleString('en-US', {
+          timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (e) { return t; }
+    };
+    const num = (v, d) => (typeof v === 'number' ? v.toFixed(d) : '—');
+    const signed = (v, d) => (typeof v === 'number'
+      ? (v > 0 ? '+' : '') + v.toFixed(d) : '—');
+    const cell = (v, cls) => `<td class="${cls || ''}">${v}</td>`;
+
+    function download(name, rows) {
+      // Quote every field: place names contain commas, and a CSV that opens
+      // wrong in a spreadsheet is worse than no CSV.
+      const csv = rows.map((r) => r.map((f) => {
+        const s = f === null || f === undefined ? '' : String(f);
+        return '"' + s.replace(/"/g, '""') + '"';
+      }).join(',')).join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function wire(button, name, header, rows) {
+      if (!rows.length) return;
+      button.disabled = false;
+      button.onclick = () => download(name, [header].concat(rows));
+    }
+
+    function fillHistory(history) {
+      const body = document.querySelector('#htable tbody');
+      document.getElementById('hcount').textContent =
+        history.length ? `${history.length} events` : '';
+      if (!history.length) {
+        body.innerHTML = '<tr><td colspan="7" class="empty">' +
+          'No confirmed earthquake yet. Every shake so far was correctly ' +
+          'rejected as something else.</td></tr>';
+        return;
+      }
+      body.innerHTML = history.map((h) => {
+        const dm = typeof h.dev === 'number' && typeof h.usgs === 'number'
+          ? h.dev - h.usgs : null;
+        const dk = typeof h.dev_km === 'number' && typeof h.usgs_km === 'number'
+          ? h.dev_km - h.usgs_km : null;
+        return '<tr>' + cell(stamp(h.t), 'l') +
+          cell(num(h.dev, 2), 'dev') + cell(num(h.usgs, 1)) + cell(signed(dm, 2)) +
+          cell(num(h.dev_km, 1), 'dev') + cell(num(h.usgs_km, 1)) + cell(signed(dk, 1)) +
+          '</tr>';
+      }).join('');
+
+      wire(document.getElementById('hcsv'), 'sismo-la-earthquakes.csv',
+        ['time_utc', 'device_mw', 'usgs_mw', 'error_mw', 'device_km', 'usgs_km', 'error_km'],
+        history.map((h) => [h.t, h.dev, h.usgs,
+          typeof h.dev === 'number' && typeof h.usgs === 'number'
+            ? (h.dev - h.usgs).toFixed(2) : '',
+          h.dev_km, h.usgs_km,
+          typeof h.dev_km === 'number' && typeof h.usgs_km === 'number'
+            ? (h.dev_km - h.usgs_km).toFixed(1) : '']));
+    }
+
+    function fillRecent(recent, days) {
+      const body = document.querySelector('#rtable tbody');
+      document.getElementById('rtitle').textContent = `Everything felt, last ${days} days`;
+      document.getElementById('rcount').textContent =
+        recent.length ? `${recent.length} shakes` : '';
+      if (!recent.length) {
+        body.innerHTML = '<tr><td colspan="7" class="empty">' +
+          `Nothing crossed the trigger in the last ${days} days.</td></tr>`;
+        return;
+      }
+      body.innerHTML = recent.map((d) => {
+        const truth = d.usgs != null
+          ? `M${d.usgs.toFixed(1)} at ${num(d.usgs_km, 1)} km${d.place ? ' — ' + d.place : ''}`
+          : 'not an earthquake';
+        return '<tr>' + cell(stamp(d.t), 'l') +
+          cell(num(d.pga, 4)) + cell(d.dur ?? '—') + cell(num(d.hz, 2)) +
+          cell(num(d.dev, 2), 'dev') + cell(num(d.dev_km, 1), 'dev') +
+          cell(truth, d.usgs != null ? 'l' : 'l off') + '</tr>';
+      }).join('');
+
+      wire(document.getElementById('rcsv'), 'sismo-la-shakes.csv',
+        ['time_utc', 'pga_g', 'duration_ms', 'freq_hz', 'device_mw', 'device_km',
+         'usgs_mw', 'usgs_km', 'place', 'p_quake'],
+        recent.map((d) => [d.t, d.pga, d.dur, d.hz, d.dev, d.dev_km,
+          d.usgs ?? '', d.usgs_km ?? '', d.place ?? '', d.p ?? '']));
+    }
+
+    /* Older snapshots carried "detections" instead of the journal-backed list. */
+    function shakes(s) {
+      if (s.recent) return s.recent;
+      return (s.detections || []).map((d) => ({
+        t: d.recv_time, pga: d.pga_g, dur: d.dur_ms, hz: d.dom_hz, p: d.p_quake,
+        dev: d.device_est ? d.device_est.mag : null,
+        dev_km: d.device_est ? d.device_est.distance_km : null,
+        usgs: d.match ? d.match.magnitude : undefined,
+        usgs_km: d.match ? d.match.distance_km : undefined,
+        place: d.match ? d.match.place : '',
+      }));
+    }
+
+    (async () => {
+      let s = null;
+      try {
+        const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        if (r.ok) s = await r.json();
+      } catch (e) { /* handled below */ }
+
+      if (!s) {
+        document.querySelector('main').insertAdjacentHTML('afterbegin',
+          '<p class="note">The station has not published anything yet, so both ' +
+          'tables are empty. <a href="index.html">The map</a> still shows the ' +
+          'USGS catalogue.</p>');
+        s = {};
+      }
+      fillHistory(s.history || []);
+      fillRecent(shakes(s), s.window_days || 7);
+    })();
+  </script>
+</body>
+</html>

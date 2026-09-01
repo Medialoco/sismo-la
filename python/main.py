@@ -453,6 +453,7 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
     method = pub_cfg.get("method", "post")
     interval = float(pub_cfg.get("interval_s", 60))
     with_location = bool(pub_cfg.get("include_location", False))
+    window_days = float(pub_cfg.get("window_days", 7))
     while True:
         time.sleep(interval)
         snapshot = state.snapshot()
@@ -464,6 +465,10 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
         if journal_path:
             try:
                 snapshot["history"] = eventlog.matched_pairs(journal_path)
+                snapshot["recent"] = eventlog.recent_events(
+                    journal_path, days=window_days
+                )
+                snapshot["window_days"] = window_days
             except OSError as e:
                 print(f"[publish] could not read journal: {e}")
         payload = json.dumps(snapshot).encode("utf-8")
