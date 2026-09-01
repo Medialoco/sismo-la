@@ -84,6 +84,49 @@ void report(const char *message) {
   Monitor.println("\"}");
 }
 
+// Narrow the accelerometer's anti-alias filter, which is the only lever that
+// moves this station's noise floor.
+//
+// Measured 2026-09-01 over 334 quiet heartbeats: the at-rest reading is
+// 0.00066 g median. The LSM6DSOX datasheet gives 110 ug/sqrt(Hz) of noise
+// density, and `Arduino_LSM6DSOX::begin()` leaves LPF2 at ODR/4, i.e. ~26 Hz of
+// bandwidth: 110e-6 * sqrt(26) = 0.00056 g. Measurement and prediction agree to
+// 18%, so the floor is the sensor's OWN ELECTRICAL NOISE, not the building.
+// That is why moving the board barely helped (0.00087 g on a desk -> 0.00066 g
+// at the final location) and why no quieter room ever will.
+//
+// White noise integrates as sqrt(bandwidth), so cutting the bandwidth cuts the
+// floor. HPCF_XL=001 selects ODR/10 ~= 10.4 Hz instead of ODR/4 ~= 26 Hz, a
+// predicted sqrt(2.5) = 1.58x reduction. Because STA/LTA is a *ratio*, that
+// gain is real only for signal the filter keeps: earthquake energy at tens of
+// km sits at 1-10 Hz, so it passes while the noise above 10 Hz does not. ODR/20
+// (5.2 Hz) would cut 2.24x but would start eating the signal itself.
+//
+// Two honest consequences. Sharp taps used to check the station are mostly
+// above 10 Hz, so they will now report a SMALLER PGA — do not read that as a
+// broken sensor. And `dom_hz` and PGA are no longer strictly comparable with
+// records written before this change.
+static bool narrowAntiAliasFilter() {
+  const uint8_t ADDR = 0x6A;      // LSM6DSOX on the Modulino Movement
+  const uint8_t CTRL8_XL = 0x17;
+  // Keep the bits begin() sets (0x09) and add HPCF_XL=001 in bits 7:5.
+  const uint8_t WANTED = 0x29;
+
+  Wire1.beginTransmission(ADDR);
+  Wire1.write(CTRL8_XL);
+  Wire1.write(WANTED);
+  if (Wire1.endTransmission() != 0) return false;
+
+  // Read it back. A write that silently did nothing would show up as "the room
+  // got no quieter", which is indistinguishable from a wrong conclusion about
+  // where the noise comes from — so verify rather than assume.
+  Wire1.beginTransmission(ADDR);
+  Wire1.write(CTRL8_XL);
+  if (Wire1.endTransmission(false) != 0) return false;
+  if (Wire1.requestFrom(ADDR, (uint8_t)1) != 1) return false;
+  return Wire1.read() == WANTED;
+}
+
 void setup() {
   Bridge.begin();
   Monitor.begin(115200);
@@ -110,6 +153,10 @@ void setup() {
     sensorOk = imu.begin();
     if (sensorOk) report("imu ok");
   }
+
+  report(narrowAntiAliasFilter()
+         ? "anti-alias filter set to ODR/10 (~10 Hz)"
+         : "anti-alias filter UNCHANGED - register write refused, floor stays ~26 Hz");
 
   // Seed both averages with the first reading instead of letting the LTA climb
   // from ~0: a 10 s EMA started at zero stays far from the true noise floor for
