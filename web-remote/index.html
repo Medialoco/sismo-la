@@ -331,11 +331,35 @@
     function fillPanel(s) {
       const c = s.calibration || {};
       document.getElementById('status').innerHTML =
+        offlineNotice(s) +
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b><br>` +
         (c.ready
           ? `Calibrated on <b>${c.n_points}</b> confirmed earthquakes.`
           : `Still learning: <b>${c.n_points ?? 0}</b> of ${c.min_points ?? '?'} confirmed earthquakes.`);
 
+    }
+
+    // Two independent ways this page can be showing an old picture: the station
+    // knew it was degraded when it published, or it stopped publishing at all.
+    // Both used to look identical to a healthy station, which is how a dead
+    // sensor link went unnoticed for hours on 2026-09-01.
+    function offlineNotice(s) {
+      const h = s.health;
+      const ageH = (Date.now() - new Date(s.updated).getTime()) / 3.6e6;
+      let msg = '';
+      if (h && h.stale) {
+        msg = 'Station degraded when this snapshot was taken'
+            + (h.problems && h.problems.length ? ': ' + h.problems.join('; ') : '')
+            + '.';
+      } else if (ageH > 2) {
+        // Snapshots are published every 30 min, so two hours of silence means
+        // the station stopped publishing rather than ran a little late.
+        msg = `No snapshot for ${ageH < 48 ? ageH.toFixed(1) + ' hours'
+              : (ageH / 24).toFixed(1) + ' days'} — the station is probably offline.`;
+      }
+      return msg
+        ? `<span style="color:#c0392b;font-weight:600">${msg}</span><br>`
+        : '';
     }
 
     function fillList(rows) {

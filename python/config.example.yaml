@@ -11,6 +11,12 @@ usgs:
   lookback_minutes: 1440       # history window fetched for display/correlation
 
 correlation:
+  # Outer bound on the search for a cataloged cause. The binding constraint is
+  # tighter and physical: `find_match` also requires the delay to match the
+  # body-wave travel time for that event's own hypocentral distance, so at 30 km
+  # only the first ~27 s qualify, not the first 180 s. That matters because a
+  # spurious match enters the calibration as ground truth, and the rate of
+  # spurious matches is proportional to how much time the window covers.
   match_window_s: 180   # local timestamp <-> USGS origin time window
 
 source:

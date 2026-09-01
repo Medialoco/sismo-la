@@ -67,6 +67,14 @@ ASSUMED_DISTANCE_KM = 30.0
 MAX_DETECTIONS = 50
 EARTH_R_KM = 6371.0
 
+# --- Liveness thresholds ---------------------------------------------------
+# The sketch heartbeats every 10 s and the catalog is polled every 60 s, so
+# these are generous: they flag a link that is gone, not one that is late.
+# Both exist because on 2026-09-01 the MCU went silent and the station kept
+# serving its start-up snapshot for 24 minutes as though nothing had happened.
+MCU_SILENT_LIMIT_S = 60.0
+USGS_STALE_LIMIT_S = 300.0
+
 
 def bearing_deg(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Initial bearing from point 1 to point 2, in degrees."""
@@ -108,11 +116,97 @@ class SharedState:
         self._detections: deque[dict] = deque(maxlen=MAX_DETECTIONS)
         self._updated = datetime.now(timezone.utc)
         self._counter = 0
+        self._started = datetime.now(timezone.utc)
+        self._mcu_last_seen: datetime | None = None
+        self._mcu_last_detail = ""
+        self._mcu_notifications = 0
+        self._usgs_last_ok: datetime | None = None
+        self._usgs_last_error = ""
+        self._loop_restarts = 0
 
     def set_quakes(self, quakes: list[usgs.Quake]) -> None:
         with self._lock:
             self._quakes = quakes
+            self._usgs_last_ok = datetime.now(timezone.utc)
+            self._usgs_last_error = ""
             self._updated = datetime.now(timezone.utc)
+
+    def quakes(self) -> list[usgs.Quake]:
+        """Current catalog snapshot, for the detection loop to correlate against.
+
+        The catalog is refreshed by its own thread now, so the loop reads it
+        here instead of owning it.
+        """
+        with self._lock:
+            return list(self._quakes)
+
+    def note_usgs_error(self, message: str) -> None:
+        with self._lock:
+            self._usgs_last_error = message
+
+    def note_mcu_activity(self, kind: str, detail: str = "") -> None:
+        """Record that the MCU said something — anything."""
+        with self._lock:
+            self._mcu_last_seen = datetime.now(timezone.utc)
+            self._mcu_notifications += 1
+            if detail:
+                self._mcu_last_detail = detail
+            if kind == "heartbeat":
+                # A heartbeat is proof of life, so it counts as the state
+                # having been confirmed fresh even when nothing shook.
+                self._updated = self._mcu_last_seen
+
+    def note_loop_restart(self) -> None:
+        with self._lock:
+            self._loop_restarts += 1
+
+    def _health(self, now: datetime) -> dict:
+        mcu_silent = ((now - self._mcu_last_seen).total_seconds()
+                      if self._mcu_last_seen else
+                      (now - self._started).total_seconds())
+        usgs_age = ((now - self._usgs_last_ok).total_seconds()
+                    if self._usgs_last_ok else None)
+        # Only a live station has an MCU to lose. In mock and replay the events
+        # are generated in-process, so demanding a heartbeat would report a
+        # permanent fault and train everyone to ignore the flag.
+        mcu_expected = self._mode == "live"
+        mcu_ok = (not mcu_expected
+                  or (self._mcu_last_seen is not None
+                      and mcu_silent <= MCU_SILENT_LIMIT_S))
+        usgs_ok = usgs_age is not None and usgs_age <= USGS_STALE_LIMIT_S
+        problems = []
+        if not mcu_ok:
+            problems.append(
+                "no MCU heartbeat for %.0f s (sensor link down?)" % mcu_silent
+                if self._mcu_last_seen else
+                "never heard from the MCU (%.0f s since start)" % mcu_silent
+            )
+        if not usgs_ok:
+            problems.append(
+                "USGS catalog %.0f s old" % usgs_age if usgs_age is not None
+                else "USGS never reached"
+            )
+        return {
+            "mcu_ok": mcu_ok,
+            "mcu_expected": mcu_expected,
+            "mcu_last_seen": (self._mcu_last_seen.isoformat()
+                              if self._mcu_last_seen else None),
+            "mcu_silent_s": round(mcu_silent, 1),
+            "mcu_notifications": self._mcu_notifications,
+            "mcu_last_detail": self._mcu_last_detail,
+            "usgs_ok": usgs_ok,
+            "usgs_last_ok": (self._usgs_last_ok.isoformat()
+                             if self._usgs_last_ok else None),
+            "usgs_age_s": round(usgs_age, 1) if usgs_age is not None else None,
+            "usgs_last_error": self._usgs_last_error,
+            "loop_restarts": self._loop_restarts,
+            "started": self._started.isoformat(),
+            # One flag for a page to key off. A stale station must look stale:
+            # serving an old snapshot as if it were current is worse than
+            # serving nothing, because nobody goes to look.
+            "stale": not (mcu_ok and usgs_ok),
+            "problems": problems,
+        }
 
     def add_detection(self, evt: dict, match: usgs.Quake | None,
                       p_quake: float | None) -> None:
@@ -185,7 +279,9 @@ class SharedState:
 
     def snapshot(self) -> dict:
         with self._lock:
+            now = datetime.now(timezone.utc)
             return {
+                "health": self._health(now),
                 "station": self._station,
                 "mode": self._mode,
                 "config": {
@@ -308,6 +404,56 @@ def snapshot_prior(evt: dict, match, model: CalibrationModel,
     return prior
 
 
+def usgs_poll_loop(cfg: dict, state: SharedState) -> None:
+    """Refresh the catalog on a timer, in its own thread.
+
+    This used to live inside the detection loop, which meant the refresh only
+    happened when the MCU delivered a shake. On 2026-09-01 the MCU went silent
+    and the loop blocked on its queue forever, so the catalog stopped being
+    fetched and ``updated`` froze at the start-up value — while the dashboard
+    happily served that snapshot for 24 minutes. Polling the catalog has nothing
+    to do with the sensor and must not wait on it.
+    """
+    st = cfg["station"]
+    us = cfg["usgs"]
+    interval = float(us.get("poll_interval_s", 60))
+    while True:
+        try:
+            quakes = usgs.fetch_recent(
+                st["lat"], st["lon"], us["radius_km"],
+                us.get("display_min_magnitude", us["min_magnitude"]),
+                lookback_minutes=us.get("lookback_minutes", 120),
+            )
+            state.set_quakes(quakes)
+        except Exception as e:  # flaky DNS/network: report, keep going
+            print(f"[USGS] request error: {e}", flush=True)
+            state.note_usgs_error(str(e))
+        time.sleep(interval)
+
+
+def supervise(name: str, target, state: SharedState, *args) -> None:
+    """Run ``target`` forever, surviving any exception it raises.
+
+    A bare ``threading.Thread`` dies silently on an uncaught exception, taking
+    the pipeline with it while the HTTP server keeps answering. For a station
+    meant to run unattended for weeks that is the worst possible failure mode:
+    invisible. Restarting with a printed traceback is strictly better, and the
+    restart count is published so the dashboard can show it.
+    """
+    import traceback
+
+    backoff = 5.0
+    while True:
+        try:
+            target(*args)
+            print(f"[{name}] returned unexpectedly; restarting", flush=True)
+        except Exception:
+            print(f"[{name}] CRASHED:\n{traceback.format_exc()}", flush=True)
+        state.note_loop_restart()
+        time.sleep(backoff)
+        backoff = min(backoff * 2, 300.0)
+
+
 def detection_loop(cfg: dict, mode: str, state: SharedState,
                    model: CalibrationModel, clf: QuakeNoiseClassifier,
                    dist_model: DistanceModel) -> None:
@@ -327,7 +473,7 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
         events = iter_mock_events()
         print("[Sismo-LA] source = MOCK")
     elif cfg["source"]["type"] == "bridge":
-        events = iter_bridge_events()
+        events = iter_bridge_events(on_mcu_activity=state.note_mcu_activity)
         print("[Sismo-LA] source = Bridge RPC (MCU notifications)")
     elif cfg["source"]["type"] == "monitor":
         cmd = cfg["source"].get("monitor_command", "arduino-app-cli monitor")
@@ -338,35 +484,10 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
         events = iter_serial_events(s["serial_port"], s["baudrate"])
         print(f"[Sismo-LA] source = serial {s['serial_port']}")
 
-    # Startup calibration check: fetch USGS before the first shake arrives.
-    last_poll = 0.0
-    quakes: list[usgs.Quake] = []
-    try:
-        quakes = usgs.fetch_recent(
-            st["lat"], st["lon"], us["radius_km"],
-            us.get("display_min_magnitude", us["min_magnitude"]),
-            lookback_minutes=us.get("lookback_minutes", 120),
-        )
-        state.set_quakes(quakes)
-        last_poll = time.monotonic()
-        print(f"[Sismo-LA] startup USGS check: {len(quakes)} recent quakes")
-    except Exception as e:
-        print(f"[USGS] startup check failed (will retry): {e}")
-
+    # The catalog is fetched by usgs_poll_loop in its own thread; this loop only
+    # reads the latest snapshot. Keeping the fetch here is what let a silent MCU
+    # freeze the whole station on 2026-09-01.
     for evt in events:
-        now = time.monotonic()
-        if now - last_poll > us["poll_interval_s"]:
-            try:
-                quakes = usgs.fetch_recent(
-                    st["lat"], st["lon"], us["radius_km"],
-                    us.get("display_min_magnitude", us["min_magnitude"]),
-                    lookback_minutes=us.get("lookback_minutes", 120),
-                )
-                state.set_quakes(quakes)
-                last_poll = now
-            except Exception as e:  # flaky network: keep going
-                print(f"[USGS] request error: {e}")
-
         # Correlation/calibration only trusts confirmed events >= min_magnitude.
         if "replay_quake" in evt:
             # Replay mode: the pairing is exact by construction (the event was
@@ -374,8 +495,10 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
             # threshold does not apply.
             match = evt["replay_quake"]
         else:
-            match_pool = [q for q in quakes if q.magnitude >= us["min_magnitude"]]
-            match = find_match(evt["recv_time"], match_pool, corr["match_window_s"])
+            match_pool = [q for q in state.quakes()
+                          if q.magnitude >= us["min_magnitude"]]
+            match = find_match(evt["recv_time"], match_pool,
+                               corr["match_window_s"], pga_g=evt["pga_g"])
         p_quake = clf.predict_proba(evt["pga_g"], evt.get("dur_ms"), evt.get("dom_hz"))
 
         # Snapshot the models BEFORE they learn this event. Once the point is
@@ -570,12 +693,34 @@ def main() -> None:
     mode = "replay" if args.replay else ("mock" if args.mock else "live")
     state = SharedState(cfg["station"], cfg["usgs"], model, clf, dist_model,
                         mode=mode)
-    worker = threading.Thread(
-        target=detection_loop,
-        args=(cfg, mode, state, model, clf, dist_model),
+
+    # Startup catalog check, so the station knows its seismic context before the
+    # first shake arrives and the dashboard is not empty on first load.
+    st, us = cfg["station"], cfg["usgs"]
+    try:
+        startup = usgs.fetch_recent(
+            st["lat"], st["lon"], us["radius_km"],
+            us.get("display_min_magnitude", us["min_magnitude"]),
+            lookback_minutes=us.get("lookback_minutes", 120),
+        )
+        state.set_quakes(startup)
+        print(f"[Sismo-LA] startup USGS check: {len(startup)} recent quakes")
+    except Exception as e:
+        print(f"[USGS] startup check failed (will retry): {e}")
+        state.note_usgs_error(str(e))
+
+    # Both loops are supervised: an uncaught exception must be loud and
+    # recoverable, not a silent thread death behind a live HTTP server.
+    threading.Thread(
+        target=supervise,
+        args=("detection", detection_loop, state,
+              cfg, mode, state, model, clf, dist_model),
         daemon=True,
-    )
-    worker.start()
+    ).start()
+    threading.Thread(
+        target=supervise, args=("usgs", usgs_poll_loop, state, cfg, state),
+        daemon=True,
+    ).start()
 
     pub_cfg = cfg.get("publish") or {}
     if pub_cfg.get("enabled"):

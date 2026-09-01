@@ -47,6 +47,18 @@
     .mode-replay { background: rgba(255,176,74,.15);  color: var(--orange); }
     .mode-mock   { background: rgba(139,152,165,.2);  color: var(--muted); }
 
+    /* ---- Staleness banner ----
+       A station whose sensor link has died still answers HTTP and still has a
+       snapshot to show. Showing it silently is how a 24-minute outage went
+       unnoticed on 2026-09-01, so a stale station now says so, loudly. */
+    #health-banner {
+      display: none; padding: 8px 16px; font-size: 13px; font-weight: 600;
+      background: rgba(255,90,90,.16); color: #ff8080;
+      border-bottom: 1px solid rgba(255,90,90,.35);
+    }
+    #health-banner.show { display: block; }
+    #health-banner .detail { font-weight: 400; opacity: .85; }
+
     /* ---- Layout ---- */
     #content { display: flex; flex: 1; min-height: 0; }
     #map { flex: 1; height: 100%; background: #0b0f14; }
@@ -113,6 +125,8 @@
       Red = what the device thinks. Colors = what really happened.</span>
     <span id="mode-badge" class="mode-badge mode-mock">…</span>
   </header>
+
+  <div id="health-banner"></div>
 
   <div id="content">
     <div id="map"></div>
@@ -363,7 +377,40 @@
       } else {
         s.detections.forEach((d) => list.appendChild(detCard(d)));
       }
+      renderHealth(s);
       document.getElementById("updated").textContent = "updated " + fmtTime(s.updated);
+    }
+
+    // The banner is the only thing on this page that reports on the page's own
+    // trustworthiness, so it deliberately overrides everything else.
+    function renderHealth(s) {
+      const banner = document.getElementById("health-banner");
+      const h = s.health;
+      if (!h) { banner.classList.remove("show"); return; }
+      if (!h.stale) {
+        banner.classList.remove("show");
+        return;
+      }
+      const age = h.usgs_age_s == null ? "never" : fmtAge(h.usgs_age_s);
+      const mcu = h.mcu_last_seen == null
+        ? "never heard from"
+        : "silent for " + fmtAge(h.mcu_silent_s);
+      banner.innerHTML =
+        "STATION DEGRADED — the figures below may be out of date."
+        + '<div class="detail">'
+        + (h.mcu_expected ? "MCU: " + mcu + ". " : "")
+        + "USGS catalog age: " + age + "."
+        + (h.loop_restarts ? " Pipeline restarts: " + h.loop_restarts + "." : "")
+        + (h.usgs_last_error ? " Last error: " + h.usgs_last_error : "")
+        + "</div>";
+      banner.classList.add("show");
+    }
+
+    function fmtAge(sec) {
+      if (sec == null) return "unknown";
+      if (sec < 90) return Math.round(sec) + " s";
+      if (sec < 5400) return Math.round(sec / 60) + " min";
+      return (sec / 3600).toFixed(1) + " h";
     }
 
     async function refresh() {

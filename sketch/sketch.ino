@@ -27,7 +27,21 @@ const unsigned long SAMPLE_PERIOD_US = (unsigned long)(1000000.0f / SAMPLE_HZ);
 // --- STA/LTA parameters ---
 const float STA_SEC = 0.5f;
 const float LTA_SEC = 10.0f;
-const float TRIGGER_ON = 4.0f;   // STA/LTA trigger ratio
+// STA/LTA trigger ratio. Lowered from 4.0 to 2.5 on measured evidence, not
+// taste (numbers in AGENTS.md, "detection threshold"):
+//   - the sensor's own noise produces ZERO triggers per hour at any ratio down
+//     to 1.8 over six simulated hours, so what a lower ratio actually catches
+//     is more building vibration, not more electrical noise;
+//   - the ~780 triggers/day recorded on a desk were all mechanical, and their
+//     measured amplitude distribution says this change adds only 5-55% of them;
+//   - at 4.0 the detector was blind to a long slow wavelet (2 Hz, 12 s,
+//     0.02 g) — the very shape a distant moderate earthquake arrives with,
+//     because a slow envelope lets the 10 s LTA creep up with the signal. At
+//     2.5 the same wavelet is caught.
+// 2.5 rather than 2.0 keeps a 1.67x margin over TRIGGER_OFF: the simulations
+// use white noise, while real MEMS noise has a 1/f component and the board
+// drifts thermally, and none of that can be re-tested remotely.
+const float TRIGGER_ON = 2.5f;   // STA/LTA trigger ratio
 const float TRIGGER_OFF = 1.5f;  // end-of-event ratio
 const float GRAVITY_ALPHA = 0.995f; // slow tracking of the gravity component
 
@@ -73,6 +87,14 @@ void report(const char *message) {
 void setup() {
   Bridge.begin();
   Monitor.begin(115200);
+  // Announce life BEFORE touching the I2C bus. `imu.begin()` can block for a
+  // long time on a half-seated Qwiic connector, and until 2026-09-01 the first
+  // report() came after it — so "MCU never flashed", "MCU held in reset" and
+  // "sensor bus stuck" all produced the same symptom, total silence, and cost
+  // an hour to tell apart. This line makes the MCU's own boot observable
+  // independently of whether the sensor answers.
+  report("booting");
+
   // On the UNO Q the Qwiic connector is on the I2C bus Wire1 (not Wire),
   // so we pass the bus explicitly (known gotcha on this board).
   Modulino.begin(Wire1);

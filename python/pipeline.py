@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import time
 from datetime import datetime, timezone
@@ -74,7 +75,7 @@ def iter_serial_events(port: str, baudrate: int):
         yield evt
 
 
-def iter_bridge_events():
+def iter_bridge_events(on_mcu_activity=None):
     """Generator of events pushed by the MCU over the Bridge RPC link.
 
     This is the transport to use on the board. App Lab runs this half inside a
@@ -84,12 +85,25 @@ def iter_bridge_events():
     The sketch sends one ``seismic_event`` notification per detection. The
     Bridge dispatches it on its own daemon thread, so the handler only hands
     the event to this generator through a queue.
+
+    ``on_mcu_activity(kind, detail)`` is called for every notification of any
+    kind, heartbeats included. Without it the only evidence that the MCU is
+    alive is a log line, and a station whose MCU has gone quiet then looks
+    exactly like a station in a quiet neighbourhood — which is precisely the
+    failure that went unnoticed on 2026-09-01.
     """
     import queue
 
     from arduino.app_utils import Bridge  # provided by the App Lab runtime
 
     pending: "queue.Queue[dict]" = queue.Queue()
+
+    def note(kind, detail=""):
+        if on_mcu_activity is not None:
+            try:
+                on_mcu_activity(kind, detail)
+            except Exception as e:  # never let bookkeeping kill the link
+                print(f"[bridge] activity hook failed: {e}", flush=True)
 
     def on_seismic_event(t_ms, pga_g, dur_ms, dom_hz):
         pending.put({
@@ -99,15 +113,18 @@ def iter_bridge_events():
             "dom_hz": float(dom_hz),
             "recv_time": datetime.now(timezone.utc),
         })
+        note("event")
 
     def on_mcu_status(message):
         print(f"[bridge] mcu status: {message}", flush=True)
+        note("status", str(message))
 
     def on_mcu_heartbeat(t_ms, sta_lta, dyn_g):
         # The noise floor is the one number that tells you the detector is
         # actually looking at a sensor rather than at a dead I2C bus.
         print(f"[bridge] mcu alive t={int(t_ms)}ms sta/lta={float(sta_lta):.2f} "
               f"dyn={float(dyn_g):.5f}g", flush=True)
+        note("heartbeat", f"sta/lta={float(sta_lta):.2f} dyn={float(dyn_g):.5f}g")
 
     Bridge.provide("seismic_event", on_seismic_event)
     Bridge.provide("mcu_status", on_mcu_status)
@@ -167,15 +184,102 @@ def iter_mock_events(min_seconds=8, max_seconds=20):
         }
 
 
-def find_match(evt_time, quakes, window_s):
-    """Find a USGS earthquake whose origin time precedes the local reception
-    within the allowed window."""
+# --- Correlation gates -----------------------------------------------------
+#
+# A match feeds the calibration as ground truth, so a wrong one is worse than
+# no match at all. Two things can put a local shake next to a cataloged
+# earthquake: a genuine detection, or an unrelated door slam landing by chance
+# inside the acceptance window. Measured on this station, the second was by far
+# the more likely of the two, so both gates below exist to suppress it. See the
+# "detection threshold" section of AGENTS.md for the numbers.
+
+# Crustal body-wave speeds around Los Angeles, km/s. The detector triggers on
+# whichever part of the wavetrain first crosses STA/LTA — the P arrival for a
+# close event, the S arrival or the start of the coda for a distant one — so the
+# admissible delay has to span both.
+P_SPEED_KM_S = 7.0    # fast end of crustal P: earliest arrival that is possible
+S_SPEED_KM_S = 2.5    # slow end of crustal S: latest arrival that is plausible
+# Absorbs the STA's 0.5 s lag before the ratio crosses, the Bridge/RPC hop to
+# the Python half, and the board's NTP clock error.
+TIMING_MARGIN_S = 15.0
+
+# Ground-motion reference, fitted by least squares to 6941 PGA values actually
+# recorded by USGS ShakeMap stations during 24 Los Angeles earthquakes
+# (M3.0-5.5, 3-200 km):
+#     log10(PGA_g) = 0.822*M - 1.741*log10(R_hypo_km) - 3.133
+# with 0.413 log10 units of scatter. This is used ONLY as a veto on absurd
+# pairings, never to estimate anything: the amplitude law the station reports is
+# still the one it learns for itself. Below M3 it is an extrapolation.
+REF_GMPE = (0.8220, -1.7409, -3.1327)
+REF_GMPE_SIGMA = 0.4127
+# Both allowances are deliberately generous. Being wrong in this direction
+# discards the genuine matches the whole project is waiting for, so the veto is
+# tuned to reject only the physically absurd: together they permit an observed
+# amplitude ~180x above the reference median before a pairing is refused.
+SITE_AMPLIFICATION_ALLOWANCE = 4.0   # unknown building, floor and mount
+PLAUSIBILITY_SIGMA = 4.0             # path-to-path luck
+
+
+def travel_time_window(distance_km: float, depth_km: float = 0.0,
+                       margin_s: float = TIMING_MARGIN_S) -> tuple[float, float]:
+    """Delays after an origin time at which shaking from it can plausibly land.
+
+    Uses the hypocentral distance: LA earthquakes are typically 5-15 km deep,
+    which dominates the path length for a nearby epicenter.
+    """
+    hypo = math.hypot(distance_km, depth_km or 0.0)
+    return (max(0.0, hypo / P_SPEED_KM_S - margin_s),
+            hypo / S_SPEED_KM_S + margin_s)
+
+
+def amplitude_is_plausible(pga_g: float, magnitude: float,
+                           distance_km: float, depth_km: float = 0.0) -> bool:
+    """Could this earthquake have produced the amplitude we recorded?
+
+    One-sided on purpose. An amplitude far *below* the reference is not
+    suspicious — weak coupling and unfavourable paths are normal, and refusing
+    those would throw away real matches. Only an amplitude far *above* what the
+    event can deliver is evidence that the two are unrelated: a 0.05 g shake
+    cannot be an M2.2 that happened 150 km away.
+    """
+    if pga_g is None or pga_g <= 0 or magnitude is None:
+        return True
+    a, b, c = REF_GMPE
+    hypo = max(math.hypot(distance_km or 0.0, depth_km or 0.0), 3.0)
+    predicted = a * magnitude + b * math.log10(hypo) + c
+    margin = (PLAUSIBILITY_SIGMA * REF_GMPE_SIGMA
+              + math.log10(SITE_AMPLIFICATION_ALLOWANCE))
+    return math.log10(pga_g) <= predicted + margin
+
+
+def find_match(evt_time, quakes, window_s, pga_g=None):
+    """Find the cataloged earthquake that could have produced a local shake.
+
+    Two conditions, both physical. The delay must be consistent with waves
+    travelling from the hypocenter — accepting anything up to ``window_s``, as
+    this did, admits a detection 170 s after an M2 whose S wave passed the
+    station at 9 s. And, when ``pga_g`` is given, the recorded amplitude must be
+    one that event could actually deliver at that distance.
+
+    ``window_s`` is kept as an outer bound on the search; the travel-time gate
+    is tighter than it at every distance inside the station's radius.
+    """
     best = None
     for q in quakes:
         dt = (evt_time - q.time).total_seconds()
-        if 0 <= dt <= window_s:
-            if best is None or dt < best[1]:
-                best = (q, dt)
+        if dt < 0 or dt > window_s:
+            continue
+        dist = getattr(q, "distance_km", 0.0) or 0.0
+        depth = getattr(q, "depth_km", 0.0) or 0.0
+        lo, hi = travel_time_window(dist, depth)
+        if not lo <= dt <= hi:
+            continue
+        if pga_g is not None and not amplitude_is_plausible(
+            pga_g, getattr(q, "magnitude", None), dist, depth
+        ):
+            continue
+        if best is None or dt < best[1]:
+            best = (q, dt)
     return best[0] if best else None
 
 
@@ -254,7 +358,8 @@ def main() -> None:
 
         # Correlation/calibration only trusts confirmed events >= min_magnitude.
         match_pool = [q for q in quakes if q.magnitude >= us["min_magnitude"]]
-        match = find_match(evt["recv_time"], match_pool, corr["match_window_s"])
+        match = find_match(evt["recv_time"], match_pool,
+                           corr["match_window_s"], pga_g=evt["pga_g"])
         ts = evt["recv_time"].strftime("%H:%M:%S")
 
         # AI filter: predict before learning from this event.
