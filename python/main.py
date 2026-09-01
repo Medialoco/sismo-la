@@ -677,12 +677,22 @@ def strip_location(snapshot: dict) -> dict:
     contribution is a magnitude and a distance attached to the matched event.
     Only the local dashboard, on the operator's own network, plots the station.
 
-    This is not anonymity. The distances to several known epicenters still
-    trilaterate the station, roughly. It only avoids publishing a home address
-    outright.
+    Dropping `station.lat/lon` is not enough on its own. Every catalog event
+    carries `distance_km` to the station next to the epicenter's own
+    coordinates, so a dozen of them trilaterate the station to the precision
+    those distances are printed with -- no need to read any of the prose. The
+    public pages draw the catalog from the epicenter coordinates and never read
+    that field, so it is dropped here.
+
+    What stays is the distance of a *matched* event, which the station's own
+    estimate is compared against. That is the measurement the project exists to
+    show, and it only appears for earthquakes the station recognised, so it
+    trilaterates nothing until there are several.
     """
     out = dict(snapshot)
     out["station"] = {"label": snapshot.get("station", {}).get("label", "Los Angeles")}
+    out["quakes"] = [{k: v for k, v in q.items() if k != "distance_km"}
+                     for q in snapshot.get("quakes", [])]
     out["detections"] = []
     for d in snapshot.get("detections", []):
         d = dict(d)

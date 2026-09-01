@@ -11,6 +11,11 @@ venv/
 # committing this file would hand anyone write access to it.
 .sismo-token
 
+# The working notes kept across sessions. They carry the station's real
+# location, the state of the board's credentials and a lot of decisions that
+# are nobody else's business; this repository is public.
+AGENTS.md
+
 # Local config & data
 python/config.yaml
 *.local.yaml

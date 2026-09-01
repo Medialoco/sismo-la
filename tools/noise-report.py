@@ -5,8 +5,14 @@ The journal (`event_log.jsonl`) records shakes only. The noise floor between
 them exists nowhere but in the MCU heartbeats, which go to stdout and end up in
 the Docker log — so any statement about the floor has to come from there.
 
-Pull the log with the recipe in AGENTS.md ("Reading the whole container log"),
-which strips the NUL bytes a power cut leaves behind:
+Do not use `docker logs` to get it. A power cut leaves NUL bytes in the
+container's JSON log; the daemon stops reading at the first one and reports it
+only after the partial output, so different invocations return different eras of
+the file and a healthy station can look dead. Read the file directly instead,
+stripping the NULs. `--user 0:0` is required because the image pins a non-root
+user and the log is root-only; docker group membership is enough, no board
+password is needed. This recovered 1408 heartbeats where `docker logs` showed
+142:
 
     CID=$(docker inspect -f '{{.Id}}' sismo-la-main-1)
     docker run --rm --user 0:0 --entrypoint sh \

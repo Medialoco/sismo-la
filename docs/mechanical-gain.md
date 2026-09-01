@@ -2,8 +2,9 @@
 
 Written **2026-09-01**. Everything in this document is **calculated**. Not one
 number here was measured on the board, and section 7 says exactly which
-measurement would settle each of them. Read `AGENTS.md`, "Claims discipline",
-before quoting anything from here.
+measurement would settle each of them. Section 8 separates what is calculated
+from what is cited and from what is load-bearing and unknown; read it before
+quoting anything from here.
 
 ![A tuned steel blade carrying the sensor at its tip, and the curve showing how the effective gain saturates once the amplified ground noise reaches the sensor's own noise](images/mechanical-gain.png)
 
@@ -11,10 +12,12 @@ before quoting anything from here.
 
 The station's at-rest noise floor was measured on 2026-09-01 to be the
 LSM6DSOX's own electrical noise, in two independent bands, to within 4-10% of
-the datasheet white-noise line (`AGENTS.md`, "The seismic band-pass"). Electrical
-noise enters **after** the mechanical path. So a mechanism that amplifies ground
-motion before the sensor multiplies the signal and leaves that noise alone,
-which no amount of gain applied after digitisation can do. The idea is sound.
+the datasheet white-noise line: 0.00036 g measured in the 0.7-12 Hz band against
+0.00040 g predicted, 0.00052 g against 0.00050 g wideband, both averaged over
+the same ten seconds. Electrical noise enters **after** the mechanical path. So
+a mechanism that amplifies ground motion before the sensor multiplies the signal
+and leaves that noise alone, which no amount of gain applied after digitisation
+can do. The idea is sound.
 
 The honest arithmetic is less exciting than the idea:
 
@@ -51,7 +54,8 @@ The chain is unchanged from `tools/sensor-gain.py`: the trigger is STA/LTA, so
 the ground amplitude a shake needs in order to fire is proportional to the floor
 the LTA tracks. Dividing the effective floor by G is exactly equivalent to
 fitting a sensor G times quieter, and it converts to detections per year through
-the same refit ground-motion law and the same 2185 real the station's site events.
+the same refit ground-motion law and the same 2185 real events around the
+station.
 
 | effective gain | trigger floor | M@10km | M@30 | M@50 | M@100 | M@160 | detections/year (x1..x4 site) | mean wait | P(one in 12 d) |
 |---|---|---|---|---|---|---|---|---|---|
@@ -79,8 +83,9 @@ acceleration is multiplied by the quality factor" comes from, and it is true —
 The resonance has a noise-equivalent bandwidth of `(pi/2) f0/Q` and a peak power
 gain of `Q^2`, so the power it adds to a broadband input is `(pi/2) f0 Q`,
 independent of nothing except the product. The detector integrates
-`ENBW = 5.21 Hz` (the 0.7-12 Hz chain, measured value from `AGENTS.md`), so the
-power gain seen by the trigger is
+`ENBW = 5.21 Hz` (the equivalent noise bandwidth of the firmware's 0.7-12 Hz
+cascade, the same figure that puts the measured floor on the datasheet line), so
+the power gain seen by the trigger is
 
 ```
 K = 1 + (pi/2) * f0 * Q / ENBW          amplitude gain = sqrt(K)
@@ -314,8 +319,9 @@ just built.
 
 **Single-sensor bench version: $15-25 if a vice exists. Permanent two-sensor
 version: $27-37.** Only the Modulino price is sourced; everything else is a
-hardware-store estimate and is labelled as one, per the discipline that killed
-the "$25 node" (`AGENTS.md`).
+hardware-store estimate and is labelled as one — the same discipline that
+replaced this project's early "$25 node" with the sourced $71-86 in
+`docs/hardware.md`.
 
 ## 5. What this breaks, without minimising it
 
@@ -370,10 +376,10 @@ Safe, but it must be re-derated if the blade ever feeds the primary path.
 are *ground motion*, so the blade amplifies them by exactly the same G as an
 earthquake. The floor at rest is sensor noise and does not move, so every
 mechanical event's STA/LTA rises by G and many sub-threshold ones cross. This is
-the same lesson the band-pass taught (`AGENTS.md`: 96.5% of false positives are
-already inside 0.7-12 Hz) and it applies here with more force: **no mechanical
-amplifier can distinguish an earthquake from a door, because both are the
-ground.**
+the same lesson the band-pass taught — 96.5% of the false positives recorded
+here already sit inside 0.7-12 Hz — and it applies with more force: **no
+mechanical amplifier can distinguish an earthquake from a door, because both are
+the ground.**
 
 ### 5.1 Therefore: two sensors, and this is not a nicety
 
@@ -402,8 +408,9 @@ task** — this study does not touch `sketch.ino`:
 
 One cost either way: `ModulinoMovement::update()` reads the gyroscope as well as
 the accelerometer, so a second sensor read naively would halve a loop already
-measured at 95.3 Hz. `AGENTS.md` already notes that dropping the gyro read halves
-the I2C traffic; that change becomes a prerequisite rather than an optimisation.
+measured at 95.3 Hz. The sketch never uses the gyroscope, so dropping that read
+halves the I2C traffic; with a second sensor it becomes a prerequisite rather
+than an optimisation.
 
 ## 6. The other mechanical routes, some of which are better
 
@@ -449,8 +456,8 @@ Four caveats, stated because they are real:
 
 ### 6.2 Coupling to the ground, and a correction
 
-`AGENTS.md` currently says that "only better coupling to a heavier mass would
-help the signal side". **The mass part of that is wrong and worth correcting.**
+A tempting shortcut says that better coupling to a heavier mass would help the
+signal side. **The mass half of that is wrong and worth correcting.**
 Ground motion is a boundary condition and an accelerometer measures acceleration;
 bolting the sensor to a 20 kg block does not make the acceleration bigger. Mass
 helps a *seismometer*, which weighs an inertial proof mass against a frame, and
@@ -550,8 +557,8 @@ Three warnings:
   the watchdog's 4 min 24 s recovery, which is why the blocks are 30 minutes and
   not 10.
 - **Every journal record written while the sensor is on the blade is a third
-  definition of `pga_g`.** Note the exact UTC window in `AGENTS.md` so those
-  records can be excluded later. Do not delete the journal.
+  definition of `pga_g`.** Write the exact UTC window down in the station's own
+  notes so those records can be excluded later. Do not delete the journal.
 - The trigger rate will rise sharply during the blade blocks. That is the gain
   working, and it is not evidence of a fault.
 
@@ -604,7 +611,8 @@ In order:
    13 September. Expected 3-4x on both horizontals if the building behaves like
    the literature, capped by the same 1/r as everything else. Nothing is lost if
    it does not: the calibration is at 0/8, so there is no site-specific model to
-   invalidate. Log the move and the UTC time in `AGENTS.md`.
+   invalidate. Log the move and the UTC time in the station's own notes: the
+   floor before and after is only comparable if the boundary is known.
 2. **The minimal blade, section 7.3.** One hacksaw blade, a vice, 16 g of
    washers, a plastic box, a longer Qwiic cable. **$15-25 and about two hours**,
    no purchase that has to be delivered, no firmware change, no permanent

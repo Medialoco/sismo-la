@@ -235,9 +235,11 @@ def iter_mock_events(min_seconds=8, max_seconds=20):
 # A match feeds the calibration as ground truth, so a wrong one is worse than
 # no match at all. Two things can put a local shake next to a cataloged
 # earthquake: a genuine detection, or an unrelated door slam landing by chance
-# inside the acceptance window. Measured on this station, the second was by far
-# the more likely of the two, so both gates below exist to suppress it. See the
-# "detection threshold" section of AGENTS.md for the numbers.
+# inside the acceptance window. Measured on this station, the second is by far
+# the more likely of the two: the trigger fires 3 to 23 times an hour depending
+# on where the board sits, while the measured 0.00308 g floor convolved with the
+# real catalog predicts 2 to 10 genuine detections a *year*. Both gates below
+# exist to suppress that mismatch.
 
 # Crustal body-wave speeds around Los Angeles, km/s. The detector triggers on
 # whichever part of the wavetrain first crosses STA/LTA — the P arrival for a

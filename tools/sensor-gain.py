@@ -3,15 +3,16 @@
 
 Convolves a candidate sensor's noise density with the real USGS catalog around
 the station, through the refit ground-motion law in `python/pipeline.py`. It is
-the same computation that produced the 2.0-9.8/year figure in AGENTS.md, made
-re-runnable so a sensor choice can be argued from numbers instead of from
-datasheet headlines.
+the same computation that produced the station's published 2.0-9.8/year figure
+(`docs/sensor-upgrade.md`), made re-runnable so a sensor choice can be argued
+from numbers instead of from datasheet headlines.
 
 The chain, and the one assumption that carries it: the trigger is STA/LTA, so
 the amplitude a shake needs in order to fire is proportional to the noise floor
 the LTA tracks, and the floor at rest was *measured* to be the sensor's own
-white noise (0.00036 g in band against 0.00040 g predicted; see AGENTS.md, "The
-seismic band-pass"). Swapping the sensor therefore scales the trigger floor by
+white noise -- 0.00036 g in band against 0.00040 g predicted from the datasheet,
+and 0.00052 g against 0.00050 g wideband, the two channels averaged over the
+same ten seconds. Swapping the sensor therefore scales the trigger floor by
 the ratio of noise densities -- as long as the new floor stays sensor-limited.
 Below roughly 1e-4 g that stops being safe, because the site's own contribution
 was only shown to be negligible *at 0.00036 g*, and the script says so.
@@ -22,8 +23,9 @@ Usage:
 With no catalog argument it queries USGS directly. The station position comes
 from python/config.yaml when present (gitignored, board-only) and otherwise
 falls back to the neutral downtown placeholder -- which is NOT where the board
-is and inflates the rates by about 24%, because the station's site sits further from the
-Puente Hills cluster. Pass --lat/--lon to reproduce the published figures.
+is and inflates the rates by about 24%, because the station sits further from
+the seismicity that dominates the downtown counts. Pass --lat/--lon to
+reproduce the published figures.
 """
 from __future__ import annotations
 

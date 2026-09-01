@@ -4,11 +4,11 @@
 Companion to `tools/sensor-gain.py`, which answers the same question for a
 quieter accelerometer. The argument here is different and it rests on one
 measured fact: the station's at-rest noise floor is the LSM6DSOX's own
-electrical noise, in band (0.00036 g measured against 0.00040 g predicted; see
-AGENTS.md, "The seismic band-pass"). Electrical noise is added *after* the
-mechanical path, so anything that amplifies ground motion before the sensor
-multiplies the signal and not that noise. Amplifying after digitisation does
-nothing at all.
+electrical noise, in band (0.00036 g measured against 0.00040 g predicted from
+the datasheet, and 0.00052 g against 0.00050 g on the wideband channel of the
+same ten seconds). Electrical noise is added *after* the mechanical path, so
+anything that amplifies ground motion before the sensor multiplies the signal
+and not that noise. Amplifying after digitisation does nothing at all.
 
 Three things are computed, and only the first is pure geometry:
 
@@ -33,7 +33,7 @@ import math
 import sys
 from pathlib import Path
 
-# --- Measured on this station, 2026-09-01 (AGENTS.md) ----------------------
+# --- Measured on this station, 2026-09-01 ----------------------------------
 # Equivalent noise bandwidth of the 0.7-12 Hz detector chain. Every "how much
 # of a broadband signal does the resonance capture" answer is a ratio against
 # this number, so it is the single most load-bearing constant in the file.

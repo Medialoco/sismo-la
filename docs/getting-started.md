@@ -51,9 +51,15 @@ split in `config.yaml`: `usgs.display_min_magnitude` controls the map, while
 
 Besides waiting to trigger, the station records a continuous envelope of the
 ground motion and re-reads it at the arrival time each cataloged earthquake
-implies. That is worth about a magnitude unit over the blind trigger; the method
-and its caveats are in `AGENTS.md`, "Retrospective search". Two config blocks
-control it, both defaulted so a fresh clone just works:
+implies. Testing a handful of windows at a known instant instead of the ~170000
+a day the blind trigger has to be right about buys a factor 7 to 8 in amplitude,
+about one magnitude unit; `tools/retro-gain.py` reproduces that figure by
+simulating both detectors on the same noise, and prints the false-confirmation
+rate the `z_min` below is calibrated against. The catch is that the low
+threshold is only reachable when the site is at rest — measured here at roughly
+half the time — so the blind trigger keeps running at all hours and the two
+channels are counted separately. Two config blocks control it, both defaulted so
+a fresh clone just works:
 
 ```yaml
 envelope:

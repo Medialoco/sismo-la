@@ -5,12 +5,14 @@ carries the date it was read, because all three move.
 
 The station's at-rest noise floor was measured that morning to be the
 LSM6DSOX's own electrical noise, in two independent bands, to within 4-10% of
-the datasheet white-noise line (see `AGENTS.md`, "The seismic band-pass"). No
-*filter* can go further: the noise is white and inside the seismic band, so the
-only bandwidth left to remove is bandwidth an earthquake needs. This document
-answers the question that follows: **which quieter accelerometer can be plugged
-into this board, at what cost in hand-work, and what does it buy in detections
-per year.**
+the datasheet white-noise line: 0.00036 g measured in the 0.7-12 Hz band against
+0.00040 g predicted, 0.00052 g against 0.00050 g wideband, both averaged over
+the same ten seconds so that neither figure depends on comparing one night with
+another. No *filter* can go further: the noise is white and inside the seismic
+band, so the only bandwidth left to remove is bandwidth an earthquake needs.
+This document answers the question that follows: **which quieter accelerometer
+can be plugged into this board, at what cost in hand-work, and what does it buy
+in detections per year.**
 
 One correction to the framing, made the same afternoon. An earlier version of
 this paragraph said "the software has run out of room", and that was wrong by
@@ -18,10 +20,10 @@ one word. The filter had; the *blind trigger* had not, because its threshold is
 set by a false-alarm budget rather than by the noise. Spending that budget
 differently — recording a continuous envelope and re-reading it at the arrival
 time the USGS catalog implies — is worth a factor 7 to 8 in amplitude, a full
-magnitude unit, and it is already deployed (`AGENTS.md`, "Retrospective
-search"). Everything below still stands, because that trick needs the catalog to
-say when to look and therefore cannot make the station detect anything *on its
-own*. A quieter sensor is still the only route to a lower autonomous threshold,
+magnitude unit, and it is already deployed (configuration in
+`docs/getting-started.md`, gain reproduced by `tools/retro-gain.py`). Everything
+below still stands, because that trick needs the catalog to say when to look and
+therefore cannot make the station detect anything *on its own*. A quieter sensor is still the only route to a lower autonomous threshold,
 and the two gains multiply rather than overlap.
 
 Scope note: the question asked was specifically about *pluggable* boards, not a
@@ -79,13 +81,14 @@ bit-for-bit before being trusted with a new one. Method:
 3. That floor is converted to a required magnitude with `REF_GMPE`
    (`python/pipeline.py`), the law refitted to 12324 USGS ShakeMap PGA values.
 4. The 0.390 log10 scatter of that fit becomes a per-event detection
-   probability, summed over **2185 real events** (M>=2 within 160 km of the station's site,
-   2021-09-01 to 2026-09-01, USGS FDSN, fetched 2026-09-01).
+   probability, summed over **2185 real events** (M>=2 within 160 km of the
+   station, 2021-09-01 to 2026-09-01, USGS FDSN, fetched 2026-09-01).
 
-Validation: at 0.0044 g the script returns **1.31-6.56** detections/year against
-the 1.31-6.57 in `AGENTS.md`, and at 0.00308 g it returns **1.98-9.79** against
-1.98-9.80. The magnitude table reproduces exactly. The method is the same one,
-re-runnable.
+Validation: at 0.0044 g — the trigger floor before the band-pass — the script
+returns **1.31-6.56** detections/year against the 1.31-6.57 published for that
+floor, and at 0.00308 g it returns **1.98-9.79** against the 1.98-9.80 published
+for the current one. The magnitude table reproduces exactly. The method is the
+same one, re-runnable.
 
 The `x1 .. x4` spread in every rate below is unknown site amplification, and it
 is not a rounding error — station-to-station scatter is 0.347 of the fit's 0.390
@@ -114,9 +117,10 @@ Two honest limits on the bottom rows. The floor-scaling assumption was only
 *measured* at 0.00036 g; below roughly 1e-4 g, where an ADXL355 or IIS2ICLX
 would sit, the site's own contribution has never been shown to be negligible,
 because it could not be separated from zero at the current floor. Expect the
-first factor of 2-3 to be certain and the rest to be probable. And `AGENTS.md`
-quotes 10.9-42.8/year for the ADXL355 — that figure was computed with 25 µg/√Hz,
-the value in Rev. 0 of the datasheet. Rev. D says 22.5, which gives 12.2-47.0.
+first factor of 2-3 to be certain and the rest to be probable. An earlier
+estimate of 10.9-42.8/year for the ADXL355 is superseded: it was computed with
+25 µg/√Hz, the value in Rev. 0 of the datasheet. Rev. D says 22.5, which gives
+12.2-47.0.
 The difference is 0.05 Mw and changes nothing. The IIS2ICLX row is an upper
 bound twice over: two axes instead of three (the current `pga_g` is a 3-vector
 magnitude), and the same site-noise caveat, one step further down.
@@ -187,8 +191,9 @@ before ordering.
   with the installed core (`arduino:zephyr 0.56.0`): 72556 bytes of flash (9%),
   27648 bytes of RAM (10%), no errors. This matters because the library uses
   `std::shared_ptr` and `<algorithm>`, and because this platform has a history
-  of link failures on innocuous-looking calls (`expf`, see `AGENTS.md`). It
-  links.
+  of link failures on innocuous-looking calls: `expf` does not link at all here,
+  because it sets `errno` and this Zephyr link provides no `__errno`, which is
+  why `sketch.ino` carries its own polynomial exponential. It links.
 - Dependencies are only `SPI` and `Wire`, both core-provided, so the hermetic
   profile build needs exactly one new line in `sketch/sketch.yaml`.
 - **The catch: `beginI2C(address, frequency)` takes no `TwoWire&`.** The I2C
@@ -345,7 +350,7 @@ headers have to be soldered, or wires jammed in the holes.
 **The chain would be site-limited, not sensor-limited.** The current 0.00036 g
 floor only proves the site is quieter than 0.00036 g (~194 µm/s at 2.9 Hz),
 which is a loose bound. Urban 1-10 Hz floors measured elsewhere run 10 µm/s
-(Taipei, night) to 500 µm/s (Karlsruhe cellars). If the station's site is the quiet end
+(Taipei, night) to 500 µm/s (Karlsruhe cellars). If this site is the quiet end
 of that, the real gain is closer to ×36 than ×1 400 — still seven times the
 ADXL355, and enough that M2 at 100 km becomes reachable. The only way to
 know is the same two-channel ratio this station already used.
@@ -519,5 +524,6 @@ python3 tools/sensor-gain.py --lat <station lat> --lon <station lon>
 Queries USGS directly, or takes a cached geojson as an argument. Without
 `--lat/--lon` it falls back to `python/config.example.yaml`, which is downtown
 LA and **not** where the board is — that inflates the rates by about 24%,
-because the station's site sits further from the Puente Hills cluster. The station's real
-position lives only in the board's gitignored `config.yaml`.
+because the station sits further from the seismicity that dominates the
+downtown counts. The station's real position lives only in the board's
+gitignored `config.yaml`.

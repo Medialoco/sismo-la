@@ -16,8 +16,11 @@
  *
  * Since 2026-09-01 the detector runs on a 0.7-12 Hz band-passed signal rather
  * than on the raw vector magnitude, and `pga_g` is the band-passed peak. See
- * "The seismic band-pass" below for why, and AGENTS.md for the measurement
- * that decides whether it was worth it.
+ * "The seismic band-pass" below for why. Measured afterwards, on the two floors
+ * this sketch reports over the same ten seconds: the filter removes 1.43x of
+ * the at-rest floor (0.00036 g in band against 0.00052 g wideband), worth
+ * 0.18 Mw. Real, and far short of turning this into an instrument that feels
+ * distant earthquakes.
  */
 
 #include <Arduino_Modulino.h>
@@ -90,7 +93,7 @@ const float BP_LP_HZ = 12.0f;
 const float STA_SEC = 0.5f;
 const float LTA_SEC = 10.0f;
 // STA/LTA trigger ratio. Lowered from 4.0 to 2.5 on measured evidence, not
-// taste (numbers in AGENTS.md, "detection threshold"):
+// taste:
 //   - the sensor's own noise produces ZERO triggers per hour at any ratio down
 //     to 1.8 over six simulated hours, so what a lower ratio actually catches
 //     is more building vibration, not more electrical noise;
@@ -281,9 +284,11 @@ void report(const char *message) {
 // high-pass side, which the sensor cannot do at all.
 //
 // The predicted sqrt(26/10.4) = 1.58x reduction of the floor did NOT show up
-// when it was first measured (AGENTS.md, "NEGATIVE RESULT"). Kept anyway: it
-// costs nothing and the measurement it failed was taken in a noisy daytime
-// window, so it was never a clean test.
+// when it was first measured: 81 heartbeats after the change gave a dyn median
+// of 0.00074 g against 0.00066-0.00069 g before. Kept anyway: it costs nothing,
+// and that measurement was taken in a noisy daytime window against a window
+// from another night, so it was never a clean test. The two-channel floors
+// reported below were introduced precisely so no such comparison is needed.
 static bool narrowAntiAliasFilter() {
   const uint8_t ADDR = 0x6A;      // LSM6DSOX on the Modulino Movement
   const uint8_t CTRL8_XL = 0x17;

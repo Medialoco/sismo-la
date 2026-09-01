@@ -15,8 +15,8 @@ Method, in three steps.
    the in-band envelope mean equals the station's measured at-rest floor
    (0.00036 g). That model is not an assumption: the two-channel heartbeat
    measurement put the at-rest floor on the LSM6DSOX's datasheet white-noise
-   line in two independent bands, 10% low in band and 4% high wideband
-   (AGENTS.md, "The seismic band-pass").
+   line in two independent bands, 10% low in band (0.00036 g against 0.00040 g)
+   and 4% high wideband (0.00052 g against 0.00050 g).
 
 2. THRESHOLDS. Both detectors are run on the same synthetic earthquake
    wavetrains buried in that noise, and the amplitude each one needs is found by
@@ -29,9 +29,9 @@ Method, in three steps.
    component).
 
 3. RATE. The amplitude threshold is converted to a magnitude threshold with
-   REF_GMPE and convolved with the real USGS catalog around the station, exactly
-   as the earlier sensitivity estimates in AGENTS.md were, so the before/after
-   comparison is like for like.
+   REF_GMPE and convolved with the real USGS catalog around the station, by the
+   same routine `tools/sensor-gain.py` uses for the published sensitivity
+   figures, so the before/after comparison is like for like.
 
 The honest caveat is printed with the result: the retrospective threshold is only
 reachable when the site is at rest, and this station is at rest roughly half the
@@ -358,9 +358,10 @@ def main() -> None:
         lat, lon = cfg["station"]["lat"], cfg["station"]["lon"]
     events = catalog(args.catalog or None, lat, lon, args.years)
     # The blind reference is the station's published floor rather than this
-    # simulation's, so the before/after is measured against what AGENTS.md
-    # already quotes; the simulated blind threshold is printed above for
-    # comparison and is the more optimistic of the two.
+    # simulation's, so the before/after is measured against the figure the
+    # documentation already quotes (1.98-9.79 detections/year, see
+    # docs/sensor-upgrade.md); the simulated blind threshold is printed above
+    # for comparison and is the more optimistic of the two.
     thr_blind = 0.0044 / 1.43
     thr_retro = thr_blind / gain
     print(f"\ncatalog: {len(events)} events M>=2 within 160 km over "
