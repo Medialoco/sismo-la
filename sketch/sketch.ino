@@ -13,6 +13,11 @@
  *
  * Sensor: Modulino Movement (LSM6DSOX) over Qwiic (bus Wire1). Adapt for a
  * different IMU.
+ *
+ * Since 2026-09-01 the detector runs on a 0.7-12 Hz band-passed signal rather
+ * than on the raw vector magnitude, and `pga_g` is the band-passed peak. See
+ * "The seismic band-pass" below for why, and AGENTS.md for the measurement
+ * that decides whether it was worth it.
  */
 
 #include <Arduino_Modulino.h>
@@ -20,9 +25,66 @@
 
 ModulinoMovement imu;
 
+// Types first, before any function: the Arduino preprocessor injects generated
+// prototypes just above the first function definition, and a prototype naming a
+// type declared further down does not compile.
+
+// State of one axis' band-pass cascade: two one-pole high-pass sections then
+// two one-pole low-pass sections.
+struct BandPass {
+  float h1x, h1y, h2x, h2y, lp1, lp2;
+  bool primed;
+};
+
+// One IMU reading, in both representations.
+struct Reading {
+  float band;  // 0.7-12 Hz, unity gain in band, in g  -> drives everything
+  float wide;  // raw dynamic magnitude, in g          -> diagnostic only
+};
+
 // --- Sampling parameters ---
+// Nominal only: this is a poll loop over I2C, and the real rate is measured at
+// boot and again at every heartbeat. Every coefficient below is derived from
+// the MEASURED rate, never from this constant.
 const float SAMPLE_HZ = 100.0f;
 const unsigned long SAMPLE_PERIOD_US = (unsigned long)(1000000.0f / SAMPLE_HZ);
+
+// --- The seismic band-pass ---
+//
+// Until 2026-09-01 the trigger ran on the raw dynamic magnitude, i.e. on
+// everything from 0.08 Hz (where the gravity EMA stops removing DC) to the
+// sensor's anti-alias corner. STA/LTA is a *ratio*, so any noise the detector
+// looks at outside the band an earthquake actually occupies costs sensitivity
+// and buys nothing.
+//
+// The band is argued from the station's own journal, not from a textbook. Over
+// the 255 shakes recorded at this location, the dominant ground-motion
+// frequency (dom_hz/2, the rectification factor) runs p5 = 1.0 Hz, median
+// 4.4 Hz, p95 = 7.8 Hz. 0.7 Hz sits below the 5th percentile and 12 Hz above
+// the 95th, so the band was chosen to keep essentially all of the motion this
+// site really produces; a local M4-M4.5 at 20-50 km radiates in the same
+// 1-10 Hz window, so the same band fits the signal we are waiting for.
+//
+// NOTE, and it is the uncomfortable one: that same journal says 96.5% of the
+// FALSE positives already sit inside 0.7-12 Hz. The band-pass is therefore not
+// a false-positive filter — the earlier belief that footsteps and doors were
+// "high frequency" came from reading dom_hz as a physical frequency when it
+// runs at twice the ground motion. What the filter can still do is remove
+// out-of-band NOISE POWER from the LTA, which lowers the amplitude at which a
+// real earthquake reaches TRIGGER_ON. How much depends entirely on where the
+// noise floor's energy actually lives, which is the open question this build
+// is instrumented to answer (see the heartbeat below).
+//
+// Structure: two one-pole high-pass sections plus two one-pole low-pass
+// sections, per axis, on the RAW acceleration (the high-pass removes gravity
+// itself, so this path does not use the gravity EMA at all). A cascade of
+// first-order sections rather than a biquad is deliberate: at 0.7 Hz over
+// 100 Hz a biquad's pole pair sits within 0.04 of the unit circle, where
+// float32 coefficient rounding starts to matter, while a one-pole section
+// stores a = 0.957 and is numerically unremarkable. Cost is four first-order
+// sections per axis, about 3600 flops/s at 100 Hz.
+const float BP_HP_HZ = 0.7f;
+const float BP_LP_HZ = 12.0f;
 
 // --- STA/LTA parameters ---
 const float STA_SEC = 0.5f;
@@ -41,36 +103,127 @@ const float LTA_SEC = 10.0f;
 // 2.5 rather than 2.0 keeps a 1.67x margin over TRIGGER_OFF: the simulations
 // use white noise, while real MEMS noise has a 1/f component and the board
 // drifts thermally, and none of that can be re-tested remotely.
+// Deliberately UNCHANGED when the band-pass went in, so the before/after
+// comparison measures the filter and nothing else.
 const float TRIGGER_ON = 2.5f;   // STA/LTA trigger ratio
 const float TRIGGER_OFF = 1.5f;  // end-of-event ratio
 const float GRAVITY_ALPHA = 0.995f; // slow tracking of the gravity component
 
-const int STA_N = (int)(STA_SEC * SAMPLE_HZ);
-const int LTA_N = (int)(LTA_SEC * SAMPLE_HZ);
+// --- Rate-dependent coefficients, all recomputed from the MEASURED rate ---
+float fsHz = SAMPLE_HZ;
+float STA_W = 2.0f / (STA_SEC * SAMPLE_HZ + 1.0f);
+float LTA_W = 2.0f / (LTA_SEC * SAMPLE_HZ + 1.0f);
+float bpA = 0.0f;      // one-pole high-pass coefficient
+float bpB = 0.0f;      // one-pole low-pass coefficient
+float bpNorm = 1.0f;   // scales the cascade to unity gain in the passband
 
-// Exponential moving averages (avoids storing long buffers).
-float sta = 0.0f;
-float lta = 1e-6f; // avoids division by zero at startup
-const float STA_W = 2.0f / (STA_N + 1);
-const float LTA_W = 2.0f / (LTA_N + 1);
+// exp(-u), u >= 0, without libm.
+//
+// `expf` cannot be called from this sketch: newlib's version sets errno, this
+// Zephyr link provides no `__errno`, and the build dies at the link stage with
+// "undefined reference to `__errno'" — long after every compilation unit has
+// succeeded, which makes it look like a platform fault rather than a call site.
+// Range-reduce by halving until u <= 0.5, sum seven Taylor terms (error under
+// 1e-7 there), then square back. The arguments here are 2*pi*fc/fs, i.e. 0.04
+// and 0.75 at the nominal rate, so this is comfortably inside its accurate
+// range.
+static float expNeg(float u) {
+  if (!(u > 0.0f)) return 1.0f;
+  int halvings = 0;
+  while (u > 0.5f && halvings < 12) { u *= 0.5f; halvings++; }
+  float term = 1.0f, sum = 1.0f;
+  for (int k = 1; k <= 7; k++) {
+    term *= -u / (float)k;
+    sum += term;
+  }
+  while (halvings-- > 0) sum *= sum;
+  return sum;
+}
 
-// Per-axis gravity estimate (low-pass filter).
+// Recompute every coefficient for a measured sample rate.
+//
+// The passband gain of the cascade is not 1 (it peaks at 0.857 for 0.7/12 Hz
+// at 100 Hz), and `pga_g` is now read off this signal and fed to the amplitude
+// model, so it has to come out in real g. Normalising by the peak keeps it
+// comparable with a ground-motion prediction equation. The peak of a
+// (1-pole HP)^2 (1-pole LP)^2 cascade sits at the geometric mean of the two
+// corners, f0 = sqrt(0.7 * 12) = 2.90 Hz; evaluating the exact digital
+// magnitude there matches a numerical sweep of the true peak to 0.01%.
+void setRates(float fs) {
+  if (!(fs > 20.0f && fs < 400.0f)) return;  // refuse a nonsensical measurement
+  fsHz = fs;
+  STA_W = 2.0f / (STA_SEC * fs + 1.0f);
+  LTA_W = 2.0f / (LTA_SEC * fs + 1.0f);
+
+  bpA = expNeg(2.0f * PI * BP_HP_HZ / fs);
+  bpB = 1.0f - expNeg(2.0f * PI * BP_LP_HZ / fs);
+
+  const float theta = 2.0f * PI * sqrtf(BP_HP_HZ * BP_LP_HZ) / fs;
+  const float c = cosf(theta);
+  const float mHp = bpA * 2.0f * sinf(theta * 0.5f)
+                    / sqrtf(1.0f - 2.0f * bpA * c + bpA * bpA);
+  const float p = 1.0f - bpB;
+  const float mLp = bpB / sqrtf(1.0f - 2.0f * p * c + p * p);
+  const float peak = mHp * mHp * mLp * mLp;
+  bpNorm = (peak > 1e-6f) ? (1.0f / peak) : 1.0f;
+}
+
+BandPass bpX, bpY, bpZ;
+
+// One sample through the cascade. Priming on the first sample (rather than
+// from zero) matters: the axis carrying gravity starts at ~1 g, and a
+// high-pass fed a 1 g step rings for seconds. Seeding x[-1] with the first
+// sample makes the step disappear instead of being filtered.
+float bpStep(BandPass &s, float x) {
+  if (!s.primed) {
+    s.h1x = x; s.h1y = 0.0f;
+    s.h2x = 0.0f; s.h2y = 0.0f;
+    s.lp1 = 0.0f; s.lp2 = 0.0f;
+    s.primed = true;
+    return 0.0f;
+  }
+  const float y1 = bpA * (s.h1y + x - s.h1x);
+  s.h1x = x; s.h1y = y1;
+  const float y2 = bpA * (s.h2y + y1 - s.h2x);
+  s.h2x = y1; s.h2y = y2;
+  s.lp1 += bpB * (y2 - s.lp1);
+  s.lp2 += bpB * (s.lp1 - s.lp2);
+  return s.lp2;
+}
+
+void resetBandPass() {
+  bpX.primed = false;
+  bpY.primed = false;
+  bpZ.primed = false;
+}
+
+// Exponential moving averages (avoids storing long buffers). `band` drives the
+// trigger; `wide` is carried only so the heartbeat can report how much of the
+// noise floor lies outside the band — that ratio is the whole experiment.
+float staBand = 0.0f, ltaBand = 1e-6f;
+float ltaWide = 1e-6f;
+
+// Per-axis gravity estimate (low-pass filter), used by the wideband diagnostic
+// path only.
 float gx = 0, gy = 0, gz = 1.0f;
 
 // Current event state.
 bool inEvent = false;
-float eventPeakG = 0.0f;
+float eventPeakBand = 0.0f;
+float eventPeakWide = 0.0f;
 unsigned long eventStartMs = 0;
 unsigned long lastSampleUs = 0;
 long zeroCrossings = 0;
 // Previous sample of the MEAN-CENTERED signal. Both sides of the sign test
-// must be centered: `dyn` is a vector magnitude and is never negative, so
-// testing its raw sign would always yield the same answer.
+// must be centered: the band-passed magnitude is still a vector magnitude and
+// is never negative, so testing its raw sign would always yield the same
+// answer.
 float prevCentered = 0.0f;
 
 // Heartbeat: proves the MCU->Linux link is alive even with no shakes.
 const unsigned long HEARTBEAT_MS = 10000;
 unsigned long lastHeartbeatMs = 0;
+unsigned long sampleCount = 0;
 
 bool sensorOk = false;
 
@@ -84,28 +237,18 @@ void report(const char *message) {
   Monitor.println("\"}");
 }
 
-// Narrow the accelerometer's anti-alias filter, which is the only lever that
-// moves this station's noise floor.
+// Narrow the accelerometer's anti-alias filter.
 //
-// Measured 2026-09-01 over 334 quiet heartbeats: the at-rest reading is
-// 0.00066 g median. The LSM6DSOX datasheet gives 110 ug/sqrt(Hz) of noise
-// density, and `Arduino_LSM6DSOX::begin()` leaves LPF2 at ODR/4, i.e. ~26 Hz of
-// bandwidth: 110e-6 * sqrt(26) = 0.00056 g. Measurement and prediction agree to
-// 18%, so the floor is the sensor's OWN ELECTRICAL NOISE, not the building.
-// That is why moving the board barely helped (0.00087 g on a desk -> 0.00066 g
-// at the final location) and why no quieter room ever will.
+// `Arduino_LSM6DSOX::begin()` leaves LPF2 at ODR/4 (~26 Hz). HPCF_XL=001
+// selects ODR/10 (~10.4 Hz), which keeps the 1-10 Hz seismic band and removes
+// bandwidth that only carries noise. This is the analog-side half of the same
+// argument as the digital band-pass above; the digital filter adds the
+// high-pass side, which the sensor cannot do at all.
 //
-// White noise integrates as sqrt(bandwidth), so cutting the bandwidth cuts the
-// floor. HPCF_XL=001 selects ODR/10 ~= 10.4 Hz instead of ODR/4 ~= 26 Hz, a
-// predicted sqrt(2.5) = 1.58x reduction. Because STA/LTA is a *ratio*, that
-// gain is real only for signal the filter keeps: earthquake energy at tens of
-// km sits at 1-10 Hz, so it passes while the noise above 10 Hz does not. ODR/20
-// (5.2 Hz) would cut 2.24x but would start eating the signal itself.
-//
-// Two honest consequences. Sharp taps used to check the station are mostly
-// above 10 Hz, so they will now report a SMALLER PGA — do not read that as a
-// broken sensor. And `dom_hz` and PGA are no longer strictly comparable with
-// records written before this change.
+// The predicted sqrt(26/10.4) = 1.58x reduction of the floor did NOT show up
+// when it was first measured (AGENTS.md, "NEGATIVE RESULT"). Kept anyway: it
+// costs nothing and the measurement it failed was taken in a noisy daytime
+// window, so it was never a clean test.
 static bool narrowAntiAliasFilter() {
   const uint8_t ADDR = 0x6A;      // LSM6DSOX on the Modulino Movement
   const uint8_t CTRL8_XL = 0x17;
@@ -125,6 +268,38 @@ static bool narrowAntiAliasFilter() {
   if (Wire1.endTransmission(false) != 0) return false;
   if (Wire1.requestFrom(ADDR, (uint8_t)1) != 1) return false;
   return Wire1.read() == WANTED;
+}
+
+// True when enough time has passed for the next sample. Also the single place
+// the sample clock is advanced, so warm-up and steady state are timed
+// identically — otherwise the rate measured at boot would not be the rate the
+// main loop actually runs at.
+bool dueForSample() {
+  const unsigned long now = micros();
+  if (now - lastSampleUs < SAMPLE_PERIOD_US) return false;
+  lastSampleUs = now;
+  return true;
+}
+
+Reading readSample() {
+  imu.update();
+  const float ax = imu.getX();
+  const float ay = imu.getY();
+  const float az = imu.getZ();
+
+  gx = GRAVITY_ALPHA * gx + (1 - GRAVITY_ALPHA) * ax;
+  gy = GRAVITY_ALPHA * gy + (1 - GRAVITY_ALPHA) * ay;
+  gz = GRAVITY_ALPHA * gz + (1 - GRAVITY_ALPHA) * az;
+  const float dx = ax - gx, dy = ay - gy, dz = az - gz;
+
+  const float fx = bpStep(bpX, ax);
+  const float fy = bpStep(bpY, ay);
+  const float fz = bpStep(bpZ, az);
+
+  Reading r;
+  r.wide = sqrtf(dx * dx + dy * dy + dz * dz);
+  r.band = bpNorm * sqrtf(fx * fx + fy * fy + fz * fz);
+  return r;
 }
 
 void setup() {
@@ -158,89 +333,144 @@ void setup() {
          ? "anti-alias filter set to ODR/10 (~10 Hz)"
          : "anti-alias filter UNCHANGED - register write refused, floor stays ~26 Hz");
 
-  // Seed both averages with the first reading instead of letting the LTA climb
+  setRates(SAMPLE_HZ);
+  resetBandPass();
+
+  // Phase 1 - measure the sample rate the loop really achieves. The I2C read
+  // costs a few ms and ModulinoMovement::update() fetches the gyroscope too,
+  // so 100 Hz is an aspiration. Filter corners placed with the wrong rate are
+  // wrong by the same proportion, which at 0.7 Hz is exactly where it hurts.
+  unsigned long t0 = millis();
+  unsigned long n = 0;
+  while (millis() - t0 < 5000UL) {
+    if (dueForSample()) { readSample(); n++; }
+  }
+  const unsigned long elapsed = millis() - t0;
+  setRates(elapsed > 0 ? (n * 1000.0f) / (float)elapsed : SAMPLE_HZ);
+  // Formatted by hand rather than with "%f": newlib-nano on this platform is
+  // routinely built without floating-point printf, and a status line that
+  // silently prints nothing would hide the one number the filter depends on.
+  char line[96];
+  const int whole = (int)fsHz;
+  const int tenth = (int)((fsHz - whole) * 10.0f + 0.5f);
+  snprintf(line, sizeof(line),
+           "sample rate %d.%d Hz, band 0.7-12 Hz (2 poles each side)",
+           whole, tenth);
+  report(line);
+
+  // Phase 2 - the filter states were built with the wrong coefficients, so
+  // start them again and let them settle before anything reads them. Two poles
+  // at 0.7 Hz settle with tau = 0.23 s; 2 s is ~9 tau.
+  resetBandPass();
+  t0 = millis();
+  while (millis() - t0 < 2000UL) {
+    if (dueForSample()) readSample();
+  }
+
+  // Seed both averages with a real reading instead of letting the LTA climb
   // from ~0: a 10 s EMA started at zero stays far from the true noise floor for
   // tens of seconds, and every ratio computed meanwhile is spuriously large.
   // Seeding, then warming up for one full LTA window, avoids a burst of false
   // triggers at boot.
-  float seed = readDynamicMagnitude();
-  sta = seed;
-  lta = (seed > 0.0f) ? seed : 1e-6f;
+  while (!dueForSample()) { /* wait for the next slot */ }
+  Reading seed = readSample();
+  staBand = seed.band;
+  ltaBand = (seed.band > 0.0f) ? seed.band : 1e-6f;
+  ltaWide = (seed.wide > 0.0f) ? seed.wide : 1e-6f;
 
-  unsigned long t0 = millis();
+  t0 = millis();
   while (millis() - t0 < (unsigned long)(LTA_SEC * 1000.0f)) {
-    float d = readDynamicMagnitude();
-    lta = lta + LTA_W * (d - lta);
-    sta = sta + STA_W * (d - sta);
-    delayMicroseconds(SAMPLE_PERIOD_US);
+    if (!dueForSample()) continue;
+    Reading r = readSample();
+    ltaBand += LTA_W * (r.band - ltaBand);
+    staBand += STA_W * (r.band - staBand);
+    ltaWide += LTA_W * (r.wide - ltaWide);
   }
   report("noise floor ready");
-}
 
-// Magnitude of the dynamic acceleration (gravity removed), in g.
-float readDynamicMagnitude() {
-  imu.update();
-  float ax = imu.getX();
-  float ay = imu.getY();
-  float az = imu.getZ();
-
-  gx = GRAVITY_ALPHA * gx + (1 - GRAVITY_ALPHA) * ax;
-  gy = GRAVITY_ALPHA * gy + (1 - GRAVITY_ALPHA) * ay;
-  gz = GRAVITY_ALPHA * gz + (1 - GRAVITY_ALPHA) * az;
-
-  float dx = ax - gx, dy = ay - gy, dz = az - gz;
-  return sqrtf(dx * dx + dy * dy + dz * dz);
+  lastHeartbeatMs = millis();
+  sampleCount = 0;
 }
 
 void loop() {
-  unsigned long now = micros();
-  if (now - lastSampleUs < SAMPLE_PERIOD_US) return;
-  lastSampleUs = now;
+  if (!dueForSample()) return;
 
-  float dyn = readDynamicMagnitude();
+  const Reading r = readSample();
+  sampleCount++;
 
   // Update the averages (the LTA is frozen during an event so it does not get
   // self-contaminated by the seismic signal).
-  sta = sta + STA_W * (dyn - sta);
+  staBand += STA_W * (r.band - staBand);
   if (!inEvent) {
-    lta = lta + LTA_W * (dyn - lta);
+    ltaBand += LTA_W * (r.band - ltaBand);
+    ltaWide += LTA_W * (r.wide - ltaWide);
   }
+  if (ltaBand < 1e-7f) ltaBand = 1e-7f;  // a dead bus must not read as a quake
 
-  float ratio = sta / lta;
+  const float ratio = staBand / ltaBand;
 
   // Centered about the short-term mean so the signal actually crosses zero.
-  float centered = dyn - sta;
+  const float centered = r.band - staBand;
 
   if (!inEvent && ratio > TRIGGER_ON) {
     inEvent = true;
-    eventPeakG = dyn;
+    eventPeakBand = r.band;
+    eventPeakWide = r.wide;
     eventStartMs = millis();
     zeroCrossings = 0;
   } else if (inEvent) {
-    if (dyn > eventPeakG) eventPeakG = dyn;
+    if (r.band > eventPeakBand) eventPeakBand = r.band;
+    if (r.wide > eventPeakWide) eventPeakWide = r.wide;
     if ((prevCentered < 0.0f) != (centered < 0.0f)) zeroCrossings++;
     if (ratio < TRIGGER_OFF) {
-      unsigned long durMs = millis() - eventStartMs;
-      // Rectification note: `dyn` is a vector magnitude, so this rate runs
-      // about 2x the true ground-motion frequency. Both downstream consumers
-      // absorb a constant factor (log-linear distance fit, standardized
-      // classifier feature), so it is a usable proxy, not a calibrated
-      // spectral estimate.
-      float domHz = (durMs > 0) ? (zeroCrossings * 1000.0f) / (2.0f * durMs) : 0;
-      emitEvent(eventStartMs, eventPeakG, durMs, domHz);
+      const unsigned long durMs = millis() - eventStartMs;
+      // Rectification note: this is a vector magnitude, so the rate runs about
+      // 2x the true ground-motion frequency. Both downstream consumers absorb a
+      // constant factor (log-linear distance fit, standardized classifier
+      // feature), so it is a usable proxy, not a calibrated spectral estimate.
+      // Since 2026-09-01 it is measured on the band-passed signal, like
+      // everything else the event reports, so it is now bounded by the band:
+      // roughly 1.4-24 Hz in these units.
+      const float domHz = (durMs > 0)
+                          ? (zeroCrossings * 1000.0f) / (2.0f * durMs) : 0;
+      emitEvent(eventStartMs, eventPeakBand, durMs, domHz, eventPeakWide);
       inEvent = false;
     }
   }
   prevCentered = centered;
 
-  unsigned long ms = millis();
+  const unsigned long ms = millis();
   if (ms - lastHeartbeatMs >= HEARTBEAT_MS) {
+    const unsigned long window = ms - lastHeartbeatMs;
+    const float fsNow = (window > 0) ? (sampleCount * 1000.0f) / (float)window
+                                     : fsHz;
+    // Re-derive the coefficients if the loop rate has genuinely drifted. The
+    // 2% deadband keeps a noisy estimate from re-solving four transcendentals
+    // every 10 s for nothing.
+    if (fsNow > 20.0f && fsNow < 400.0f && fabsf(fsNow - fsHz) > 0.02f * fsHz) {
+      setRates(fsNow);
+    }
     lastHeartbeatMs = ms;
-    Bridge.notify("mcu_heartbeat", ms, ratio, dyn);
+    sampleCount = 0;
+
+    // Seven fields, and six of them exist for one measurement: ltaBand against
+    // ltaWide, sampled in the SAME ten seconds, is the fraction of the noise
+    // floor that lies outside 0.7-12 Hz. Comparing a floor measured today
+    // against one measured last night proves nothing (the station's own
+    // history is full of that trap); comparing two channels of the same
+    // instant proves it outright.
+    Bridge.notify("mcu_heartbeat", ms, ratio, r.band, ltaBand,
+                  r.wide, ltaWide, fsHz);
     Monitor.print("{\"status\":\"alive\",\"t_ms\":");
     Monitor.print(ms);
     Monitor.print(",\"sta_lta\":");
     Monitor.print(ratio, 3);
+    Monitor.print(",\"lta_band\":");
+    Monitor.print(ltaBand, 6);
+    Monitor.print(",\"lta_wide\":");
+    Monitor.print(ltaWide, 6);
+    Monitor.print(",\"fs_hz\":");
+    Monitor.print(fsHz, 1);
     Monitor.println("}");
   }
 }
@@ -249,8 +479,17 @@ void loop() {
 // reaches the Python half through the router socket, which is the only path
 // available now that App Lab runs that half inside a container. The Monitor
 // line is kept as a human-readable trace for `arduino-app-cli monitor`.
-void emitEvent(unsigned long tMs, float pgaG, unsigned long durMs, float domHz) {
-  Bridge.notify("seismic_event", tMs, pgaG, durMs, domHz);
+//
+// `pgaG` is the BAND-PASSED peak since 2026-09-01. It is the amplitude that
+// actually crossed the trigger, and it is the one the amplitude model should
+// learn from when a real earthquake finally arrives; reporting a wideband peak
+// while triggering on a filtered one would fit the model to energy the
+// detector never used. Records written before the change carry `schema: 1` in
+// event_log.jsonl and are NOT comparable. `pgaWbG` keeps the old definition
+// alongside, so the two can always be related after the fact.
+void emitEvent(unsigned long tMs, float pgaG, unsigned long durMs, float domHz,
+               float pgaWbG) {
+  Bridge.notify("seismic_event", tMs, pgaG, durMs, domHz, pgaWbG);
 
   Monitor.print("{\"t_ms\":");
   Monitor.print(tMs);
@@ -260,5 +499,7 @@ void emitEvent(unsigned long tMs, float pgaG, unsigned long durMs, float domHz) 
   Monitor.print(durMs);
   Monitor.print(",\"dom_hz\":");
   Monitor.print(domHz, 2);
+  Monitor.print(",\"pga_wb_g\":");
+  Monitor.print(pgaWbG, 5);
   Monitor.println("}");
 }

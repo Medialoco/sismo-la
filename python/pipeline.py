@@ -105,12 +105,19 @@ def iter_bridge_events(on_mcu_activity=None):
             except Exception as e:  # never let bookkeeping kill the link
                 print(f"[bridge] activity hook failed: {e}", flush=True)
 
-    def on_seismic_event(t_ms, pga_g, dur_ms, dom_hz):
+    def on_seismic_event(t_ms, pga_g, dur_ms, dom_hz, pga_wb_g=None):
+        # ``pga_g`` is the 0.7-12 Hz band-passed peak since the 2026-09-01
+        # firmware; ``pga_wb_g`` is the old wideband definition, kept so the two
+        # eras can be related after the fact. The default keeps this handler
+        # working against a firmware that predates the change, which matters
+        # because Python is deployed by pushing a file and the MCU by a flash:
+        # the two are never simultaneous.
         pending.put({
             "t_ms": int(t_ms),
             "pga_g": float(pga_g),
             "dur_ms": int(dur_ms),
             "dom_hz": float(dom_hz),
+            "pga_wb_g": float(pga_wb_g) if pga_wb_g is not None else None,
             "recv_time": datetime.now(timezone.utc),
         })
         note("event")
@@ -119,12 +126,29 @@ def iter_bridge_events(on_mcu_activity=None):
         print(f"[bridge] mcu status: {message}", flush=True)
         note("status", str(message))
 
-    def on_mcu_heartbeat(t_ms, sta_lta, dyn_g):
+    def on_mcu_heartbeat(t_ms, sta_lta, dyn_g, lta_g=None, dyn_wb_g=None,
+                         lta_wb_g=None, fs_hz=None):
         # The noise floor is the one number that tells you the detector is
         # actually looking at a sensor rather than at a dead I2C bus.
-        print(f"[bridge] mcu alive t={int(t_ms)}ms sta/lta={float(sta_lta):.2f} "
-              f"dyn={float(dyn_g):.5f}g", flush=True)
-        note("heartbeat", f"sta/lta={float(sta_lta):.2f} dyn={float(dyn_g):.5f}g")
+        #
+        # The extra fields exist for one measurement. ``lta_g`` is the noise
+        # floor inside 0.7-12 Hz and ``lta_wb_g`` the wideband floor, averaged
+        # over the SAME ten seconds, so their ratio is the fraction of the floor
+        # that lies outside the seismic band — the quantity that decides whether
+        # band-passing buys any sensitivity at all. Measuring it this way avoids
+        # comparing a daytime window against a night one, which is how the
+        # previous attempt at the same question ended up inconclusive.
+        detail = (f"sta/lta={float(sta_lta):.2f} dyn={float(dyn_g):.5f}g")
+        if lta_g is not None:
+            detail += f" lta={float(lta_g):.5f}g"
+        if dyn_wb_g is not None:
+            detail += f" wb={float(dyn_wb_g):.5f}g"
+        if lta_wb_g is not None:
+            detail += f" wb_lta={float(lta_wb_g):.5f}g"
+        if fs_hz is not None:
+            detail += f" fs={float(fs_hz):.1f}Hz"
+        print(f"[bridge] mcu alive t={int(t_ms)}ms {detail}", flush=True)
+        note("heartbeat", detail)
 
     Bridge.provide("seismic_event", on_seismic_event)
     Bridge.provide("mcu_status", on_mcu_status)

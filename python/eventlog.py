@@ -23,7 +23,17 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-SCHEMA = 1
+# Schema 2 (2026-09-01) redefines `pga_g`: it is the peak of the 0.7-12 Hz
+# band-passed acceleration, the amplitude that actually crossed the trigger,
+# where schema 1 recorded the wideband vector magnitude. `dur_ms` and `dom_hz`
+# moved to the same band with it. The two eras must never be pooled — a schema-1
+# reading is systematically larger, by whatever fraction of that shake's energy
+# sat outside the band. Nothing of value was lost in the break: all 255 schema-1
+# records are unmatched noise, the calibration stood at 0/8 points, and they
+# remain the station's only characterisation of its own ambient noise, which is
+# why the journal is appended to and never rewritten. `pga_wb_g` carries the old
+# definition alongside the new one so the two can still be related.
+SCHEMA = 2
 
 
 class EventLog:
@@ -48,6 +58,7 @@ class EventLog:
             "wall_time": _iso(evt.get("recv_time")),
             "mcu_t_ms": evt.get("t_ms"),
             "pga_g": evt.get("pga_g"),
+            "pga_wb_g": evt.get("pga_wb_g"),
             "dur_ms": evt.get("dur_ms"),
             "dom_hz": evt.get("dom_hz"),
             "p_quake_prior": p_quake,
