@@ -10,7 +10,16 @@ This project is deliberately **low-cost**: the value comes from the software
 | 1 | **Arduino UNO Q (4 GB)** | 1 | The board (Dragonwing MPU + STM32 MCU, WiFi) |
 | 2 | **IMU / accelerometer over I²C** — see options below | 1 | Senses ground motion |
 | 3 | **Qwiic cable** (JST-SH 4-pin) | 1 | Plug-and-play I²C to the UNO Q |
-| 4 | **USB-C cable + power supply** | 1 | Powers the board (PD recommended) |
+| 4 | **USB-C cable + 5 V / 3 A supply** | 1 | Powers the board — 3 A is a requirement, not a suggestion |
+
+> **The power supply is not a detail.** Arduino's datasheet asks for 5 V at 3 A
+> (15 W) and warns that a weaker source browns out "during short activity peaks
+> such as wireless bursts"; below 4.5 V on VBUS the board resets. A 5 W or 10 W
+> phone charger will therefore appear to work and then reboot the station at
+> random — which is worse than a clean power cut, because a station that reboots
+> mid-detection is a station that misses earthquakes. A laptop USB-C port is
+> usually fine; a bargain-bin charger usually is not. Check the rating printed
+> on the adapter before leaving the station unattended.
 
 Optional (nice for the demo / dashboard):
 
