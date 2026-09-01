@@ -42,33 +42,42 @@ def _request(url: str, token: str, method: str = "GET", payload: dict | None = N
         return json.loads(resp.read() or b"{}")
 
 
-def _token_file() -> str:
-    """Where the token lives when it does not come from the environment.
+def _token_files() -> list[str]:
+    """Where the token may live when it does not come from the environment.
 
     App Lab generates the container's compose file from ``app.yaml``, which has
     no field for environment variables, and regenerates it on every app start --
     so there is no supported way to hand the container a secret through its
     environment. The app folder, however, is bind-mounted at /app, so a file
     dropped beside the code is visible inside. That is the route.
+
+    ``APP_HOME`` is set by App Lab to the app's path *on the host*, which does
+    not exist inside the container, so it cannot be the only candidate: the
+    path relative to this file is what actually resolves under /app.
     """
     override = os.environ.get("SISMO_GITHUB_TOKEN_FILE")
     if override:
-        return override
-    root = os.environ.get("APP_HOME") or os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
-    return os.path.join(root, ".sismo-token")
+        return [override]
+    roots = [os.path.dirname(os.path.dirname(os.path.abspath(__file__)))]
+    app_home = os.environ.get("APP_HOME")
+    if app_home and app_home not in roots:
+        roots.append(app_home)
+    return [os.path.join(r, ".sismo-token") for r in roots]
 
 
 def _token() -> str | None:
     token = os.environ.get("SISMO_GITHUB_TOKEN")
     if token:
         return token.strip()
-    try:
-        with open(_token_file(), "r", encoding="utf-8") as fh:
-            return fh.read().strip() or None
-    except OSError:
-        return None
+    for candidate in _token_files():
+        try:
+            with open(candidate, "r", encoding="utf-8") as fh:
+                value = fh.read().strip()
+        except OSError:
+            continue
+        if value:
+            return value
+    return None
 
 
 def _same_but_for_time(old: bytes, new: bytes) -> bool:
@@ -95,8 +104,9 @@ def main() -> int:
 
     token = _token()
     if not token:
+        where = " or ".join(_token_files())
         print(f"publish-to-github: no token. Set SISMO_GITHUB_TOKEN, or write it "
-              f"to {_token_file()} (chmod 600).", file=sys.stderr)
+              f"to {where} (chmod 600).", file=sys.stderr)
         return 1
 
     repo = os.environ.get("SISMO_GITHUB_REPO", "Medialoco/sismo-la")
@@ -132,10 +142,21 @@ def main() -> int:
         print("publish-to-github: unchanged since last snapshot, not committing")
         return 0
 
+    # Without an explicit author the commit is attributed to whatever profile
+    # name the token's account carries, which is not the identity the rest of
+    # the history uses.
+    who = {
+        "name": os.environ.get("SISMO_GIT_NAME", "thepriben"),
+        "email": os.environ.get(
+            "SISMO_GIT_EMAIL", "5019565+thepriben@users.noreply.github.com"
+        ),
+    }
     payload = {
         "message": "Publish station snapshot",
         "content": base64.b64encode(body).decode(),
         "branch": branch,
+        "author": who,
+        "committer": who,
     }
     if sha:
         payload["sha"] = sha
