@@ -80,6 +80,9 @@ We fill this page in as the project progresses.
       next to what USGS said.
 - [x] Diagram of the principle — `docs/images/how-it-works.png` (and `.jpg`).
       Source is `how-it-works.svg`: plain text, edit it rather than the raster.
+- [x] Diagram of the network geometry — `docs/images/network.png` (and `.jpg`),
+      source `network.svg`. It says on its face that it is a geometric argument
+      and not a measurement; do not caption it as a result.
 - [x] Calibration sequence — four stills cut from the timelapse,
       `timelapse-1-learning` to `timelapse-4-calibrated`, usable as a
       before/after pair in the Story.

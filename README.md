@@ -108,6 +108,25 @@ computed on data the model has already seen.
 
 Details in [`docs/calibration.md`](docs/calibration.md).
 
+## What three of these would add
+
+![One station measures a distance but no bearing, so it can only place the epicenter somewhere on a ring; three stations produce three rings that cross at a single point](docs/images/network.png)
+
+A single station recovers a distance and no bearing. The firmware reduces every
+sample to the magnitude of the acceleration vector, which throws direction away,
+and the P wave — the only arrival whose polarization points back to the source —
+is far below the hundredths of a g it takes to trip this sensor; what fires it
+are the S and surface waves behind it. So the honest output of one station is a
+ring. Three rings cross in one place, the way GPS locates a receiver that no
+satellite knows the direction of.
+
+What would make such a network installable is not the sensor, it is the
+self-calibration: each station fits its own coefficients against the USGS
+catalog and adapts to its own soil, building and mount, with nobody calibrating
+anything by hand. **This is an argument from geometry, not a demonstration.**
+There is one station, it has yet to recognize a single real earthquake — 0 of
+the 8 matches it needs — and nothing above was measured or simulated.
+
 ## What it is, and what it is not
 
 **It detects, it does not predict.** The device characterizes earthquakes while

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a3"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="900" fill="#f7f8fa"/>
+
+  <text x="40" y="54" font-size="30" font-weight="700" fill="#1c2430">One station draws a ring. Three draw a point.</text>
+  <text x="40" y="88" font-size="16" fill="#6b7684">A Sismo-LA station recovers how far away an earthquake was, never in which direction. That is geometry, not a defect,</text>
+  <text x="40" y="110" font-size="16" fill="#6b7684">and it is the same geometry that makes a neighborhood of stations worth building.</text>
+
+  <!-- ================= one station ================= -->
+  <rect x="40" y="140" width="420" height="500" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="40" y="140" width="420" height="4" rx="2" fill="#e63946"/>
+  <text x="64" y="182" font-size="15" font-weight="700" fill="#1c2430">1 &#183; What one station can say</text>
+  <text x="64" y="206" font-size="13" fill="#6b7684">It measures how far. It cannot measure which way.</text>
+
+  <circle cx="250" cy="390" r="125" fill="none" stroke="#e63946" stroke-width="26" opacity="0.12"/>
+  <circle cx="250" cy="390" r="125" fill="none" stroke="#e63946" stroke-width="2" stroke-dasharray="7,6"/>
+  <text x="250" y="252" font-size="11.5" font-style="italic" fill="#a32330" text-anchor="middle">the epicenter is somewhere on this ring</text>
+
+  <line x1="250" y1="390" x2="128" y2="390" stroke="#8a94a3" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <rect x="166" y="366" width="66" height="18" rx="4" fill="#ffffff"/>
+  <text x="199" y="379" font-size="11.5" fill="#4a5563" text-anchor="middle">distance R</text>
+
+  <circle cx="346" cy="310" r="10" fill="#fdf0f1" stroke="#e8a0a6"/>
+  <text x="346" y="314" font-size="11" fill="#a32330" text-anchor="middle">?</text>
+  <circle cx="170" cy="294" r="10" fill="#fdf0f1" stroke="#e8a0a6"/>
+  <text x="170" y="298" font-size="11" fill="#a32330" text-anchor="middle">?</text>
+  <circle cx="154" cy="470" r="10" fill="#fdf0f1" stroke="#e8a0a6"/>
+  <text x="154" y="474" font-size="11" fill="#a32330" text-anchor="middle">?</text>
+  <circle cx="330" cy="486" r="10" fill="#fdf0f1" stroke="#e8a0a6"/>
+  <text x="330" y="490" font-size="11" fill="#a32330" text-anchor="middle">?</text>
+
+  <rect x="238" y="378" width="24" height="24" rx="6" fill="#00878F"/>
+  <text x="250" y="422" font-size="11.5" fill="#4a5563" text-anchor="middle">the station</text>
+
+  <text x="64" y="556" font-size="13.5" fill="#4a5563">The coda duration and the fall in dominant frequency</text>
+  <text x="64" y="574" font-size="13.5" fill="#4a5563">both grow with range, so the radius is a genuine</text>
+  <text x="64" y="592" font-size="13.5" fill="#4a5563">measurement. Every point on the ring is equally</text>
+  <text x="64" y="610" font-size="13.5" fill="#4a5563">possible.</text>
+
+  <!-- ================= three stations ================= -->
+  <rect x="490" y="140" width="670" height="500" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="490" y="140" width="670" height="4" rx="2" fill="#2f9e44"/>
+  <text x="514" y="182" font-size="15" font-weight="700" fill="#1c2430">2 &#183; What three stations can say</text>
+  <text x="514" y="206" font-size="13" fill="#6b7684">Three rings cross in one place, and that place is the epicenter.</text>
+
+  <circle cx="730" cy="400" r="135.83" fill="none" stroke="#3d7ebd" stroke-width="14" opacity="0.13"/>
+  <circle cx="730" cy="400" r="135.83" fill="none" stroke="#3d7ebd" stroke-width="2"/>
+  <circle cx="930" cy="325" r="88.46" fill="none" stroke="#e8a33d" stroke-width="14" opacity="0.16"/>
+  <circle cx="930" cy="325" r="88.46" fill="none" stroke="#e8a33d" stroke-width="2"/>
+  <circle cx="955" cy="435" r="102.96" fill="none" stroke="#2f9e44" stroke-width="14" opacity="0.13"/>
+  <circle cx="955" cy="435" r="102.96" fill="none" stroke="#2f9e44" stroke-width="2"/>
+
+  <line x1="730" y1="400" x2="865" y2="385" stroke="#3d7ebd" stroke-width="1.3" stroke-dasharray="5,4" opacity="0.6"/>
+  <line x1="930" y1="325" x2="865" y2="385" stroke="#e8a33d" stroke-width="1.3" stroke-dasharray="5,4" opacity="0.7"/>
+  <line x1="955" y1="435" x2="865" y2="385" stroke="#2f9e44" stroke-width="1.3" stroke-dasharray="5,4" opacity="0.6"/>
+
+  <rect x="722" y="392" width="16" height="16" rx="4" fill="#3d7ebd"/>
+  <text x="730" y="380" font-size="11.5" fill="#4a5563" text-anchor="middle">station A</text>
+  <rect x="922" y="317" width="16" height="16" rx="4" fill="#e8a33d"/>
+  <text x="930" y="305" font-size="11.5" fill="#4a5563" text-anchor="middle">station B</text>
+  <rect x="947" y="427" width="16" height="16" rx="4" fill="#2f9e44"/>
+  <text x="955" y="471" font-size="11.5" fill="#4a5563" text-anchor="middle">station C</text>
+
+  <text x="514" y="244" font-size="11.5" font-style="italic" fill="#8a94a3">each station knows only its own radius</text>
+
+  <circle cx="865" cy="385" r="12" fill="#e63946" opacity="0.20"/>
+  <circle cx="865" cy="385" r="5" fill="#e63946"/>
+  <line x1="858" y1="377" x2="832" y2="346" stroke="#8a94a3" stroke-width="1.2"/>
+  <text x="826" y="342" font-size="12" font-weight="600" fill="#a32330" text-anchor="end">epicenter</text>
+
+  <text x="514" y="570" font-size="13.5" fill="#4a5563">No station measured a direction; the direction falls out of the geometry. GPS works</text>
+  <text x="514" y="588" font-size="13.5" fill="#4a5563">the same way &#8212; no satellite knows where the receiver is, the intersection of the</text>
+  <text x="514" y="606" font-size="13.5" fill="#4a5563">spheres does.</text>
+
+  <!-- ================= the three arguments ================= -->
+  <rect x="40" y="672" width="1120" height="176" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="40" y="672" width="4" height="176" rx="2" fill="#8a94a3"/>
+
+  <text x="72" y="708" font-size="13.5" font-weight="600" fill="#4a5563">Why one station has no bearing</text>
+  <text x="72" y="732" font-size="13" fill="#6b7684">The firmware reduces every sample to the magnitude</text>
+  <text x="72" y="750" font-size="13" fill="#6b7684">of the acceleration vector, which throws direction</text>
+  <text x="72" y="768" font-size="13" fill="#6b7684">away. And the P wave &#8212; the only arrival whose</text>
+  <text x="72" y="786" font-size="13" fill="#6b7684">polarization points back to the source &#8212; is far</text>
+  <text x="72" y="804" font-size="13" fill="#6b7684">below the hundredths of a g it takes to trip this</text>
+  <text x="72" y="822" font-size="13" fill="#6b7684">sensor. What fires it are the S and surface waves.</text>
+
+  <text x="450" y="708" font-size="13.5" font-weight="600" fill="#4a5563">What would make a network deployable</text>
+  <text x="450" y="732" font-size="13" fill="#6b7684">A conventional array needs chosen sites, instruments</text>
+  <text x="450" y="750" font-size="13" fill="#6b7684">calibrated against a reference, and specialists to run</text>
+  <text x="450" y="768" font-size="13" fill="#6b7684">them. Here every station fits its own coefficients</text>
+  <text x="450" y="786" font-size="13" fill="#6b7684">against the USGS catalog, so it adapts to its own</text>
+  <text x="450" y="804" font-size="13" fill="#6b7684">soil, building and mount. That self-calibration is the</text>
+  <text x="450" y="822" font-size="13" fill="#6b7684">part a neighborhood could install &#8212; not the sensor.</text>
+
+  <text x="850" y="708" font-size="13.5" font-weight="600" fill="#a32330">This is an argument, not a result</text>
+  <text x="850" y="732" font-size="13" fill="#6b7684">There is one station, and it has yet to</text>
+  <text x="850" y="750" font-size="13" fill="#6b7684">recognize a single real earthquake: the</text>
+  <text x="850" y="768" font-size="13" fill="#6b7684">calibration record stands at 0 of the 8</text>
+  <text x="850" y="786" font-size="13" fill="#6b7684">matches it needs. Nothing here was</text>
+  <text x="850" y="804" font-size="13" fill="#6b7684">measured or simulated &#8212; it is the</text>
+  <text x="850" y="822" font-size="13" fill="#6b7684">geometry a network would use, no more.</text>
+
+  <text x="40" y="876" font-size="11" fill="#8a94a3">Sismo-LA &#183; why a network &#183; a geometric argument, not a measurement &#183; editable source: docs/images/network.svg</text>
+</svg>

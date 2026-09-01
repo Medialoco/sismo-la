@@ -210,7 +210,33 @@ from the fit. That campaign is running now.
 - Magnitude from a single PGA measurement is approximate by nature
   (±0.3–0.5 after good calibration is realistic).
 
-### 9. Why this matters (and scales)
+### 9. What three of these would add
+
+![One station draws a ring, three rings cross at a point](images/network.png)
+
+One station measures a distance, never a direction. The firmware reduces each
+sample to the magnitude of the acceleration vector, which throws direction away,
+and the one arrival whose polarization would recover it — the P wave — is far
+below the hundredths of a g it takes to trip this sensor; what fires the trigger
+are the S and surface waves behind it. So the honest output of a single station
+is a ring, not a pin. Three rings cross in one place, and that place is the
+epicenter — the same trick as GPS, where no satellite knows the direction to the
+receiver either.
+
+The part that would make such a network real is not the sensor. A conventional
+array needs chosen sites, instruments calibrated against a reference, and people
+who know how to keep them honest. Here each station learns its own coefficients
+from the USGS catalog and adapts to its own soil, its own building, its own
+mount — so coverage could grow street by street instead of budget by budget.
+That, and not the price of an accelerometer, is the claim I would defend.
+
+**Said plainly: this is an argument, not a demonstration.** There is one
+station, and it has not yet recognized a single real earthquake — the
+calibration record stands at 0 of the 8 matches it needs. I did not simulate a
+network to draw that figure; it is the geometry three stations would use, and
+nothing more.
+
+### 10. Why this matters (and scales)
 
 The pattern — **cheap sensor + free open ground truth = self-calibrating
 instrument** — is not specific to earthquakes. Air quality (OpenAQ), weather
@@ -232,3 +258,5 @@ best possible test city.
       `images/timelapse-4-calibrated.jpg`. Replayed catalog data, and the
       badge in the corner says so; do not present it as a live recording.
 - [x] Diagram of the principle — `images/how-it-works.png`.
+- [x] Diagram of the network geometry — `images/network.png`. A drawn argument,
+      not a measurement: one station, one ring; three stations, one point.
