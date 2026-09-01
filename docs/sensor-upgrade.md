@@ -412,6 +412,15 @@ the floor is the sensor's own electrical noise, proven in two bands, and the
 next gain is therefore hardware. That is a stronger result than a rushed swap,
 and it is already written down.
 
+**The mechanical route, for the twelve days that remain**, is treated in
+`docs/mechanical-gain.md`: nothing to order, and it answers the one question
+this chapter has to leave open — whether the site stays negligible below
+0.00036 g. Two sensors reporting an in-band floor over the same ten seconds
+measure the site-to-sensor noise ratio directly, and that ratio is what decides
+whether the ADXL355's 4.9x survives contact with the room. Its verdict is the
+same as this one for the deadline itself: relocate the station, do not rebuild
+it.
+
 **After the contest**, two steps, in this order:
 
 1. **ADXL355 first**, because it is a drop-in change of density and nothing
