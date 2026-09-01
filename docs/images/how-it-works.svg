@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a3"/>
+    </marker>
+    <marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e63946"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="700" fill="#f7f8fa"/>
+
+  <text x="40" y="56" font-size="30" font-weight="700" fill="#1c2430">How Sismo-LA calibrates itself</text>
+  <text x="40" y="88" font-size="16" fill="#6b7684">A cheap MEMS sensor cannot measure a magnitude. But in Los Angeles the USGS catalog is a permanent ground truth,</text>
+  <text x="40" y="110" font-size="16" fill="#6b7684">so the device compares what it felt with what really happened &#8212; and learns the conversion by itself.</text>
+
+  <!-- Step 1 -->
+  <rect x="40" y="150" width="250" height="230" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="40" y="150" width="250" height="4" rx="2" fill="#3d7ebd"/>
+  <text x="64" y="192" font-size="15" font-weight="700" fill="#1c2430">1 &#183; The ground shakes</text>
+  <text x="64" y="220" font-size="13.5" fill="#4a5563">The STM32 microcontroller runs</text>
+  <text x="64" y="240" font-size="13.5" fill="#4a5563">an STA/LTA trigger on the IMU</text>
+  <text x="64" y="260" font-size="13.5" fill="#4a5563">at 100 Hz. Each shake emits one</text>
+  <text x="64" y="280" font-size="13.5" fill="#4a5563">event with three numbers:</text>
+  <rect x="64" y="298" width="66" height="26" rx="13" fill="#eef4fa" stroke="#c9dcee"/>
+  <text x="97" y="315" font-size="12" fill="#2c5f8f" text-anchor="middle">peak g</text>
+  <rect x="136" y="298" width="72" height="26" rx="13" fill="#eef4fa" stroke="#c9dcee"/>
+  <text x="172" y="315" font-size="12" fill="#2c5f8f" text-anchor="middle">duration</text>
+  <rect x="214" y="298" width="52" height="26" rx="13" fill="#eef4fa" stroke="#c9dcee"/>
+  <text x="240" y="315" font-size="12" fill="#2c5f8f" text-anchor="middle">freq.</text>
+  <text x="64" y="352" font-size="12" fill="#8a94a3">It knows it was shaken.</text>
+  <text x="64" y="368" font-size="12" font-style="italic" fill="#8a94a3">It has no idea by what.</text>
+
+  <!-- Step 2 -->
+  <rect x="330" y="150" width="250" height="230" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="330" y="150" width="250" height="4" rx="2" fill="#e8a33d"/>
+  <text x="354" y="192" font-size="15" font-weight="700" fill="#1c2430">2 &#183; USGS says what it was</text>
+  <text x="354" y="220" font-size="13.5" fill="#4a5563">The Linux half of the board</text>
+  <text x="354" y="240" font-size="13.5" fill="#4a5563">queries the public USGS catalog</text>
+  <text x="354" y="260" font-size="13.5" fill="#4a5563">over WiFi: every confirmed quake</text>
+  <text x="354" y="280" font-size="13.5" fill="#4a5563">of magnitude 2 or more within</text>
+  <text x="354" y="300" font-size="13.5" fill="#4a5563">160 km, with its true magnitude</text>
+  <text x="354" y="320" font-size="13.5" fill="#4a5563">and its true distance.</text>
+  <text x="354" y="352" font-size="12" fill="#8a94a3">Free, official, updated</text>
+  <text x="354" y="368" font-size="12" fill="#8a94a3">every few minutes.</text>
+
+  <!-- Step 3 -->
+  <rect x="620" y="150" width="250" height="230" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="620" y="150" width="250" height="4" rx="2" fill="#2f9e44"/>
+  <text x="644" y="192" font-size="15" font-weight="700" fill="#1c2430">3 &#183; Match them in time</text>
+  <text x="644" y="220" font-size="13.5" fill="#4a5563">A shake felt within 3 minutes</text>
+  <text x="644" y="240" font-size="13.5" fill="#4a5563">after a cataloged quake becomes</text>
+  <text x="644" y="260" font-size="13.5" fill="#4a5563">a labelled example: this much</text>
+  <text x="644" y="280" font-size="13.5" fill="#4a5563">shaking meant that magnitude,</text>
+  <text x="644" y="300" font-size="13.5" fill="#4a5563">at that distance.</text>
+  <text x="644" y="332" font-size="12" fill="#8a94a3">Unmatched shakes are not</text>
+  <text x="644" y="348" font-size="12" fill="#8a94a3">wasted: they train the noise</text>
+  <text x="644" y="364" font-size="12" fill="#8a94a3">filter against doors and trucks.</text>
+
+  <!-- Step 4 -->
+  <rect x="910" y="150" width="250" height="230" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="910" y="150" width="250" height="4" rx="2" fill="#e63946"/>
+  <text x="934" y="192" font-size="15" font-weight="700" fill="#1c2430">4 &#183; Fit, then stand alone</text>
+  <text x="934" y="220" font-size="13.5" fill="#4a5563">A few matches are enough to fit</text>
+  <text x="934" y="240" font-size="13.5" fill="#4a5563">the two laws of attenuation:</text>
+  <rect x="928" y="254" width="220" height="52" rx="8" fill="#fdf0f1" stroke="#f3ccd0"/>
+  <text x="940" y="274" font-size="10.5" font-family="ui-monospace, Menlo, monospace" fill="#a32330">M = a&#183;log(peak) + b&#183;log(R) + c</text>
+  <text x="940" y="294" font-size="10.5" font-family="ui-monospace, Menlo, monospace" fill="#a32330">R = f(duration, frequency)</text>
+  <text x="934" y="330" font-size="13.5" fill="#4a5563">From then on the station gives</text>
+  <text x="934" y="350" font-size="13.5" fill="#4a5563">its own magnitude and distance</text>
+  <text x="934" y="370" font-size="13.5" fill="#4a5563">for the next shake, unaided.</text>
+
+  <!-- Arrows between steps -->
+  <line x1="296" y1="265" x2="324" y2="265" stroke="#8a94a3" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="586" y1="265" x2="614" y2="265" stroke="#8a94a3" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="876" y1="265" x2="904" y2="265" stroke="#8a94a3" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Feedback loop -->
+  <path d="M 1035 386 L 1035 424 L 165 424 L 165 386" fill="none" stroke="#e63946" stroke-width="2"
+        stroke-dasharray="6,5" marker-end="url(#arrowLoop)"/>
+  <rect x="470" y="410" width="260" height="28" rx="14" fill="#f7f8fa"/>
+  <text x="600" y="429" font-size="13" fill="#e63946" text-anchor="middle">every new quake re-fits the model</text>
+
+  <!-- Honest limits -->
+  <rect x="40" y="474" width="1120" height="186" rx="12" fill="#ffffff" stroke="#dde2e9"/>
+  <rect x="40" y="474" width="4" height="186" rx="2" fill="#8a94a3"/>
+  <text x="72" y="512" font-size="16" font-weight="700" fill="#1c2430">What it does not do</text>
+
+  <text x="72" y="546" font-size="13.5" font-weight="600" fill="#4a5563">It detects, it never predicts.</text>
+  <text x="72" y="566" font-size="13.5" fill="#6b7684">Every number describes a quake that has</text>
+  <text x="72" y="586" font-size="13.5" fill="#6b7684">already happened. Nothing here forecasts</text>
+  <text x="72" y="606" font-size="13.5" fill="#6b7684">an earthquake to come.</text>
+
+  <text x="450" y="546" font-size="13.5" font-weight="600" fill="#4a5563">It knows how far, not which way.</text>
+  <text x="450" y="566" font-size="13.5" fill="#6b7684">One station cannot measure a bearing. Alone</text>
+  <text x="450" y="586" font-size="13.5" fill="#6b7684">it can only say the epicenter lies somewhere</text>
+  <text x="450" y="606" font-size="13.5" fill="#6b7684">on a circle of a given radius.</text>
+
+  <text x="850" y="546" font-size="13.5" font-weight="600" fill="#4a5563">The calibration belongs to the spot.</text>
+  <text x="850" y="566" font-size="13.5" fill="#6b7684">It encodes this building and this desk as much</text>
+  <text x="850" y="586" font-size="13.5" fill="#6b7684">as the ground. Move the device and it has to</text>
+  <text x="850" y="606" font-size="13.5" fill="#6b7684">learn again from scratch.</text>
+
+  <text x="72" y="640" font-size="12.5" fill="#8a94a3">Sismo-LA &#183; Arduino UNO Q &#183; the STM32 half detects in real time, the Linux half fetches the catalog, correlates, calibrates and serves the map.</text>
+</svg>

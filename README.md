@@ -22,6 +22,8 @@ see [What it is, and what it is not](#what-it-is-and-what-it-is-not).*
 
 ## The idea in 30 seconds
 
+![How Sismo-LA calibrates itself: the sensor measures a shake, the USGS catalog says what it really was, matching the two in time produces a labelled example, and fitting those examples lets the station estimate magnitude and distance on its own](docs/images/how-it-works.png)
+
 1. The sensor feels a shake and reduces it to three numbers: peak acceleration,
    duration, dominant frequency.
 2. The board asks the USGS catalog whether a real earthquake just happened

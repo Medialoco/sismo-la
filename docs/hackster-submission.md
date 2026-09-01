@@ -62,9 +62,19 @@ We fill this page in as the project progresses.
 
 ## Media to produce (to check)
 
-- [ ] Cover photo (final result, polished).
+- [ ] **Cover photo** (final result, polished). Needs the camera, and the rules
+      say **no text** on it — so no dashboard export can serve as the cover,
+      it has to be the physical station.
 - [ ] Macro photo of the UNO Q + IMU assembly.
 - [ ] Fritzing schematic.
 - [ ] GIF/video of a detection (tap the desk -> trigger).
-- [ ] Dashboard screenshot.
-- [ ] Screenshot of a successful USGS correlation.
+- [x] Dashboard screenshot — `docs/images/timelapse-4-calibrated.jpg`, and
+      `dashboard-1920x1080.jpg` for a 16:9 slot (padded, nothing cropped).
+- [x] Screenshot of a successful USGS correlation — same still: the right-hand
+      panel lists "Earthquake — confirmed by USGS" with what the device said
+      next to what USGS said.
+- [x] Diagram of the principle — `docs/images/how-it-works.png` (and `.jpg`).
+      Source is `how-it-works.svg`: plain text, edit it rather than the raster.
+- [x] Calibration sequence — four stills cut from the timelapse,
+      `timelapse-1-learning` to `timelapse-4-calibrated`, usable as a
+      before/after pair in the Story.
