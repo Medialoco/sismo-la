@@ -64,8 +64,10 @@ publishes it on GitHub Pages (`.github/workflows/pages.yml` serves everything
 under `web-remote/`). It fetches USGS live from the browser and overlays the
 station's readings from a `station.json` sitting beside it, so the target of
 `publish:` has to be `web-remote/station.json` in this repository. Every
-snapshot commit redeploys the page, so `interval_s` is 1800 — one push every
-half hour, and a snapshot that differs only by its clock is skipped entirely.
+snapshot commit redeploys the page, so `interval_s` is 1200 — one push every
+twenty minutes at worst, which stays well inside the roughly ten builds an hour
+Pages will take, and a snapshot that differs only by its clock is skipped
+entirely, so a quiet station pushes nothing at all.
 Nothing is lost in between: each snapshot carries the whole confirmed history,
 rebuilt from the journal.
 

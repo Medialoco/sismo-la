@@ -121,8 +121,7 @@
 <body>
   <header>
     <span class="logo">Sismo-LA</span>
-    <span class="tagline">A low-cost MEMS sensor + open USGS data = a self-calibrating seismograph.
-      Red = what the device thinks. Colors = what really happened.</span>
+    <span class="tagline">A low-cost MEMS sensor + open USGS data = a self-calibrating seismograph.</span>
     <span id="mode-badge" class="mode-badge mode-mock">…</span>
   </header>
 
@@ -146,21 +145,17 @@
         </div>
         <div class="row">
           <span class="swatch" style="background:rgba(255,77,77,.4);border:2px solid #ff4d4d"></span>
-          <span><b style="color:var(--red)">Device estimates</b> — how big and how
-          far <i>our sensor alone</i> thinks the quake was. Direction is
-          <b>not</b> measured: it is borrowed from the matched USGS event so the
-          marker can be drawn as a point. Only the radius and the magnitude are
-          the device's. The dashed line is its error — watch it shrink as
-          calibration improves.</span>
+          <span><b style="color:var(--red)">Device estimates</b> — magnitude and
+          distance from the sensor alone; dashed line = error. The direction is
+          <b>not</b> measured, it is borrowed from the matched USGS event.</span>
         </div>
         <div class="row">
           <span class="swatch" style="background:transparent;border:2px dashed #ff4d4d"></span>
-          <span><b>Distance ring</b> — no USGS match yet: the quake is somewhere
-          on this circle (a single station knows distance, not direction).</span>
+          <span><b>Distance ring</b> — no USGS match yet: distance without direction.</span>
         </div>
         <div class="row">
           <span class="swatch" style="background:rgba(74,163,255,.3);border:2px dashed #4aa3ff"></span>
-          <span><b>Station</b> — the Sismo-LA device (UNO Q + IMU), downtown LA.</span>
+          <span><b>Station</b> — UNO Q + IMU, downtown LA.</span>
         </div>
       </div>
 
@@ -173,10 +168,8 @@
         <div class="stat-row" style="margin-top:8px">
           <span title="Root-mean-square residual over the very points the model was fitted on, using each quake's true catalog distance. It is a training error, not an accuracy: the station has to estimate that distance itself, and run `python audit.py` for the out-of-sample figure.">Fit residual (in-sample)</span><span id="calib-rmse">--</span>
         </div>
-        <div class="note">Training residual, not accuracy — it scores the model
-          on its own fitting points and is given the true distance.
-          <code>python audit.py</code> replays the journal for the honest,
-          out-of-sample number.</div>
+        <div class="note">Fitted on its own points, with the true distance.
+          <code>python audit.py</code> for the out-of-sample figure.</div>
         <div class="stat-row">
           <span>Distance model</span><span id="calib-dist">--</span>
         </div>
@@ -391,18 +384,18 @@
         banner.classList.remove("show");
         return;
       }
-      const age = h.usgs_age_s == null ? "never" : fmtAge(h.usgs_age_s);
-      const mcu = h.mcu_last_seen == null
-        ? "never heard from"
-        : "silent for " + fmtAge(h.mcu_silent_s);
-      banner.innerHTML =
-        "STATION DEGRADED — the figures below may be out of date."
-        + '<div class="detail">'
-        + (h.mcu_expected ? "MCU: " + mcu + ". " : "")
-        + "USGS catalog age: " + age + "."
-        + (h.loop_restarts ? " Pipeline restarts: " + h.loop_restarts + "." : "")
-        + (h.usgs_last_error ? " Last error: " + h.usgs_last_error : "")
-        + "</div>";
+      // Facts only: what is dead and for how long. This is the operator's page,
+      // so the detail line stays — it is what a repair starts from.
+      const bits = [];
+      if (h.mcu_expected) {
+        bits.push("MCU " + (h.mcu_last_seen == null
+          ? "never seen" : "silent " + fmtAge(h.mcu_silent_s)));
+      }
+      bits.push("USGS " + (h.usgs_age_s == null ? "never" : fmtAge(h.usgs_age_s)));
+      if (h.loop_restarts) bits.push(h.loop_restarts + " restarts");
+      if (h.usgs_last_error) bits.push(h.usgs_last_error);
+      banner.innerHTML = "STATION DEGRADED"
+        + '<div class="detail">' + bits.join(" &middot; ") + "</div>";
       banner.classList.add("show");
     }
 

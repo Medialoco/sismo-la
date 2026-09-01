@@ -57,6 +57,14 @@ echo "docker:   $container -> restart=always"
 #    group in) and the app folder, read-only, for the script and the opt-out
 #    file. The image is the app's own, which is already on the board -- nothing
 #    is pulled, so this still works when the boot comes up without a network.
+#
+#    "--network host" is what lets it recover the MICROCONTROLLER and not just
+#    the container. App Lab's stop erases the sketch from the micro, so a plain
+#    `docker start` returns a station that serves a dashboard and feels nothing.
+#    Only the App Lab daemon can reflash, it listens on 127.0.0.1:8800, and
+#    127.0.0.1 in a bridged container is the container itself -- so the sidecar
+#    has to share the host's network namespace to reach it. It listens on no
+#    port of its own, so this adds no exposure.
 image=$(docker inspect -f '{{.Config.Image}}' "$container")
 gid=$(getent group docker | cut -d: -f3)
 
@@ -64,13 +72,14 @@ docker rm -f "$WATCHDOG" >/dev/null 2>&1 || true
 docker run -d \
   --name "$WATCHDOG" \
   --restart always \
+  --network host \
   --group-add "$gid" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v "$APP_DIR":/station:ro \
   -e SISMO_CONTAINER="$container" \
   --entrypoint python3 \
   "$image" /station/deploy/watchdog.py >/dev/null
-echo "watchdog: $WATCHDOG running on $image (docker gid $gid)"
+echo "watchdog: $WATCHDOG running on $image (docker gid $gid, host network)"
 
 echo
 echo "To stop the station on purpose without the watchdog undoing it:"

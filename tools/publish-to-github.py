@@ -16,8 +16,9 @@ revoked without touching anything else.
 
 Wired in through the ``publish.command`` block of ``python/config.yaml``.
 Every snapshot is a commit that redeploys the page, so keep ``interval_s``
-generous -- half an hour, not a minute. A snapshot whose only difference is
-the clock is skipped, so a quiet station stops committing altogether.
+generous -- twenty minutes, not one. Pages tolerates roughly ten builds an
+hour; three is comfortable. A snapshot whose only difference is the clock is
+skipped, so a quiet station stops committing altogether.
 """
 
 import base64
@@ -136,8 +137,8 @@ def main() -> int:
             return 1
 
     # A station that detects nothing for a week would otherwise commit an
-    # identical snapshot every half hour, purely because the clock moved. Two
-    # snapshots that differ only by their timestamp are not news.
+    # identical snapshot every twenty minutes, purely because the clock moved.
+    # Two snapshots that differ only by their timestamp are not news.
     if current is not None and _same_but_for_time(current, body):
         print("publish-to-github: unchanged since last snapshot, not committing")
         return 0

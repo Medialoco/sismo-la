@@ -39,6 +39,12 @@
     .logo { font-weight: 700; }
     .sub { color: var(--muted); font-size: 13px; flex: 1; min-width: 0;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Shown only when there is something to say: these tables carry no clue
+       of their own age, and an eight-hour-old table looks exactly like a live one. */
+    .badge { display: none; padding: 2px 9px; border-radius: 999px; font-size: 12px;
+             white-space: nowrap; border: 1px solid var(--dev);
+             background: var(--dev); color: #fff; }
+    .badge.show { display: inline-block; }
     header a { color: var(--muted); font-size: 13px; text-decoration: none; }
     header a:hover { color: var(--text); }
     .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
@@ -74,7 +80,6 @@
     td.dev { color: var(--dev); font-weight: 600; }
     td.off { color: var(--muted); }
     .empty { padding: 16px; color: var(--muted); font-size: 13px; }
-    .quiet { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -82,6 +87,7 @@
   <header>
     <span class="logo">Sismo-LA</span>
     <span class="sub">Every reading the station published, and the CSV behind it.</span>
+    <span id="badge" class="badge"></span>
     <a href="index.html">&larr; map</a>
     <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
     <button type="button" id="theme" class="iconbtn" aria-label="Light or dark">
@@ -97,12 +103,8 @@
         <span class="count" id="hcount"></span>
         <button type="button" class="csv" id="hcsv" disabled>Download CSV</button>
       </div>
-      <p class="note">Every earthquake the station has ever recognised, oldest
-        first. This table does not expire &mdash; it is the calibration record.
-        The magnitude and distance in the device columns are what it worked out
-        <b>before</b> this earthquake was folded into its models, so the error
-        column is an honest out-of-sample miss rather than a training residual.
-        Replayed events are excluded: they are correct by construction.</p>
+      <p class="note">Device columns are what it worked out <b>before</b> this
+        earthquake was folded into its models. Replayed events excluded.</p>
       <div class="wrap"><table id="htable">
         <thead><tr>
           <th class="l">When (LA)</th>
@@ -119,10 +121,7 @@
         <span class="count" id="rcount"></span>
         <button type="button" class="csv" id="rcsv" disabled>Download CSV</button>
       </div>
-      <p class="note">A rolling window of every shake that crossed the trigger,
-        newest first. Most rows are not earthquakes &mdash; a door, a truck, a
-        footstep &mdash; and that is the point: the noise filter learns from
-        them. PGA is peak ground acceleration in g, and the frequency is a
+      <p class="note">PGA is peak ground acceleration in g. The frequency is a
         zero-crossing rate on a rectified signal, so it runs about twice the
         true ground-motion frequency.</p>
       <div class="wrap"><table id="rtable">
@@ -136,9 +135,6 @@
       </table></div>
     </section>
 
-    <p class="note quiet">The station publishes a snapshot on a timer, so these
-      tables are as fresh as the last push, not live. Raw journal lines never
-      leave the device; what you see here is what it chose to publish.</p>
   </main>
 
   <script>
@@ -193,8 +189,8 @@
         history.length ? `${history.length} events` : '';
       if (!history.length) {
         body.innerHTML = '<tr><td colspan="7" class="empty">' +
-          'No confirmed earthquake yet. Every shake so far was correctly ' +
-          'rejected as something else.</td></tr>';
+          (hasSnapshot ? 'No confirmed earthquake yet.' : 'No snapshot.') +
+          '</td></tr>';
         return;
       }
       body.innerHTML = history.map((h) => {
@@ -225,7 +221,8 @@
         recent.length ? `${recent.length} shakes` : '';
       if (!recent.length) {
         body.innerHTML = '<tr><td colspan="7" class="empty">' +
-          `Nothing crossed the trigger in the last ${days} days.</td></tr>`;
+          (hasSnapshot ? `Nothing in the last ${days} days.` : 'No snapshot.') +
+          '</td></tr>';
         return;
       }
       body.innerHTML = recent.map((d) => {
@@ -243,6 +240,27 @@
          'usgs_mw', 'usgs_km', 'place', 'p_quake'],
         recent.map((d) => [d.t, d.pga, d.dur, d.hz, d.dev, d.dev_km,
           d.usgs ?? '', d.usgs_km ?? '', d.place ?? '', d.p ?? '']));
+    }
+
+    let hasSnapshot = true;
+
+    const ago = (ms) => {
+      const min = ms / 6e4;
+      if (min < 90) return Math.round(min) + ' min';
+      if (min < 2880) return Math.round(min / 60) + ' h';
+      return Math.round(min / 1440) + ' d';
+    };
+
+    /* Same rule as the map: snapshots land every 20 min, so two hours of
+       silence is an outage. Nothing shows when the tables are current. */
+    function markFreshness(s) {
+      const b = document.getElementById('badge');
+      const age = s.updated ? Date.now() - new Date(s.updated).getTime() : null;
+      const text = !hasSnapshot ? 'no device data'
+        : age > 2 * 3.6e6 ? `offline &middot; ${ago(age)}`
+        : s.health && s.health.stale ? 'degraded' : '';
+      b.innerHTML = text;
+      b.className = text ? 'badge show' : 'badge';
     }
 
     /* Older snapshots carried "detections" instead of the journal-backed list. */
@@ -266,12 +284,10 @@
       } catch (e) { /* handled below */ }
 
       if (!s) {
-        document.querySelector('main').insertAdjacentHTML('afterbegin',
-          '<p class="note">The station has not published anything yet, so both ' +
-          'tables are empty. <a href="index.html">The map</a> still shows the ' +
-          'USGS catalogue.</p>');
+        hasSnapshot = false;
         s = {};
       }
+      markFreshness(s);
       fillHistory(s.history || []);
       fillRecent(shakes(s), s.window_days || 7);
     })();

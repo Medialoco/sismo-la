@@ -1,4 +1,11 @@
-# Station: Los Angeles (validation only here for this project).
+# Station position. These are downtown Los Angeles coordinates, kept here as a
+# neutral placeholder so a fresh clone runs somewhere sensible — they are NOT
+# where the reference station sits, and its real position is deliberately absent
+# from this repository. Put your own here, in `python/config.yaml`, which is
+# gitignored. Accuracy to the nearest town is plenty: this only seeds the USGS
+# search centre and the epicentral distances, against a 160 km radius. Being
+# wrong by ~15 km, as this project was until 2026-09-01, quietly biases every
+# distance the correlation and the distance model compute.
 station:
   lat: 34.0522
   lon: -118.2437
@@ -53,8 +60,10 @@ publish:
   method: command       # post | file | command
   # Each snapshot published to the repository is a commit that redeploys the
   # page, so this is deliberately slow. Detections are not lost in between:
-  # every snapshot carries the recent ones.
-  interval_s: 1800
+  # every snapshot carries the recent ones. 1200 s keeps the worst case at
+  # three builds an hour, well inside GitHub Pages' ~10/hour soft limit, and
+  # the skip-if-unchanged guard means a quiet station commits nothing at all.
+  interval_s: 1200
   # The station's coordinates stay out of what is published. The public page
   # shows the catalog and, on the events the device matched, the magnitude and
   # distance it read — none of which needs to know where the box sits. Set this

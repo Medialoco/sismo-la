@@ -52,6 +52,8 @@
     .badge { padding: 2px 9px; border-radius: 999px; font-size: 12px;
              border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
     .badge.on { border-color: var(--dev); color: var(--dev); }
+    /* Freshness is the one thing no figure here can show, so it gets the badge. */
+    .badge.bad { border-color: var(--dev); background: var(--dev); color: #fff; }
     header a { color: var(--muted); font-size: 13px; text-decoration: none; }
     header a:hover { color: var(--text); }
     .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
@@ -156,14 +158,12 @@
 
     <aside id="panel">
       <h2>Station</h2>
-      <div id="status">No snapshot yet. Showing the USGS record alone.</div>
+      <div id="status">USGS catalogue only.</div>
 
       <h2>Its reading vs the record</h2>
       <svg id="chart" viewBox="0 0 220 214" role="img"
            aria-label="Magnitude read by the device against magnitude published by the USGS"></svg>
-      <div id="chartnote">One dot per earthquake, every one it has ever caught.
-        Each is what the station worked out <b>before</b> being told the answer.
-        On the line means it got the magnitude right.</div>
+      <div id="chartnote">Each dot is what it read <b>before</b> being told the answer.</div>
 
       <h2 id="shakes-title">Recent shakes</h2>
       <div id="list"><div class="empty">Nothing yet.</div></div>
@@ -331,35 +331,28 @@
     function fillPanel(s) {
       const c = s.calibration || {};
       document.getElementById('status').innerHTML =
-        offlineNotice(s) +
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b><br>` +
         (c.ready
-          ? `Calibrated on <b>${c.n_points}</b> confirmed earthquakes.`
-          : `Still learning: <b>${c.n_points ?? 0}</b> of ${c.min_points ?? '?'} confirmed earthquakes.`);
-
+          ? `Calibrated &middot; <b>${c.n_points}</b> earthquakes`
+          : `Calibration <b>${c.n_points ?? 0}</b>/${c.min_points ?? '?'} earthquakes`);
     }
 
-    // Two independent ways this page can be showing an old picture: the station
-    // knew it was degraded when it published, or it stopped publishing at all.
-    // Both used to look identical to a healthy station, which is how a dead
-    // sensor link went unnoticed for hours on 2026-09-01.
-    function offlineNotice(s) {
-      const h = s.health;
-      const ageH = (Date.now() - new Date(s.updated).getTime()) / 3.6e6;
-      let msg = '';
-      if (h && h.stale) {
-        msg = 'Station degraded when this snapshot was taken'
-            + (h.problems && h.problems.length ? ': ' + h.problems.join('; ') : '')
-            + '.';
-      } else if (ageH > 2) {
-        // Snapshots are published every 30 min, so two hours of silence means
-        // the station stopped publishing rather than ran a little late.
-        msg = `No snapshot for ${ageH < 48 ? ageH.toFixed(1) + ' hours'
-              : (ageH / 24).toFixed(1) + ' days'} — the station is probably offline.`;
-      }
-      return msg
-        ? `<span style="color:#c0392b;font-weight:600">${msg}</span><br>`
-        : '';
+    const ago = (ms) => {
+      const min = ms / 6e4;
+      if (min < 90) return Math.round(min) + ' min';
+      if (min < 2880) return Math.round(min / 60) + ' h';
+      return Math.round(min / 1440) + ' d';
+    };
+
+    /* Two ways this page can be showing an old picture: the station knew it was
+       degraded when it published, or it stopped publishing at all. Both used to
+       look identical to a healthy station, which is how a dead sensor link went
+       unnoticed for hours on 2026-09-01. Snapshots land every 20 min, so two
+       hours of silence is an outage rather than lateness. */
+    function staleness(s) {
+      const age = Date.now() - new Date(s.updated).getTime();
+      if (age > 2 * 3.6e6) return `offline &middot; ${ago(age)}`;
+      return s.health && s.health.stale ? 'degraded' : '';
     }
 
     function fillList(rows) {
@@ -375,14 +368,13 @@
         const said = d.dev != null
           ? `<span class="dev">~M${d.dev}</span> at ~${d.dev_km} km`
           : '<span class="dev">shake detected</span>';
-        const truth = d.usgs != null
-          ? `USGS: M${d.usgs.toFixed(1)} at ${d.usgs_km} km`
-          : 'nothing in the catalogue &mdash; traffic, a door, a footstep';
         el.innerHTML =
-          `<div class="top"><span class="who">${d.usgs != null ? 'Earthquake' : 'Not an earthquake'}</span>` +
+          `<div class="top"><span class="who">${d.usgs != null ? 'Earthquake' : 'Not in the catalogue'}</span>` +
           `<span class="when">${day(d.t)} ${clock(d.t)}</span></div>` +
           `<div class="vals">${said}</div>` +
-          `<div class="top"><span class="who">${truth}</span></div>`;
+          (d.usgs != null
+            ? `<div class="top"><span class="who">USGS: M${d.usgs.toFixed(1)} at ${d.usgs_km} km</span></div>`
+            : '');
         list.appendChild(el);
       });
     }
@@ -464,9 +456,10 @@
         const pairs = (snap.history || []).map((h) => ({ usgs: h.usgs, dev: h.dev }));
         fillPanel(snap);
         drawChart(pairs);
-        b.textContent = pairs.length
-          ? `${pairs.length} earthquakes caught` : 'device reporting';
-        b.className = 'badge on';
+        const bad = staleness(snap);
+        b.innerHTML = bad || (pairs.length
+          ? `${pairs.length} earthquakes caught` : 'device reporting');
+        b.className = bad ? 'badge bad' : 'badge on';
       } catch (e) {
         snap = null;
         drawChart([]);
