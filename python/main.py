@@ -453,7 +453,7 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
     method = pub_cfg.get("method", "post")
     interval = float(pub_cfg.get("interval_s", 60))
     with_location = bool(pub_cfg.get("include_location", False))
-    window_days = float(pub_cfg.get("window_days", 7))
+    window_days = float(pub_cfg.get("window_days", 30))
     while True:
         time.sleep(interval)
         snapshot = state.snapshot()

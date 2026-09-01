@@ -90,6 +90,16 @@
             color: var(--dev); text-decoration: none; }
     .more:hover { text-decoration: underline; }
 
+    .window {
+      position: absolute; right: 12px; top: 12px; z-index: 500;
+      background: var(--card); border: 1px solid var(--border); border-radius: 9px;
+      padding: 8px 12px 6px; box-shadow: 0 4px 14px var(--shadow);
+    }
+    .window label { display: block; font-size: 11px; color: var(--muted);
+                    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+    .window b { color: var(--text); font-size: 12.5px; text-transform: none; letter-spacing: 0; }
+    .window input { width: 150px; display: block; accent-color: var(--dev); cursor: pointer; }
+
     .legend {
       position: absolute; left: 12px; bottom: 22px; z-index: 500;
       background: var(--card); border: 1px solid var(--border); border-radius: 9px;
@@ -125,6 +135,12 @@
 
   <div id="content">
     <div id="map">
+      <div class="window">
+        <label for="days">Showing <b id="dayslabel">the last 7 days</b></label>
+        <input type="range" id="days" min="1" max="30" step="1" value="7"
+               aria-label="How many days to show" />
+      </div>
+
       <div class="legend">
         <div class="line"><span class="sw" style="background:#fec44f;border:1px solid #8a7a4a"></span>
           <b>USGS catalogue</b></div>
@@ -313,12 +329,15 @@
           ? `Calibrated on <b>${c.n_points}</b> confirmed earthquakes.`
           : `Still learning: <b>${c.n_points ?? 0}</b> of ${c.min_points ?? '?'} confirmed earthquakes.`);
 
+    }
+
+    function fillList(rows) {
       document.getElementById('shakes-title').textContent =
-        `Shakes, last ${windowOf(s)} days`;
-      const dets = shakes(s).slice(0, LISTED);
+        `Shakes, last ${days} day${days > 1 ? 's' : ''}`;
+      const dets = rows.slice(0, LISTED);
       const list = document.getElementById('list');
       list.innerHTML = dets.length
-        ? '' : `<div class="empty">Nothing in the last ${windowOf(s)} days.</div>`;
+        ? '' : `<div class="empty">Nothing in the last ${days} days.</div>`;
       dets.forEach((d) => {
         const el = document.createElement('div');
         el.className = 'det' + (d.usgs != null ? ' quake' : '');
@@ -338,6 +357,10 @@
     }
 
     const windowOf = (s) => s.window_days || WINDOW_DAYS;
+    const within = (rows, d) => {
+      const cut = Date.now() - d * 864e5;
+      return rows.filter((r) => !r.t || new Date(r.t).getTime() >= cut);
+    };
 
     /* Snapshots published before the journal-backed list carried "detections"
        instead; map them so an older station.json still renders. */
@@ -354,38 +377,25 @@
       }));
     }
 
-    let fitted = false, days = WINDOW_DAYS;
-    async function refresh() {
-      let radius = LA.radius_km;
+    const slider = document.getElementById('days');
+    const dayslabel = document.getElementById('dayslabel');
+    let days = +(localStorage.getItem('sismo-days') || WINDOW_DAYS);
+    let snap = null, radius = LA.radius_km, fitted = false;
+
+    function label() {
+      dayslabel.textContent = days === 1 ? 'the last 24 hours' : `the last ${days} days`;
+    }
+
+    /* Redraw everything that depends on the window, without touching the
+       network. Dragging the slider must stay instant. */
+    function applyWindow() {
+      label();
+      fillList(snap ? within(shakes(snap), days) : []);
+    }
+
+    async function loadUSGS() {
       const felt = new Map();
-
-      try {
-        const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
-        if (!r.ok) throw 0;
-        const s = await r.json();
-        radius = (s.config || {}).radius_km || radius;
-
-        // The scatter comes from the journal, not from the detection list:
-        // the list only holds the last few and starts empty after a restart,
-        // while "history" is every earthquake the station ever confirmed.
-        const pairs = (s.history || []).map((h) => ({ usgs: h.usgs, dev: h.dev }));
-        days = windowOf(s);
-        // Outline the catalog events the station recognised, by event id.
-        shakes(s).forEach((d) => { if (d.id) felt.set(d.id, d); });
-
-        fillPanel(s);
-        drawChart(pairs);
-        const b = document.getElementById('badge');
-        b.textContent = pairs.length
-          ? `${pairs.length} earthquakes caught` : 'device reporting';
-        b.className = 'badge on';
-      } catch (e) {
-        drawChart([]);
-        const b = document.getElementById('badge');
-        b.textContent = 'no device data';
-        b.className = 'badge';
-      }
-
+      if (snap) within(shakes(snap), days).forEach((d) => { if (d.id) felt.set(d.id, d); });
       try {
         const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
         const pts = drawUSGS((await r.json()).features || [], felt);
@@ -393,12 +403,55 @@
           map.fitBounds(L.latLngBounds(pts.concat([[LA.lat, LA.lon]])).pad(.2));
           fitted = true;
         }
-      } catch (e) { /* keep what is drawn */ }
+      } catch (e) { /* keep what is already drawn */ }
     }
 
+    async function loadStation() {
+      const b = document.getElementById('badge');
+      try {
+        const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) throw 0;
+        snap = await r.json();
+        radius = (snap.config || {}).radius_km || radius;
+
+        // Never offer a window wider than what the station actually published,
+        // or the map would show a month of catalogue against a week of device.
+        const max = Math.max(1, Math.round(windowOf(snap)));
+        slider.max = max;
+        if (days > max) days = max;
+        slider.value = days;
+
+        // The scatter is not windowed: it is every earthquake ever confirmed.
+        const pairs = (snap.history || []).map((h) => ({ usgs: h.usgs, dev: h.dev }));
+        fillPanel(snap);
+        drawChart(pairs);
+        b.textContent = pairs.length
+          ? `${pairs.length} earthquakes caught` : 'device reporting';
+        b.className = 'badge on';
+      } catch (e) {
+        snap = null;
+        drawChart([]);
+        b.textContent = 'no device data';
+        b.className = 'badge';
+      }
+      applyWindow();
+    }
+
+    // Dragging fires continuously; only the release costs a USGS query.
+    slider.addEventListener('input', () => {
+      days = +slider.value;
+      applyWindow();
+    });
+    slider.addEventListener('change', () => {
+      localStorage.setItem('sismo-days', days);
+      loadUSGS();
+    });
+
+    slider.value = days;
+    label();
     drawChart([]);
-    refresh();
-    setInterval(refresh, 60000);
+    (async () => { await loadStation(); await loadUSGS(); })();
+    setInterval(async () => { await loadStation(); await loadUSGS(); }, 60000);
   </script>
 </body>
 </html>

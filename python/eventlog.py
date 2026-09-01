@@ -126,7 +126,7 @@ def matched_pairs(path: str, limit: int = 400) -> list[dict]:
     return out[-limit:]
 
 
-def recent_events(path: str, days: float = 7.0, limit: int = 120) -> list[dict]:
+def recent_events(path: str, days: float = 30.0, limit: int = 300) -> list[dict]:
     """Everything the station felt in a rolling window, newest first.
 
     Read from the journal rather than from the in-memory deque, which holds
