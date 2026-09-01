@@ -279,7 +279,8 @@
     };
 
     /* map */
-    const map = L.map('map').setView([LA.lat, LA.lon], 8);
+    const MIN_ZOOM = 8;
+    const map = L.map('map').setView([LA.lat, LA.lon], MIN_ZOOM);
     map.attributionControl.setPrefix(false);
 
     // Labels above the basemap but below the data, so no place name hides a circle.
@@ -515,7 +516,12 @@
         const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
         const pts = drawUSGS((await r.json()).features || [], felt);
         if (!fitted && pts.length) {
-          map.fitBounds(L.latLngBounds(pts.concat([[LA.lat, LA.lon]])).pad(.2));
+          map.fitBounds(L.latLngBounds(pts.concat([[LA.lat, LA.lon]])), {
+            padding: [24, 24],
+          });
+          // A couple of distant events would otherwise pull the view out to
+          // half of California, burying the basin the station actually sits in.
+          if (map.getZoom() < MIN_ZOOM) map.setView([LA.lat, LA.lon], MIN_ZOOM);
           fitted = true;
         }
       } catch (e) { /* keep what is already drawn */ }
