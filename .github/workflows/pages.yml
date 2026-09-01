@@ -1,0 +1,42 @@
+# Publish the public station page on GitHub Pages.
+#
+# Everything under web-remote/ is served as the site root, so the page lives at
+# the Pages URL and reads its station.json from right beside itself. The station
+# publishes that file by committing it here (see the `publish:` block in
+# python/config.yaml) -- which is also why the path filter includes it: each new
+# snapshot redeploys the page.
+name: Publish the station page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web-remote/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deployments race; a snapshot in flight can be dropped safely
+# because the next one is a minute away.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-remote
+      - id: deployment
+        uses: actions/deploy-pages@v4

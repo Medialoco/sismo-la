@@ -59,11 +59,17 @@ publish:
 - `command` — run any upload command (`scp`, `rsync`, `curl -T` for FTP…);
   `{file}` is replaced by the JSON temp-file path.
 
-Then upload `web-remote/sismo.html` next to `station.json` on the site: it is a
-fully static page (works on any host, e.g. next to `tools/quakes.html` on
-benoit-prieur.fr) that fetches USGS live from the browser and overlays the
-station's red estimates from `station.json`. If the station stops publishing,
-the page degrades gracefully to a USGS-only map.
+The public page is `web-remote/index.html`, and this repository already
+publishes it on GitHub Pages (`.github/workflows/pages.yml` serves everything
+under `web-remote/`). It fetches USGS live from the browser and overlays the
+station's red estimates from a `station.json` sitting beside it, so the target
+of `publish:` has to be `web-remote/station.json` in this repository. Every
+snapshot commit redeploys the page — keep `interval_s` generous (a quarter of
+an hour, not a minute) so the commit history stays usable.
+
+The page is fully self-contained, so it works just as well dropped on any
+other static host. If the station stops publishing, it degrades to a USGS-only
+map and marks itself offline.
 
 ## 1. App Lab — Network setup (GUI, you do it)
 - [ ] Select your WiFi SSID and enter the password (2.4 or 5 GHz).

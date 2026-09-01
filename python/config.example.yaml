@@ -38,12 +38,16 @@ calibration:
   distance_state_file: distance_state.json
   min_points: 8         # number of points before estimating a magnitude
 
-# Autonomous mode: periodically publish the station snapshot (JSON) to a
-# remote site, so a public page (e.g. web-remote/sismo.html) can display it.
+# Autonomous mode: periodically publish the station snapshot (JSON) so the
+# public page (web-remote/index.html) can display it. That page reads
+# station.json from beside itself, so on GitHub Pages the target is
+# web-remote/station.json in the repository.
 publish:
   enabled: false
   method: command       # post | file | command
-  interval_s: 60
+  # Each snapshot published to the repository is a commit that redeploys the
+  # page. A minute is far too fast for that route; a quarter of an hour is not.
+  interval_s: 900
   # method: post  -> HTTP POST to this endpoint (optional bearer token)
   url: https://example.org/api/station
   token: ""
@@ -51,6 +55,10 @@ publish:
   path: /var/www/station.json
   # method: command -> run this command; "{file}" is replaced by the JSON
   # temp file path (appended if no placeholder). Upload examples:
-  #   scp -q {file} user@host:/var/www/tools/station.json
-  #   curl -sf -T {file} ftp://host/tools/station.json --user user:pass
-  command: "scp -q {file} user@host:/var/www/tools/station.json"
+  #   GitHub Pages: needs SISMO_GITHUB_TOKEN, a fine-grained token limited to
+  #   this repository with "Contents: read and write" and nothing else.
+  #     python3 tools/publish-to-github.py {file}
+  #   any other static host:
+  #     scp -q {file} user@host:/var/www/station.json
+  #     curl -sf -T {file} ftp://host/station.json --user user:pass
+  command: "python3 tools/publish-to-github.py {file}"

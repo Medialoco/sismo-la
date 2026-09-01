@@ -238,9 +238,11 @@ The station needs only WiFi and USB-C power — no attached computer. Beyond its
 local dashboard, `python/main.py` can push a JSON snapshot (detections, estimates,
 calibration state) to a remote site every minute (`publish:` block in
 `config.yaml`: HTTP POST, file write, or any upload command such as `scp`).
-The static page [`web-remote/sismo.html`](web-remote/sismo.html) — hostable
-anywhere, no backend — overlays that snapshot on the live USGS map, and
-degrades to USGS-only if the station goes offline.
+The static page [`web-remote/index.html`](web-remote/index.html) overlays that
+snapshot on the live USGS map. It has no backend and no build step, and this
+repository publishes it on GitHub Pages, so the station's public face costs
+nothing to host. If `station.json` is missing or the station is down, the page
+shows the USGS catalogue alone and says so, rather than breaking.
 
 ## Repository layout
 
@@ -270,8 +272,8 @@ sismo-la/
 │   ├── hackster-story.md      # contest submission draft (English)
 │   ├── hackster-submission.md # contest rules checklist
 │   └── images/                # screenshots for docs & submission
-└── web-remote/
-    └── sismo.html             # static public page: station.json + live USGS
+└── web-remote/               # published on GitHub Pages
+    └── index.html            # static public page: station.json + live USGS
 ```
 
 ## Status
