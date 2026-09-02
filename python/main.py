@@ -836,6 +836,40 @@ def strip_confirmations(snapshot: dict) -> dict:
     return out
 
 
+def refresh_confirmed_magnitudes(snapshot: dict) -> dict:
+    """Show the catalog's current magnitude for a confirmation, not the first one.
+
+    ``confirmed`` is rebuilt from the journal, which is append-only on purpose:
+    it records what the station knew at the time, and that immutability is what
+    makes out-of-sample scoring honest. But the USGS revises a magnitude in the
+    hours after an event -- the first confirmation was journalled preliminary at
+    M3.4 and the catalog settled at M3.2 -- and a page whose whole subject is the
+    comparison against the catalog should show what the catalog says now.
+
+    Only the display is reconciled; nothing is rewritten. This is the rule the
+    map already follows, where the catalog layer is refetched on every poll
+    instead of being replayed from the record.
+
+    ``history`` is deliberately left alone. There the catalog magnitude is the
+    reference a *device* estimate was scored against, so moving it under a
+    stored residual would falsify the residual. A confirmation carries no device
+    estimate at all, which is exactly why its reference is free to be updated.
+    """
+    current = {q.get("event_id"): q.get("magnitude")
+               for q in snapshot.get("quakes", [])
+               if q.get("event_id")}
+    if not current:
+        return snapshot
+    out = dict(snapshot)
+    fresh = []
+    for c in snapshot.get("confirmed", []):
+        m = current.get(c.get("id"))
+        fresh.append({**c, "usgs": round(m, 2)}
+                     if isinstance(m, (int, float)) else c)
+    out["confirmed"] = fresh
+    return out
+
+
 def strip_watchlist(snapshot: dict) -> dict:
     """Reduce the expected-vs-observed block to what is safe to publish.
 
@@ -904,6 +938,10 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
                     journal_path, days=window_days
                 )
                 snapshot["window_days"] = window_days
+                # The journal froze the preliminary magnitude; the catalog block
+                # was refetched minutes ago. Reconcile the display, not the
+                # record.
+                snapshot = refresh_confirmed_magnitudes(snapshot)
             except OSError as e:
                 print(f"[publish] could not read journal: {e}")
         # Every strip runs last, after the journal lists are attached, so
