@@ -67,7 +67,7 @@ than competing with it.
 ## 3. It reproduces the published figures before producing new ones
 
 ```
-python3 tools/expected-report.py --verify --lat L --lon L
+python3 tools/expected-report.py --verify --station-from http://board:8000/api/state
 ```
 
 Over the same five years and the same catalog as every published rate:
@@ -129,6 +129,14 @@ range and stay under 0.06 for the blind trigger — which is the whole point of
 the second channel, stated for the first time as specific events rather than as
 a rate.
 
+Two things about that table. It slides: it is a rolling window over a catalog
+that gains an event every day or two, so the split moves and only the first row
+is worth watching. And it is the **remote** audit, which assumes the at-rest
+floor everywhere; once the tool runs on the station itself the noise column
+becomes measured for everything after the recording began, and an event that
+arrived during a busy hour can move from marginal to out of reach on that
+alone.
+
 Over five years, the same arithmetic says how that rate is actually made up:
 
 | | events | share |
@@ -179,11 +187,21 @@ narrows down which ones they were, and that is a distance band each.
 - **From a laptop**, `tools/expected-report.py`, in four modes:
 
 ```bash
-python3 tools/expected-report.py --verify --lat L --lon L      # trust check
-python3 tools/expected-report.py --years 5 --lat L --lon L     # retrospective
-python3 tools/expected-report.py --live --hours 336            # on the board
+S=--station-from=http://board:8000/api/state
+python3 tools/expected-report.py --verify $S            # trust check
+python3 tools/expected-report.py --years 5 $S           # retrospective
+python3 tools/expected-report.py --live --hours 336     # on the board
 python3 tools/expected-report.py --from-api http://board:8000/api/state
 ```
+
+Every one of those numbers is an epicentral distance under the skin, so the
+station's position is not a nicety: a centre in the wrong place does not give an
+approximate answer, it gives a different station's. The position is deliberately
+absent from this repository, and the config kept here is a neutral placeholder,
+so the first two modes take it from the running station over the local network
+(or from `--lat/--lon`) and **refuse to run on the placeholder** rather than
+print a plausible wrong table. This project already lost weeks to a centre
+15.5 km off the real one; the refusal is the scar tissue.
 
 The last mode exists because the board has no shell once it leaves USB, so the
 dashboard port is the only thing left to ask. It is a weaker audit and says so:

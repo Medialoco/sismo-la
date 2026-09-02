@@ -126,12 +126,48 @@ def fetch_catalog(lat: float, lon: float, start: str, end: str,
     return out
 
 
-def station_position(args) -> tuple[float, float, str]:
+def read_snapshot(where: str) -> dict:
+    if where.startswith("http"):
+        with urllib.request.urlopen(where, timeout=30) as fh:
+            return json.loads(fh.read())
+    with open(where, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def station_position(args, snapshot: dict | None = None) -> tuple[float, float, str]:
+    """Where the station is, from the most trustworthy source available.
+
+    The order matters and the reason is a mistake this project already made:
+    it ran for weeks on a centre 15.5 km off the real one, which mis-stated
+    every epicentral distance and therefore every probability this tool
+    computes. So the live station's own snapshot wins over any local file, and
+    a fallback to the example config -- which carries a neutral placeholder,
+    not this station -- is reported as such rather than silently used.
+    """
     if args.lat is not None and args.lon is not None:
         return args.lat, args.lon, "command line"
-    from pipeline import load_config
+    for source in (snapshot, ) if snapshot else ():
+        station = (source or {}).get("station") or {}
+        if station.get("lat") is not None and station.get("lon") is not None:
+            return float(station["lat"]), float(station["lon"]), "the snapshot"
+    if getattr(args, "station_from", ""):
+        remote = read_snapshot(args.station_from)
+        station = remote.get("station") or {}
+        if station.get("lat") is None:
+            raise SystemExit(
+                f"{args.station_from} publishes no station position -- that is "
+                "the privacy stripping working as intended on a public "
+                "snapshot. Point --station-from at the station's own "
+                "/api/state on the local network, or pass --lat/--lon.")
+        return float(station["lat"]), float(station["lon"]), args.station_from
+    from pipeline import load_config, resolve_config_path
+    resolved = resolve_config_path(args.config)
     cfg = load_config(args.config)
-    return cfg["station"]["lat"], cfg["station"]["lon"], args.config
+    which = str(resolved)
+    if resolved.name == "config.example.yaml" and args.config.endswith(
+            "config.yaml"):
+        which += "  <-- PLACEHOLDER POSITION, not this station"
+    return cfg["station"]["lat"], cfg["station"]["lon"], which
 
 
 # --- modes -----------------------------------------------------------------
@@ -236,11 +272,7 @@ def from_api(args) -> None:
     """
     import usgs
 
-    if args.from_api.startswith("http"):
-        with urllib.request.urlopen(args.from_api, timeout=30) as fh:
-            snapshot = json.loads(fh.read())
-    else:
-        snapshot = json.loads(open(args.from_api).read())
+    snapshot = read_snapshot(args.from_api)
 
     min_mag = (snapshot.get("config") or {}).get("min_magnitude",
                                                  args.min_magnitude)
@@ -261,7 +293,7 @@ def from_api(args) -> None:
 
     source = "the snapshot's own catalog"
     if not quakes or args.hours_given:
-        lat, lon, which = station_position(args)
+        lat, lon, which = station_position(args, snapshot)
         radius = (snapshot.get("config") or {}).get("radius_km",
                                                     args.radius_km)
         quakes = usgs.fetch_recent(lat, lon, radius, min_mag,
@@ -385,8 +417,14 @@ def main() -> None:
     ap.add_argument("--retro-state", default="")
     ap.add_argument("--from-api", default="",
                     help="audit a running station over its dashboard port, "
-                         "e.g. http://192.168.1.69:8000/api/state - the only "
-                         "remote surface once the board leaves USB")
+                         "e.g. http://<board>:8000/api/state - the only remote "
+                         "surface once the board leaves USB")
+    ap.add_argument("--station-from", default="",
+                    help="take the station position from a running station's "
+                         "/api/state instead of a local config; the position "
+                         "is deliberately absent from this repository, so "
+                         "--verify and the retrospective mode need this or "
+                         "--lat/--lon to mean anything")
     args = ap.parse_args()
     # --hours means "refetch the catalog over this window" rather than "use the
     # one the snapshot happens to carry", so the two have to be distinguishable.
@@ -400,6 +438,17 @@ def main() -> None:
         return
 
     lat, lon, which = station_position(args)
+    if "PLACEHOLDER" in which:
+        # Every number below is an epicentral distance, so a placeholder centre
+        # does not give an approximate answer, it gives a different station's.
+        # The published figures were computed for the real one and --verify
+        # would report a mismatch that looks like a code regression.
+        raise SystemExit(
+            "The station position is not in this repository, by design, and\n"
+            f"{args.config} is absent here, so the example placeholder was\n"
+            "loaded instead. Give the real one:\n"
+            "  --station-from http://<board>:8000/api/state   (on the LAN)\n"
+            "  --lat <deg> --lon <deg>                        (anywhere)")
     if args.verify:
         events = fetch_catalog(lat, lon, VERIFY_START, VERIFY_END,
                                args.radius_km, args.min_magnitude, args.catalog)
