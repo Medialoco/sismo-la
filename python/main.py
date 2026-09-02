@@ -799,6 +799,43 @@ def strip_location(snapshot: dict) -> dict:
     return out
 
 
+def strip_confirmations(snapshot: dict) -> dict:
+    """Drop the epicentral distance from every retrospective confirmation.
+
+    Applied unconditionally, for the same reason as ``strip_watchlist`` and one
+    more. A confirmation's ``distance_km`` is not something the station
+    measured: it is computed from the station's own position and the
+    epicenter's, so it carries nothing about the instrument and everything
+    about where the instrument is. One of them draws a circle through the
+    station around a published epicenter; a handful cross.
+
+    That is what separates it from ``match.distance_km`` in ``history``, which
+    stays: there the catalog distance is the reference the station's *own*
+    distance estimate is scored against, and it only exists for earthquakes the
+    station triggered on and paired by itself.
+
+    What survives is what the station recorded — ``z``, the peak, the rms, the
+    baseline, the window and the lag. Those constrain a distance only loosely,
+    through a law with 0.39 log10 of scatter and a wave speed nobody published
+    here; the exact kilometre figure collapsed that to a point. For the same
+    reason, never publish a confirmation's amplitude *residual* against
+    ``REF_GMPE`` either: the law is in this repository, so a stated "N times
+    the median" inverts straight back to the distance this function removes.
+    """
+    out = dict(snapshot)
+    drop = ("distance_km", "usgs_km")
+    if isinstance(snapshot.get("confirmed"), list):
+        out["confirmed"] = [{k: v for k, v in c.items() if k not in drop}
+                            for c in snapshot["confirmed"]]
+    retro = snapshot.get("retro")
+    if isinstance(retro, dict) and isinstance(retro.get("confirmed"), list):
+        retro = dict(retro)
+        retro["confirmed"] = [{k: v for k, v in c.items() if k not in drop}
+                              for c in retro["confirmed"]]
+        out["retro"] = retro
+    return out
+
+
 def strip_watchlist(snapshot: dict) -> dict:
     """Reduce the expected-vs-observed block to what is safe to publish.
 
@@ -848,11 +885,6 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
     while True:
         time.sleep(interval)
         snapshot = state.snapshot()
-        # Not conditional on include_location: the watchlist encodes distances
-        # whatever the operator thinks about publishing coordinates.
-        snapshot = strip_watchlist(snapshot)
-        if not with_location:
-            snapshot = strip_location(snapshot)
         # The in-memory detection list is short and dies with the process. The
         # journal is the thing that accumulates, so the published record is
         # rebuilt from it every time rather than from what is still in RAM.
@@ -874,6 +906,16 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
                 snapshot["window_days"] = window_days
             except OSError as e:
                 print(f"[publish] could not read journal: {e}")
+        # Every strip runs last, after the journal lists are attached, so
+        # nothing added above can bypass one. The first published confirmation
+        # carried an exact epicentral distance because the strips used to run
+        # first and the list was appended behind them.
+        # Not conditional on include_location: these encode distances whatever
+        # the operator thinks about publishing coordinates.
+        snapshot = strip_watchlist(snapshot)
+        snapshot = strip_confirmations(snapshot)
+        if not with_location:
+            snapshot = strip_location(snapshot)
         payload = json.dumps(snapshot).encode("utf-8")
         try:
             if method == "post":

@@ -354,6 +354,7 @@
     const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
 
     const mg = (v) => (typeof v === 'number' ? (v * 1000).toFixed(2) : '—');
+    const quakes = (n) => `earthquake${n === 1 ? '' : 's'}`;
 
     /* The device has no map presence of its own. Where it recognised an event,
        that event is outlined and carries what the device read.
@@ -442,7 +443,7 @@
                    fill-opacity=".4" stroke="${dev}" stroke-width="1.3"/>`).join('') +
         (pairs.length ? '' :
           `<text x="${mid}" y="${T + S / 2}" fill="${muted}" font-size="10.5"
-                 text-anchor="middle">no earthquake caught yet</text>`);
+                 text-anchor="middle">nothing triggered yet</text>`);
     }
 
     /* Only a station running the retrospective search publishes this key, so a
@@ -471,14 +472,14 @@
       document.getElementById('status').innerHTML =
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b>` +
         `<div class="cat"><span class="k">Triggered &middot; autonomous</span>` +
-        `<span class="v"><b>${pairs.length}</b> earthquakes</span></div>` +
+        `<span class="v"><b>${pairs.length}</b> ${quakes(pairs.length)}</span></div>` +
         (known
           ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
-            `<span class="v"><b>${known.length}</b> earthquakes</span></div>`
+            `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>`
           : '') +
         '<div class="cal">' +
         (c.ready
-          ? `Calibrated &middot; <b>${c.n_points}</b> earthquakes`
+          ? `Calibrated &middot; <b>${c.n_points}</b> ${quakes(c.n_points)}`
           : `Calibration <b>${c.n_points ?? 0}</b>/${c.min_points ?? '?'} earthquakes`) +
         '</div>' +
         (audit

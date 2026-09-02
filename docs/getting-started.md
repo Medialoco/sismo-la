@@ -97,6 +97,15 @@ the dashboard and the public page list them separately, and `audit.py` needs an
 explicit `--include-retro` to score them at all. A confirmation is evidence the
 ground moved; it is not a detection the station made on its own.
 
+This channel produced the station's first real earthquake within a day of going
+live: `ci41540608`, M3.2, 2026-09-02 12:37:12 UTC, at z = 4.34 against the
+`z_min` of 4.0. The blind trigger did not fire and needed about three times the
+amplitude. Where to look for one yourself: the `retro` block of
+`GET /api/state`, the "Earthquakes found afterwards" section of
+`web-remote/data.html`, and `kind: retro` records in `event_log.jsonl`. It will
+never appear in the calibration count, in `matched_pairs`, or in `audit.py`
+without `--include-retro`.
+
 ### Autonomous mode: publish to a remote site
 The device can run headless (WiFi + USB-C power only) and push its snapshot to
 a public website every minute. Enable the `publish:` block in `config.yaml`:

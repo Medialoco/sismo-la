@@ -1,7 +1,7 @@
 # Hackster story draft (English) — ready to paste
 
 Draft for the project page on hackster.io, following the structure in
-`hackster-submission.md`. Numbers are current as of 1 September 2026; refresh
+`hackster-submission.md`. Numbers are current as of 2 September 2026; refresh
 the calibration count and the detection status before submitting.
 
 ---
@@ -200,9 +200,21 @@ end. Every detection is recorded together with what each model predicted
 *before* it learned that point, so the project can score itself out-of-sample
 rather than quote its own training residuals.
 
-**What is not established: that this sensor can measure a real earthquake.**
-The calibration record stands at **0 of the 8 matches** the amplitude model
-needs. Every shake so far has been correctly identified as local noise.
+**What was established on 2 September: this sensor does measure a real
+earthquake.** A M3.2 near Ontario, California stood clear of the station's own
+noise in its own continuous recording. That is the first hard evidence that an
+$80 node registers ground motion from a real regional earthquake at all.
+
+**What is still not established: that it can find one by itself, or size one.**
+The station noticed nothing at the time — the catalog supplied the instant and
+the station went back to look, and the blind trigger would have needed about
+three times the amplitude to fire. So every shake the station has *caught* on
+its own is still local noise, correctly identified as such, and the calibration
+record still stands at **0 of the 8 matches** the amplitude model needs. That
+last figure is deliberate rather than unlucky: a confirmation is selected for
+being a large excursion close to the noise, so its amplitude is biased upward by
+the selection itself, and letting it into the magnitude fit would bake that bias
+into the model. The counter is wired to refuse it. Full account in section 6b.
 
 That is not a correlation bug — it is the threshold, and this week it stopped
 being a mystery. There is no absolute g threshold in the firmware, only an
@@ -266,11 +278,63 @@ which is what the table assumes. And the search cannot reach backwards: the
 station kept no continuous record before 1 September, only the shakes that
 crossed the trigger, which are exactly the wrong ones.
 
+### 6b. The first real earthquake, and why I am calling it "confirmed"
+
+Within a day of that channel going live, the station had its first real
+earthquake: **`ci41540608`, M3.2, 6 km SE of Ontario, California, 2 September
+2026 at 12:37:12 UTC.** Anyone can look it up. In the station's own recording,
+at the instant the waves had to arrive, the envelope stood **4.34 local
+dispersions** above the noise of the preceding minutes — peak 0.001095 g against
+a baseline of 0.0003816 g, in a 20 s window 24 s after the origin time.
+
+**The station noticed nothing at the time.** No alarm, no trigger, nothing in
+the live dashboard. The USGS published an origin time, the station computed when
+the waves must have reached it, went back into a recording it had made without
+knowing what was in it, and found the shaking there. That is a *confirmation*,
+and I am not going to call it a detection, because the honest sentence is: with
+no catalog, there would have been nothing to look at.
+
+Three checks matter more to me than the result:
+
+**The travel time corroborates it, and the test never used it.** The significance
+estimator only asks whether the envelope was elevated somewhere inside the
+physically allowed arrival window; it does not score the lag. The lag came out at
+24 s after the origin, an ordinary S-wave arrival. So the agreement is evidence
+the search did not manufacture for itself.
+
+**The blind trigger was three times short.** It needed about 0.0033 g at the
+noise level of that moment, and 0.0011 g arrived. This is not an earthquake the
+previous version of the code would also have caught — it is exactly what the
+second channel bought, now measured on a real earthquake instead of simulated
+on noise.
+
+**The site was at rest.** The baseline sat on the sensor's own electrical noise
+line, which means nobody was walking above the box. The flip side is the limit
+already stated: had the same earthquake arrived during a busy hour, it would
+have been invisible.
+
+And the reservations, which I would rather state than have a judge find:
+z = 4.34 against a threshold of 4.0 is a **modest margin**; it is **one point,
+not a rate**; and the false-confirmation figure I quote — 1 in 1,200 — was
+computed against *pure sensor noise*, an assumption this site violates, since it
+produces impulses of its own. That number is therefore optimistic until it is
+recomputed on the recorded envelope, which is the next thing on the list. The calibration counter did not move, and that is the design
+working, not a disappointment.
+
+One more observation, offered as a hint and not a result. The amplitude came in
+on the high side of what the reference law predicts for an event like this,
+which is the direction a recent move to an upper floor was meant to produce —
+a timber building is itself a resonator, and the at-rest noise floor did not
+rise with it. But a single event cannot be separated from the law's own scatter,
+which is wide. Two observations pointing the same way is a reason to keep
+measuring, not a measurement.
+
 ## 9b. A station that knows what it misses
 
-There is a weakness in everything above that a counter at zero cannot fix. Zero
-detections is ambiguous: it can mean a quiet catalog, or a station that quietly
-stopped working — and this project has already been caught by the second, when
+There is a weakness in everything above that a counter at zero cannot fix. An
+empty detection list is ambiguous: it can mean a quiet catalog, or a station
+that quietly stopped working — and this project has already been caught by the
+second, when
 the sensor link died and the dashboard went on serving an hours-old snapshot as
 though nothing had happened.
 
@@ -290,30 +354,33 @@ confirmed, or **should have been seen and was not** — which means a fault, not
 seismology. A sixth says the recording did not cover that instant, which is
 neither a success nor a failure and is counted as neither.
 
-Over the 30 days to 2 September: **20 cataloged events, none in the "should have
-been seen" category.** Twelve were out of reach for both channels. The other
-eight were within the retrospective search's reach and simply predate the
-recording — which is the argument for that second channel written out as
-specific earthquakes instead of as a rate.
+Over the 30 days to 2 September: **19 cataloged events, one confirmed, and none
+in the "should have been seen" category.** So there is no fault to chase:
+nineteen cataloged earthquakes, one of them recorded and confirmed, and nothing
+that should have been felt and was not.
 
-The whole per-event table stays on the station's own network, and that is a
+Which events those were stays on the station's own network, and that is a
 privacy decision rather than a modesty one: a detection probability is a
 monotone function of distance once the magnitude is known, so a dozen of those
 rows would locate the box as precisely as the raw distances that were stripped
-out of the published data for exactly that reason. What is published is three
-integers — events examined, events recorded, events missed — and the third is
-zero when the station is doing its job.
+out of the published data for exactly that reason. Even the count of events
+"within reach" is withheld, because with a handful of events in the window it
+narrows down which ones they were, and that is a distance band each. What is
+published is three integers — events examined, events recorded, events missed —
+and the third is zero when the station is doing its job.
 
-I would rather show a station that can say *why* it has felt nothing than one
-that simply shows a zero.
+I would rather show a station that can say *why* it has felt so little than one
+that simply shows a counter.
 
 The honest summary of the feasibility question is therefore: **the difficult
 half of the condition is already met** — autonomy, self-calibration, continuous
-correction against a ground truth, on a $80 node that nobody calibrated —
-**and the missing half is measured rather than glossed over**. We now know which
-magnitude is needed at which distance, which tells us exactly what to improve:
-coupling first (86% of false triggers came off the table with a better mount),
-then the trigger, then the site.
+correction against a ground truth, on a $80 node that nobody calibrated — **the
+node has now measured a real regional earthquake**, and **the missing half is
+measured rather than glossed over**: it took the catalog to point at the right
+second, and the counter that needs eight matches is still empty. We now know
+which magnitude is needed at which distance, which tells us exactly what to
+improve: coupling first (86% of false triggers came off the table with a better
+mount), then the trigger, then the site.
 
 One more caveat I will state myself. The `--replay` mode, used for the demo
 video, synthesizes sensor readings from cataloged magnitude and distance through
@@ -344,9 +411,9 @@ building, its own mount — so coverage could grow street by street instead of
 budget by budget.
 
 **Said plainly: this is an argument, not a demonstration.** There is one
-station, and it has not yet recognized a single real earthquake. I did not
-simulate a network to draw that figure; it is the geometry three stations would
-use, and nothing more.
+station; it has confirmed one real earthquake and caught none by itself. I did
+not simulate a network to draw that figure; it is the geometry three stations
+would use, and nothing more.
 
 ### 8. Why this pattern matters beyond earthquakes
 
@@ -370,6 +437,9 @@ abstract.
 - [ ] Video: tap the desk → detection appears on the dashboard (live mode).
 - [x] Video: replay mode filling the map — `video/calibration-timelapse.mp4`
       (and `.gif`), narration in `video-script.md` + `video/narration.srt`.
+- [ ] Screenshot: the confirmed M3.2 on the public page — the map circle with
+      its dashed red outline, and its row in `data.html` under "Earthquakes
+      found afterwards". Live data, and the only shot in the set that is.
 - [x] Screenshot: a USGS-correlated event in the side panel —
       `images/timelapse-4-calibrated.jpg`. Replayed catalog data, and the
       badge in the corner says so; do not present it as a live recording.

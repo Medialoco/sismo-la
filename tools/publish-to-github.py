@@ -19,6 +19,14 @@ Every snapshot is a commit that redeploys the page, so keep ``interval_s``
 generous -- twenty minutes, not one. Pages tolerates roughly ten builds an
 hour; three is comfortable. A snapshot whose only difference is the clock is
 skipped, so a quiet station stops committing altogether.
+
+This tool publishes whatever JSON it is handed, verbatim. It does **not**
+redact. The file it normally receives has already been through
+``strip_watchlist`` / ``strip_confirmations`` / ``strip_location`` in
+``python/main.py``; ``GET /api/state`` has not, and is the operator view --
+station coordinates, catalog distances, per-event detection probabilities. So
+piping the dashboard straight in here, as a way to publish immediately instead
+of waiting for the timer, publishes the station's position.
 """
 
 import base64

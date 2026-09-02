@@ -98,9 +98,9 @@
   <text x="450" y="822" font-size="13" fill="#6b7684">part a neighborhood could install &#8212; not the sensor.</text>
 
   <text x="850" y="708" font-size="13.5" font-weight="600" fill="#a32330">This is an argument, not a result</text>
-  <text x="850" y="732" font-size="13" fill="#6b7684">There is one station, and it has yet to</text>
-  <text x="850" y="750" font-size="13" fill="#6b7684">recognize a single real earthquake: the</text>
-  <text x="850" y="768" font-size="13" fill="#6b7684">calibration record stands at 0 of the 8</text>
+  <text x="850" y="732" font-size="13" fill="#6b7684">There is one station. It has confirmed one</text>
+  <text x="850" y="750" font-size="13" fill="#6b7684">real earthquake and caught none by itself;</text>
+  <text x="850" y="768" font-size="13" fill="#6b7684">the calibration record stands at 0 of the 8</text>
   <text x="850" y="786" font-size="13" fill="#6b7684">matches it needs. Nothing here was</text>
   <text x="850" y="804" font-size="13" fill="#6b7684">measured or simulated &#8212; it is the</text>
   <text x="850" y="822" font-size="13" fill="#6b7684">geometry a network would use, no more.</text>

@@ -113,41 +113,37 @@ matched — and the two want different repairs.
 
 ## 5. What it says today
 
-Over the **30 days to 2026-09-02**, 20 cataloged events of M ≥ 2 within 160 km:
+Over the **30 days to 2026-09-02**, 19 cataloged events of M ≥ 2 within 160 km:
 
 | | |
 |---|---|
+| examined | 19 |
+| confirmed by the retrospective channel | 1 |
 | should have been seen and were not | **0** |
-| out of reach for both channels | 12 |
-| within the retrospective channel's reach but before the recording began | 8 |
 
-So there is no fault to chase, and the eight events in the third row are the
-concrete form of the argument for the retrospective search: they are the ones
-the station would now have a real chance at, having had none a fortnight ago.
-Their predicted probabilities run up to 0.75 at the optimistic end of the site
-range and stay under 0.06 for the blind trigger — which is the whole point of
-the second channel, stated for the first time as specific events rather than as
-a rate.
+So there is no fault to chase, and the one confirmation — `ci41540608`, M3.2,
+2026-09-02 — is the first event this tool has ever had to classify as anything
+other than out of reach or out of coverage. The audit had given it a real
+chance on the retrospective channel and next to none on the blind trigger, and
+that is how it turned out.
 
-Two things about that table. It slides: it is a rolling window over a catalog
-that gains an event every day or two, so the split moves and only the first row
-is worth watching. And it is the **remote** audit, which assumes the at-rest
-floor everywhere; once the tool runs on the station itself the noise column
-becomes measured for everything after the recording began, and an event that
-arrived during a busy hour can move from marginal to out of reach on that
-alone.
+Three things about that table. It slides: it is a rolling window over a catalog
+that gains an event every day or two. It is the **remote** audit, which assumes
+the at-rest floor everywhere; once the tool runs on the station itself the noise
+column becomes measured for everything after the recording began, and an event
+that arrived during a busy hour can move from marginal to out of reach on that
+alone. And **it deliberately no longer prints the reach breakdown**, for the
+reason section 6 gives: the counts of "in reach" and "out of reach" narrow which
+events they were, and that is a distance band each. Earlier revisions of this
+file and of the README published that split; they should not have.
 
-Over five years, the same arithmetic says how that rate is actually made up:
-
-| | events | share |
-|---|---|---|
-| in reach at the blind trigger, site ×1 (p ≥ 0.5) | 7 | 0.3% |
-| marginal (0.1 ≤ p < 0.5) | 14 | 0.6% |
-| out of reach (p < 0.1) | 2165 | 99.0% |
-
-That is the sentence "1.98 detections a year" written out: the station is not
-waiting for *an* earthquake, it is waiting for one of about twenty specific ones
-in five years.
+Over five years the same arithmetic says how the rate is made up, and the shape
+is what matters rather than the counts: a **fraction of a percent** of the
+catalog is in reach at the blind trigger and the pessimistic end of the site
+range, about as much again is marginal, and **99%** is out of reach. That is the
+sentence "1.98 detections a year" written out — the station is not waiting for
+*an* earthquake, it is waiting for one of a couple of dozen specific ones in
+five years.
 
 ## 6. Why none of this is published
 

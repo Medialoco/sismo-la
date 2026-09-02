@@ -177,7 +177,7 @@
       <div class="wrap"><table id="ctable">
         <thead><tr>
           <th class="l">When (LA)</th>
-          <th>USGS Mw</th><th>USGS km</th>
+          <th>USGS Mw</th>
           <th>z</th><th>Window s</th><th>Lag s</th>
           <th>Peak g</th><th>RMS g</th><th>Baseline g</th>
           <th class="l">Place</th>
@@ -213,6 +213,7 @@
     const signed = (v, d) => (typeof v === 'number'
       ? (v > 0 ? '+' : '') + v.toFixed(d) : '—');
     const cell = (v, cls) => `<td class="${cls || ''}">${v}</td>`;
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
     function download(name, rows) {
       // Quote every field: place names contain commas, and a CSV that opens
@@ -237,10 +238,10 @@
     function fillHistory(history) {
       const body = document.querySelector('#htable tbody');
       document.getElementById('hcount').textContent =
-        history.length ? `${history.length} events` : '';
+        history.length ? plural(history.length, 'event') : '';
       if (!history.length) {
         body.innerHTML = '<tr><td colspan="7" class="empty">' +
-          (hasSnapshot ? 'No earthquake caught yet.' : 'No snapshot.') +
+          (hasSnapshot ? 'Nothing triggered yet.' : 'No snapshot.') +
           '</td></tr>';
         return;
       }
@@ -269,7 +270,7 @@
       const body = document.querySelector('#rtable tbody');
       document.getElementById('rtitle').textContent = `Everything felt, last ${days} days`;
       document.getElementById('rcount').textContent =
-        recent.length ? `${recent.length} shakes` : '';
+        recent.length ? plural(recent.length, 'shake') : '';
       if (!recent.length) {
         body.innerHTML = '<tr><td colspan="7" class="empty">' +
           (hasSnapshot ? `Nothing in the last ${days} days.` : 'No snapshot.') +
@@ -302,28 +303,28 @@
       document.getElementById('csection').style.display = '';
       const body = document.querySelector('#ctable tbody');
       document.getElementById('ccount').textContent =
-        confirmed.length ? `${confirmed.length} events` : '';
+        confirmed.length ? plural(confirmed.length, 'event') : '';
       const z = retro && typeof retro.z_min === 'number' ? retro.z_min : null;
       document.getElementById('czmin').textContent =
         z != null ? ` Confirmed above ${z.toFixed(1)}.` : '';
 
       if (!confirmed.length) {
-        body.innerHTML = '<tr><td colspan="10" class="empty">' +
+        body.innerHTML = '<tr><td colspan="9" class="empty">' +
           (hasSnapshot ? 'Nothing confirmed yet.' : 'No snapshot.') +
           '</td></tr>';
         return;
       }
       body.innerHTML = confirmed.map((c) =>
         '<tr>' + cell(stamp(c.t), 'l') +
-        cell(num(c.usgs, 1)) + cell(num(c.usgs_km, 1)) +
+        cell(num(c.usgs, 1)) +
         cell(num(c.z, 1), 'dev') + cell(num(c.win, 0)) + cell(num(c.lag, 0)) +
         cell(num(c.pga, 5), 'dev') + cell(num(c.rms, 5)) + cell(num(c.base, 5)) +
         cell(c.place || '—', c.place ? 'l' : 'l off') + '</tr>').join('');
 
       wire(document.getElementById('ccsv'), 'sismo-la-confirmed.csv',
-        ['time_utc', 'event_id', 'usgs_mw', 'usgs_km', 'place', 'z', 'window_s',
+        ['time_utc', 'event_id', 'usgs_mw', 'place', 'z', 'window_s',
          'lag_s', 'peak_g', 'rms_g', 'baseline_g'],
-        confirmed.map((c) => [c.t, c.id ?? '', c.usgs, c.usgs_km, c.place ?? '',
+        confirmed.map((c) => [c.t, c.id ?? '', c.usgs, c.place ?? '',
           c.z, c.win, c.lag, c.pga, c.rms, c.base]));
     }
 

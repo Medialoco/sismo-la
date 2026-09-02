@@ -1,6 +1,6 @@
 # Contest video — shot list and narration
 
-Target: **2 min 30 s**. Hackster judges skim, so the idea has to land in the
+Target: **2 min 50 s**. Hackster judges skim, so the idea has to land in the
 first fifteen seconds and the honesty has to land before the end.
 
 Narration is in English (contest language). Subtitles live in
@@ -29,6 +29,12 @@ deliberately too large"**. The replay generator keeps an attenuation law
 measured to over-predict by 38×, because at real amplitudes almost nothing in
 the catalog would trigger. So any shot cut from replay shows the software
 working and must never be offered as evidence of what the sensor can feel.
+
+And one more word that is not negotiable: the real earthquake in shot 5 was
+**confirmed**, never *detected*. The station noticed nothing at the time; the
+USGS supplied the second to examine and the station went back into its own
+recording. Say "detected" there and the whole video becomes a claim the code
+itself refuses to make. The narration below says it out loud, twice.
 
 ---
 
@@ -73,12 +79,34 @@ desk. Wait for the heartbeat line first so the noise floor is visible.
 > real time, and correctly reports no match in the catalog, because a tap on a
 > desk is not an earthquake.
 
-## Shot 5 — Calibration converging (1:25–1:55)
+## Shot 5 — The first real earthquake (1:25–2:02)
+
+*On screen:* the USGS event page for `ci41540608`, then the public page — the
+map circle with its dashed red outline — then the row in `data.html` under
+"Earthquakes found afterwards". Hold on the `z` and the peak.
+
+> On the second of September, this happened for the first time. The USGS
+> published a magnitude three point two near Ontario, California.
+>
+> The station's trigger never fired. But it keeps a continuous recording, so it
+> worked out when the waves must have arrived, went back, and looked. The
+> shaking was there.
+>
+> Confirmed, not detected: without the catalogue there was nothing to look at.
+> And the trigger itself would have needed three times the amplitude.
+
+This is the only shot in the video made of live data, so let the screen do the
+talking: no annotation, no arrows. Do **not** put the calibration counter in
+frame here — it still reads zero of eight, correctly, because a confirmation is
+not allowed to feed the magnitude model, and a viewer who sees the two together
+without that explanation will read it as a bug.
+
+## Shot 6 — Calibration converging (2:02–2:22)
 
 *On screen:* `docs/video/calibration-timelapse.mp4`.
 
-> This next part is a replay, not a live recording. It feeds the last day of
-> real cataloged quakes through the pipeline as synthetic shakes, so thirty
+> This next part is a replay, not a live recording — the last day of real
+> cataloged quakes fed through the pipeline as synthetic shakes, so twenty
 > seconds stand in for weeks.
 >
 > Their amplitudes are deliberately unrealistic: this shows the software
@@ -87,7 +115,7 @@ desk. Wait for the heartbeat line first so the noise floor is visible.
 > Red is what the device thinks. Colour is what really happened. The dashed
 > line between them is its error, and it shrinks as the calibration learns.
 
-## Shot 6 — The honest part (1:55–2:20)
+## Shot 7 — The honest part (2:22–2:42)
 
 *On screen:* the terminal, running `python audit.py`.
 
@@ -97,10 +125,9 @@ desk. Wait for the heartbeat line first so the noise floor is visible.
 >
 > Every detection is journalled with what the model predicted *before* it
 > learned that point. Replaying that journal gives the out-of-sample error, and
-> on the operational path it is several times worse. The tool that tells you
-> that is in the repository.
+> it is several times worse. The tool that tells you that is in the repository.
 
-## Shot 7 — Close (2:20–2:30)
+## Shot 8 — Close (2:42–2:52)
 
 *On screen:* the board on the desk, dashboard glowing in the background.
 
@@ -113,6 +140,9 @@ desk. Wait for the heartbeat line first so the noise floor is visible.
 ## Recording notes
 
 - Shoot the tap shot **last**: it is the only one that needs luck and retakes.
+- Shot 5 is live data on a station that keeps running, so grab the screenshots
+  before anything else: the confirmed list is a rolling window and the row
+  leaves it after `publish.window_days`.
 - Let the heartbeat line appear on camera before you tap. It is what proves the
   sensor is live rather than a screen recording of nothing.
 - Do not zoom the browser past 100 %: the map labels break up.

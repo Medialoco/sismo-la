@@ -18,16 +18,27 @@ operation on real hardware, and an honest account of how far it gets. Stating
 the question instead of asserting the answer is deliberate. It makes the project
 falsifiable, and the partial result is part of the result.
 
-**Where it stands, 1 September 2026.** The autonomous half is done: the station
+**Where it stands, 2 September 2026.** The autonomous half is done: the station
 runs on its own power with no shell and no attached computer, detects shakes,
 correlates them against USGS, publishes a snapshot every 20 minutes, and came
-back by itself after a real power cut. The measuring half is not: **it has yet
-to recognize a single genuine earthquake — 0 of the 8 matches** its amplitude
-model needs. What changed this week is that the gap stopped being a mystery:
-the detection threshold is now measured, and measuring it showed that what held
-the station back was not the sensor but the cost of watching blindly. Asking the
+back by itself after a real power cut. And on 2 September it **confirmed a real
+earthquake for the first time** — a M3.2 near Ontario, California, standing
+clear of its own noise in its own continuous recording, at the instant the
+catalog said the waves had to arrive.
+
+It did not *notice* that earthquake. The blind trigger never fired and could not
+have: it needed about three times the amplitude that arrived. The catalog
+supplied the second to examine and the station went back and looked. So the
+measuring half is still open on both counts that matter — **the autonomous
+detector has caught nothing, and the amplitude calibration still stands at 0 of
+the 8 matches** it needs, because a confirmation is deliberately not allowed to
+feed it. What changed this week is that the gap stopped being a mystery: the
+detection threshold is now measured, and measuring it showed that what held the
+station back was not the sensor but the cost of watching blindly. Asking the
 catalog *when* to look instead is worth a full magnitude unit, and it took the
 odds of feeling a real earthquake before the deadline from 6–28% to 28–70%.
+Within a day of that channel going live it returned the first real earthquake in
+the station's history — one event, which is an existence proof and not a rate.
 
 ![Sismo-LA dashboard — device estimates in red vs USGS ground truth](docs/images/dashboard-replay.png)
 
@@ -144,8 +155,19 @@ learning chain runs end to end and converges. Every detection is journalled with
 what each model predicted *before* it learned that point, so the project can
 score itself out-of-sample instead of quoting training residuals.
 
-**Not established: that this sensor can measure a real earthquake.** Zero
-matches so far, and that is not a correlation bug — it is the threshold.
+**Established on 2 September: this sensor can measure a real earthquake.** One
+regional event stood clear of its own noise in its own recording, at the arrival
+instant the catalog implies. That is the first hard evidence that an $80 node
+records ground motion from a real earthquake at all, and it is the whole of what
+that single event proves.
+
+**Not established: that it can find one on its own, or size one.** The blind
+trigger has fired on nothing but local noise, and it would have needed three
+times the amplitude to fire on that earthquake. The calibration is still at zero
+of eight, and that is correct rather than a bug: a confirmation is selected for
+being a large excursion near the noise, so its amplitude is biased upward by the
+selection itself, and fitting a magnitude law to such points would bake that bias
+in. Neither of those is a correlation failure — it is the threshold.
 
 *Replay figures measure the software, not the instrument.* In `--replay` the
 readings are synthesized from cataloged magnitude and distance through the
@@ -206,6 +228,31 @@ five times what the seismic band-pass was worth, for no hardware and no money.
 | Blind trigger only | 2.0 – 9.8 | 37–184 days | 6–28% |
 | **Plus retrospective search** | **9.9 – 36.9** | **10–37 days** | **28–70%** |
 
+**Within a day of that going live, it found one: `ci41540608`, M3.2 near
+Ontario, California, 2 September 2026 at 12:37:12 UTC.** The recorded envelope
+stood 4.34 local dispersions above the noise of the preceding minutes, peak
+0.001095 g against a baseline of 0.0003816 g, in a 20 s window 24 s after the
+origin time. Three things are worth more than the result itself:
+
+- **The lag corroborates it independently.** 24 s after the origin is an
+  ordinary S-wave arrival, and the significance test never looks at the lag —
+  it only asks whether the envelope was elevated inside the physically allowed
+  window. So the timing is evidence the search did not manufacture.
+- **The blind trigger was three times short.** It needed about 0.0033 g and
+  0.0011 g arrived. This is not an event the previous code would also have
+  caught; it is what the second channel bought, measured on a real earthquake
+  rather than simulated.
+- **The site was at rest**, at the sensor's own electrical noise line, so
+  nobody was walking above the box. Had the same earthquake arrived during a
+  busy hour it would have been invisible — which is the caveat in the table
+  above, seen from the other side.
+
+Read as one point, not a rate. z = 4.34 against a threshold of 4.0 is a modest
+margin; the false-confirmation rate of 1 in 1,200 was computed against *pure
+sensor noise*, and this site produces its own impulses, so that figure is
+optimistic until it is recomputed on the recorded envelope; and the calibration
+counter did not move, on purpose.
+
 **And the two are not the same claim, so this repository never merges them.**
 A shake the station triggered on by itself is a detection. A shake found because
 the catalog said which second to examine is a *confirmation* — real evidence that
@@ -222,7 +269,7 @@ reach back before it was installed: the station kept no continuous record until
 1 September, only the shakes that crossed the trigger, which are precisely the
 wrong ones.
 
-**A station that knows what it misses.** Zero detections is an ambiguous
+**A station that knows what it misses.** An empty detection list is an ambiguous
 result: it can mean a quiet catalog or a station that stopped working, and
 until now nothing here could tell those apart. The station now audits itself
 against the catalog. For every cataloged earthquake it computes what the refit
@@ -233,12 +280,12 @@ earthquake that arrived while somebody walked past the sensor was not detectable
 and the tool has to say so instead of reporting a fault. Each event then lands in
 one of five categories, and only one of them is a problem: **out of reach**
 (normal, 99% of this catalog), **marginal**, **triggered**, **confirmed**, or
-**should have been seen and was not**. Over the 30 days to 2 September: 20
-cataloged events, **0 in the last category**, 12 out of reach for both channels,
-and 8 within the retrospective search's reach but earlier than the recording.
-Those 8 are the argument for the second channel written out as specific events
-rather than as a rate. Method, validation against the published figures, and
-why none of the per-event detail is published, in
+**should have been seen and was not**. Over the 30 days to 2 September: **19
+cataloged events, 1 confirmed, and 0 in the last category** — so the silence is
+the catalog and not a fault. Those three counts are all the audit publishes;
+which events were within reach is an epicentral distance in disguise and stays
+on the station's own network. Method, validation against the published figures,
+and the privacy argument, in
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 Other limits, briefly: it **detects, it does not predict** — it says nothing
@@ -263,8 +310,9 @@ locates a receiver that no satellite knows the direction of.
 What would make such a network installable is not the price of the sensor, it is
 that nobody has to calibrate it: each node fits its own coefficients against the
 catalog and adapts to its own soil, building and mount. **This is an argument
-from geometry, not a demonstration.** There is one station, it has recognized
-zero earthquakes, and nothing in that figure was measured or simulated.
+from geometry, not a demonstration.** There is one station; it has confirmed one
+earthquake and triggered on none, and nothing in that figure was measured or
+simulated.
 
 ## Run it in two minutes
 
@@ -387,10 +435,13 @@ sismo-la/
 - [x] Continuous envelope recorded, and searched retrospectively at the arrival
       time the catalog implies — a factor 7 to 8 in amplitude, kept strictly
       apart from what the station triggers on by itself.
-- [ ] **First genuine earthquake recognized — 0 of 8.** Everything else waits
-      on this.
-- [ ] First retrospective confirmation — 0 so far, the search went live on
-      1 September and has no earlier envelope to read.
+- [x] **First real earthquake confirmed** (M3.2, 2 September). Found in the
+      stored envelope at the arrival instant the catalog implies — the station
+      noticed nothing at the time, and the blind trigger needed three times the
+      amplitude.
+- [ ] **First earthquake the station catches by itself — still none**, and the
+      amplitude calibration still 0 of 8, since confirmations may not feed it.
+      Everything else waits on this.
 - [x] Self-audit against the catalog: every cataloged event classified as out of
       reach, marginal, seen, or **should have been seen and was not**. Currently
       0 in the last category, so the silence is the catalog and not a fault.
