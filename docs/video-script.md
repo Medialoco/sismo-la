@@ -13,6 +13,12 @@ Two assets are already generated and can be dropped straight in:
 |---|---|---|
 | `docs/images/dashboard-replay.png` | Dashboard, calibration converged | headless capture at 1440x900 |
 | `docs/video/calibration-timelapse.mp4` | Calibration converging from zero | 75 frames, one every ~4 s, replayed at 8 fps |
+| `docs/images/public-map-confirmed.png` | Shot 5: the confirmed event outlined on the public map, header reading "0 triggered &middot; 1 confirmed" | headless capture at 1440x900, 2x |
+| `docs/images/public-data-confirmed.png` | Shot 5: the confirmed row in `data.html`, under the wall of "not an earthquake" rows | scrolled capture of the live page |
+
+Both shot-5 stills are of the live published page, so they were taken early on
+purpose: the confirmed list is a rolling window and the row leaves it after
+`publish.window_days`.
 
 ## Golden rule for this video
 
