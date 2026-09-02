@@ -51,6 +51,7 @@ import usgs
 from calibration import CalibrationModel, DistanceModel
 from classifier import QuakeNoiseClassifier
 import eventlog
+import expected
 import retro
 from envelope import EnvelopeStore
 from eventlog import EventLog
@@ -113,6 +114,9 @@ class SharedState:
         self._retro = retro_log
         self._retro_last: datetime | None = None
         self._retro_scanned = 0
+        self._expected: list[dict] = []
+        self._expected_at: datetime | None = None
+        self._expected_hours = 0.0
         self._station = station
         self._usgs_cfg = usgs_cfg
         self._model = model
@@ -171,6 +175,38 @@ class SharedState:
         with self._lock:
             self._retro_last = datetime.now(timezone.utc)
             self._retro_scanned = scanned
+
+    def set_expected(self, rows: list[dict], hours: float) -> None:
+        with self._lock:
+            self._expected = rows
+            self._expected_at = datetime.now(timezone.utc)
+            self._expected_hours = hours
+
+    def _expected_block(self) -> dict:
+        """What the catalog says should have been felt, against what was.
+
+        Answers the question an empty detection list cannot: was that silence
+        normal, or did the station miss something it could have caught? See
+        python/expected.py — and its privacy section before publishing any of
+        it, because a per-event detection probability is an epicentral distance
+        in disguise. `strip_watchlist` reduces this to three counts on the way
+        out, unconditionally.
+        """
+        if not self._expected_at:
+            return {"enabled": False}
+        return {
+            "enabled": True,
+            "updated": self._expected_at.isoformat(),
+            "hours": self._expected_hours,
+            "summary": expected.summarise(self._expected),
+            "counts": expected.counts(self._expected),
+            # Only the rows worth an operator's attention. The out-of-reach
+            # majority is the normal state of a station in a quiet catalog and
+            # listing it would bury the two verdicts that mean something.
+            "events": [r for r in self._expected
+                       if r["verdict"] in (expected.V_MISSED,
+                                           expected.V_MARGINAL)][:20],
+        }
 
     def _retro_block(self) -> dict:
         """What the retrospective search has found, kept apart from detections.
@@ -369,6 +405,9 @@ class SharedState:
                 # at an instant the catalog supplied. See python/retro.py.
                 "detections": list(self._detections),
                 "retro": self._retro_block(),
+                # A third thing, and a different kind: not what happened, but
+                # what should have. Never counted with either of the two above.
+                "expected": self._expected_block(),
                 "updated": self._updated.isoformat(),
             }
 
@@ -528,9 +567,18 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
     lookback_h = float(rcfg.get("lookback_hours", 72))
     z_min = float(rcfg.get("z_min", retro.Z_MIN))
     feed = bool(rcfg.get("feed_calibration", False))
+    # How far back the expected-vs-observed audit reaches. Defaults to the
+    # envelope retention, i.e. everything the station can still be asked to
+    # account for.
+    audit_h = float(rcfg.get("audit_hours",
+                             24 * (cfg.get("envelope") or {})
+                             .get("retention_days", 14)))
     print(f"[retro] search on: every {interval:.0f}s over the last "
           f"{lookback_h:.0f}h, z_min={z_min}, "
           f"{'FEEDS' if feed else 'does not feed'} the calibration", flush=True)
+    print(f"[expected] audit on: every {interval:.0f}s over the last "
+          f"{audit_h:.0f}h of catalog, comparing what should have been felt "
+          f"against what was", flush=True)
 
     while True:
         try:
@@ -556,6 +604,51 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
             state.note_retro_scan(scanned)
             print(f"[retro] scanned {scanned} of {len(quakes)} cataloged events "
                   f"against the envelope; {retro_log.status()}", flush=True)
+
+            # Same envelope, same journal, same pass: what each cataloged event
+            # should have delivered here, against what was recorded. It rides
+            # along on this thread rather than getting one of its own because it
+            # needs exactly the two things this loop already has, and because
+            # nothing in it may touch the detection path.
+            #
+            # Its own catalog window, though. The retrospective search only
+            # re-scans what the USGS may still revise; the audit wants
+            # everything the recording could still be asked about, which is the
+            # retention period. Over 72 h this station sees one or two cataloged
+            # events, and a count that jumps between 1 and 2 says nothing.
+            # Its own try: the audit only reports, so a bug in it must never
+            # take the search down with it. The search is the thing that can
+            # still recover an earthquake.
+            try:
+                audit_quakes = quakes
+                if abs(audit_h - lookback_h) > 1:
+                    audit_quakes = usgs.fetch_recent(
+                        st["lat"], st["lon"], us["radius_km"],
+                        us["min_magnitude"],
+                        lookback_minutes=int(audit_h * 60))
+                rows = expected.build(audit_quakes, store=store,
+                                      journal_path=journal.path,
+                                      retro_log=retro_log)
+                state.set_expected(rows, audit_h)
+                summary = expected.summarise(rows)
+                print(f"[expected] {summary['n']} cataloged events examined, "
+                      f"{summary['covered']} with a recording, "
+                      f"{summary['missed']} within reach and not seen",
+                      flush=True)
+                for row in rows:
+                    if row["verdict"] != expected.V_MISSED:
+                        continue
+                    print(f"[expected] SHOULD HAVE BEEN SEEN: "
+                          f"M{row['magnitude']} @ {row['distance_km']:.0f}km "
+                          f"({row['place']}) - expected "
+                          f"{row['expected']['pga_g'] * 1000:.2f} mg against a "
+                          f"{row['noise']['source']} floor of "
+                          f"{row['noise']['g'] * 1000:.3f} mg, p="
+                          f"{row['p_trigger'][0]:.2f}-{row['p_trigger'][1]:.2f}"
+                          f" on the {row['channel']} channel. This is a fault, "
+                          f"not seismology.", flush=True)
+            except Exception as e:
+                print(f"[expected] audit failed: {e}", flush=True)
         except Exception as e:
             print(f"[retro] scan failed: {e}", flush=True)
         time.sleep(interval)
@@ -706,6 +799,36 @@ def strip_location(snapshot: dict) -> dict:
     return out
 
 
+def strip_watchlist(snapshot: dict) -> dict:
+    """Reduce the expected-vs-observed block to what is safe to publish.
+
+    Applied unconditionally, not behind ``include_location``, because this one
+    is not a matter of taste. A per-event detection probability is a monotone
+    function of hypocentral distance once the magnitude is known, and the USGS
+    publishes the magnitude, so a dozen of those rows trilaterate the station
+    exactly as the raw ``distance_km`` field did before ``strip_location``
+    dropped it. Publishing the reach counts is barely better: with a handful of
+    cataloged events in the window, knowing how many were "in reach" narrows
+    which ones they were, and that is a distance band each.
+
+    What survives is three integers — events examined, events the recording
+    covered, events that should have been seen and were not. The first two are
+    properties of the catalog rate and of recording uptime. The third is the
+    alarm, it is zero in normal operation, and a count has no geometry.
+    """
+    block = snapshot.get("expected")
+    if not isinstance(block, dict) or not block.get("enabled"):
+        return snapshot
+    out = dict(snapshot)
+    out["expected"] = {
+        "enabled": True,
+        "updated": block.get("updated"),
+        "hours": block.get("hours"),
+        "summary": block.get("summary"),
+    }
+    return out
+
+
 def publisher_loop(pub_cfg: dict, state: SharedState,
                    journal_path: str = "") -> None:
     """Periodically publish the station snapshot to a remote site, so the
@@ -725,6 +848,9 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
     while True:
         time.sleep(interval)
         snapshot = state.snapshot()
+        # Not conditional on include_location: the watchlist encodes distances
+        # whatever the operator thinks about publishing coordinates.
+        snapshot = strip_watchlist(snapshot)
         if not with_location:
             snapshot = strip_location(snapshot)
         # The in-memory detection list is short and dies with the process. The

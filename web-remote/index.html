@@ -104,6 +104,12 @@
                       letter-spacing: .08em; }
     #status .cat .v { color: var(--text); }
     #status .cal { margin-top: 13px; }
+    /* Three integers, and they are the answer to the question a zero on the
+       lines above provokes: was there anything to feel? Counts only — a
+       per-event reach figure is an epicentral distance in disguise and stays
+       on the station's own network. */
+    #status .audit { margin-top: 6px; }
+    #status .audit b.miss { color: var(--dev); }
 
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
@@ -443,9 +449,25 @@
        snapshot without it shows the one channel it has. */
     const confirmedOf = (s) => (Array.isArray(s.confirmed) ? s.confirmed : null);
 
+    /* Zero on both channels above says nothing on its own: it can mean a quiet
+       catalogue or a station that stopped working. The station audits every
+       catalogued event against what it should have felt and publishes the three
+       counts — how many it examined, how many it had a recording for, and how
+       many were within reach and went unnoticed. The last is the only one that
+       can be wrong, and it is zero when the station is doing its job.
+
+       Counts, never a list: a per-event detection probability is a monotone
+       function of distance once the magnitude is known, so a dozen rows would
+       locate the device. */
+    const auditOf = (s) => {
+      const e = s.expected;
+      return e && e.enabled && e.summary ? e.summary : null;
+    };
+
     function fillPanel(s, pairs) {
       const c = s.calibration || {};
       const known = confirmedOf(s);
+      const audit = auditOf(s);
       document.getElementById('status').innerHTML =
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b>` +
         `<div class="cat"><span class="k">Triggered &middot; autonomous</span>` +
@@ -458,7 +480,12 @@
         (c.ready
           ? `Calibrated &middot; <b>${c.n_points}</b> earthquakes`
           : `Calibration <b>${c.n_points ?? 0}</b>/${c.min_points ?? '?'} earthquakes`) +
-        '</div>';
+        '</div>' +
+        (audit
+          ? `<div class="audit">Audited <b>${audit.n}</b> catalogued events` +
+            ` &middot; <b>${audit.covered}</b> recorded` +
+            ` &middot; <b class="${audit.missed ? 'miss' : ''}">${audit.missed}</b> missed</div>`
+          : '');
     }
 
     const ago = (ms) => {
@@ -598,7 +625,13 @@
         fillPanel(snap, pairs);
         drawChart(pairs);
         const known = confirmedOf(snap);
-        const bad = staleness(snap);
+        const audit = auditOf(snap);
+        // Red means one of two things on this page: an event the station
+        // recognised, or a station not doing its job. An earthquake within
+        // reach that went unnoticed is the second, so it takes the same filled
+        // badge as an outage — behind an outage, which is the worse fault.
+        const bad = staleness(snap)
+          || (audit && audit.missed ? `${audit.missed} missed` : '');
         b.innerHTML = bad || (known
           ? `${pairs.length} triggered &middot; ${known.length} confirmed`
           : (pairs.length ? `${pairs.length} earthquakes caught` : 'device reporting'));

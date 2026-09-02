@@ -81,6 +81,35 @@ from scoring by default, and neither the dashboard nor the public page shows the
 in the same list. A confirmation is real ground motion; it is not a detection the
 station made, because the catalog is what said where to look.
 
+## The audit: what should have been felt
+
+Both channels above answer "what did the station see". Neither answers the
+question a run of zeros provokes: *was there anything to see?*
+`python/expected.py` does, on the same thread as the retrospective search
+because it needs the same two inputs.
+
+D. **Predicted amplitude** — `REF_GMPE` gives the median ground motion each
+   cataloged event should have delivered at the station. A model, with 0.39 log10
+   of scatter, and labelled as such everywhere it appears.
+
+E. **Measured noise at that instant** — the median of the recorded envelope over
+   the three minutes before the arrival window. The trigger is STA/LTA, so its
+   threshold in g is 8.55 times whatever the station was sitting in at the time,
+   a ratio fixed by two measurements rather than chosen. This is what stops the
+   audit reporting a fault for an earthquake that arrived during a footstep.
+
+F. **Verdict** — the scatter of the fit converted to a detection probability, as
+   the published sensitivity figures already do, and crossed with the journal:
+   `out-of-reach`, `marginal`, `triggered`, `confirmed`, `missed`, or
+   `no-coverage` when there was no recording at that instant. Only `missed` is a
+   problem, and it means a fault rather than an earthquake.
+
+The per-event output stays inside the station's own network. A detection
+probability is a monotone function of hypocentral distance once the magnitude is
+known, so a dozen rows trilaterate the station; `strip_watchlist` reduces the
+published snapshot to three counts, unconditionally. Full method, validation and
+limits in [`expected-vs-observed.md`](expected-vs-observed.md).
+
 ## Note on time synchronization
 
 This is the tricky part. The MCU has no absolute time; the MPU does (NTP over

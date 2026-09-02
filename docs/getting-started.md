@@ -72,8 +72,19 @@ retro:
   interval_s: 900          # rescan the catalog every 15 min
   lookback_hours: 72       # how far back a newly published event may be
   z_min: 4.0               # local dispersions above the trailing baseline
+  audit_hours: 336         # how far back the expected-vs-observed audit reaches
   feed_calibration: false  # leave this off, see below
 ```
+
+`audit_hours` drives a third thing the same loop does: for every cataloged event
+in that window it works out what should have arrived here and what noise the
+station was actually in at that instant, so a run of zero detections can be read
+as "nothing was in reach" rather than as an unexplained silence. It is wider than
+`lookback_hours` on purpose — the search only revisits what the USGS may still
+revise, the audit wants everything the recording can still be asked about, so it
+defaults to the envelope retention. See
+[`expected-vs-observed.md`](expected-vs-observed.md), including why the
+per-event detail never leaves the station's own network.
 
 Two things to know before changing any of it. **Retention costs disk**: 14 days
 is ~23 MB, and the board ships 90% full, so raising it buys retroactive reach

@@ -122,6 +122,24 @@
     .conf .place { color: var(--muted); margin-top: 4px; }
     .conf .raw { color: var(--muted); font-size: 11px; margin-top: 4px; }
 
+    /* ---- Expected vs observed ----
+       Not a third channel of detections: the other two cards say what the
+       station felt, this one says what it should have. An out-of-reach
+       earthquake is the normal case and is counted, never listed; only the
+       limit and the faults get a row. */
+    .exp {
+      border: 1px solid var(--line); border-left: 3px solid var(--orange);
+      border-radius: 9px; padding: 8px 10px; margin: 8px 0; font-size: 12.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .exp.missed { border-left-color: var(--red); }
+    .exp .time { float: right; color: var(--muted); font-size: 11px; }
+    .exp .p { color: var(--orange); font-weight: 600; }
+    .exp.missed .p { color: var(--red); }
+    .exp .place { color: var(--muted); margin-top: 4px; }
+    .exp .raw { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    #expected-card .stat-row span:last-child { font-variant-numeric: tabular-nums; }
+
     /* ---- Detections ---- */
     .det {
       border: 1px solid var(--line); border-radius: 9px;
@@ -207,6 +225,26 @@
         <div class="stat-row">
           <span>AI noise filter</span><span id="ai-status">--</span>
         </div>
+      </div>
+
+      <div class="card" id="expected-card" style="display:none">
+        <h2>Should it have felt them?</h2>
+        <div class="stat-row">
+          <span>Cataloged events, last <span id="exp-hours">--</span></span><span id="exp-n">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Arrival instant recorded</span><span id="exp-cov">--</span>
+        </div>
+        <div class="stat-row">
+          <span>Within reach, not seen</span><span id="exp-missed" class="pill ok">--</span>
+        </div>
+        <div id="exp-warn" class="warn"></div>
+        <div id="exp-list"></div>
+        <div class="note">Expected amplitude is <b>predicted</b> by the
+          reference ground-motion law. The noise it is compared against is
+          <b>measured</b>, in the station's own recording at the arrival
+          instant. Site amplification is unknown, so this is a probability
+          range and never a verdict.</div>
       </div>
 
       <div class="card" id="retro-card" style="display:none">
@@ -429,6 +467,7 @@
       } else {
         s.detections.forEach((d) => list.appendChild(detCard(d)));
       }
+      renderExpected(s);
       renderRetro(s);
       renderHealth(s);
       document.getElementById("updated").textContent = "updated " + fmtTime(s.updated);
@@ -439,6 +478,73 @@
     function ageOf(iso) {
       const t = new Date(iso).getTime();
       return isFinite(t) ? (Date.now() - t) / 1000 : null;
+    }
+
+    /* What the catalog says should have been felt, against what was.
+       An empty detection list is ambiguous on its own — too small to feel, or a
+       fault nobody noticed — and this card is what separates the two. The rows
+       are only the limit cases and the faults: an out-of-reach earthquake is
+       the normal outcome for 99% of this catalog and is counted, not listed. */
+    function renderExpected(s) {
+      const card = document.getElementById("expected-card");
+      const e = s.expected;
+      if (!e || !e.enabled) { card.style.display = "none"; return; }
+      card.style.display = "";
+
+      const sum = e.summary || {};
+      document.getElementById("exp-hours").textContent =
+        e.hours ? `${e.hours} h` : "—";
+      document.getElementById("exp-n").textContent = sum.n ?? "—";
+      document.getElementById("exp-cov").textContent =
+        `${sum.covered ?? 0} of ${sum.n ?? 0}`;
+
+      const missed = sum.missed || 0;
+      const pill = document.getElementById("exp-missed");
+      pill.textContent = missed;
+      pill.className = "pill " + (missed ? "bad" : "ok");
+
+      // The one thing on this card that is not seismology. Everything else here
+      // describes a quiet catalog; this describes a broken station.
+      const warn = document.getElementById("exp-warn");
+      if (missed) {
+        warn.innerHTML = "SHOULD HAVE BEEN SEEN AND WAS NOT"
+          + '<div class="detail">' + missed + " cataloged event"
+          + (missed > 1 ? "s" : "")
+          + " above the trigger floor with nothing in the journal &middot;"
+          + " check the MCU heartbeat, the threshold and the pairing gates</div>";
+        warn.classList.add("show");
+      } else {
+        warn.classList.remove("show");
+      }
+
+      const list = document.getElementById("exp-list");
+      const rows = e.events || [];
+      list.innerHTML = rows.length
+        ? "" : '<div class="empty">Nothing at the limit right now.</div>';
+      rows.forEach((r) => {
+        const el = document.createElement("div");
+        const measured = r.noise && r.noise.source === "measured";
+        // The retrospective channel only reaches its threshold on a recording,
+        // so its probability is only worth showing when there is one.
+        const pr = measured
+          ? ` &middot; retro ${r.p_retro[0].toFixed(2)}-${r.p_retro[1].toFixed(2)}` : "";
+        el.className = "exp " + r.verdict;
+        el.innerHTML =
+          `<div><b>M${num(r.magnitude, 1)}</b> at ${num(r.distance_km, 0)} km` +
+          ` &middot; <span class="p">p ${r.p_trigger[0].toFixed(2)}-${r.p_trigger[1].toFixed(2)}</span>` +
+          pr +
+          `<span class="time">${fmtTime(r.origin_time)}</span></div>` +
+          `<div class="place">${r.place || ""}</div>` +
+          `<div class="raw">expected ${mg(r.expected.pga_g)} mg predicted ` +
+          `&middot; noise ${mg(r.noise.g)} mg ${measured ? "measured" : "assumed"} ` +
+          `&middot; trigger floor ${mg(r.trigger_floor_g)} mg` +
+          (r.z != null ? ` &middot; envelope z ${num(r.z, 1)}` : "") +
+          `</div>` +
+          (r.unpaired
+            ? `<div class="raw">${r.unpaired.length} shake(s) at the right ` +
+              `instant with no stored pairing</div>` : "");
+        list.appendChild(el);
+      });
     }
 
     /* The retrospective channel, kept in its own card because it is not a

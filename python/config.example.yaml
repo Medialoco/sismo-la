@@ -75,6 +75,14 @@ retro:
   # revises magnitudes and locations for hours after an event, and a scan run a
   # minute after the origin time uses a distance that may still change.
   lookback_hours: 72
+  # How far back the expected-vs-observed audit reaches (python/expected.py).
+  # Wider than the re-scan on purpose: the search only revisits what the USGS
+  # may still revise, while the audit answers "was that silence normal?" and
+  # wants every event the recording could still be asked about. Defaults to the
+  # envelope retention above. Over 72 h this station sees one or two cataloged
+  # events and a count that jumps between 1 and 2 says nothing.
+  audit_hours: 336
+
   # Significance required, in units of the LOCAL dispersion measured over the
   # minutes before the arrival. Calibrated against the null distribution of the
   # estimator itself — `python3 tools/retro-gain.py` prints it. At 4.0 the

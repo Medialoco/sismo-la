@@ -222,6 +222,25 @@ reach back before it was installed: the station kept no continuous record until
 1 September, only the shakes that crossed the trigger, which are precisely the
 wrong ones.
 
+**A station that knows what it misses.** Zero detections is an ambiguous
+result: it can mean a quiet catalog or a station that stopped working, and
+until now nothing here could tell those apart. The station now audits itself
+against the catalog. For every cataloged earthquake it computes what the refit
+law says should have arrived here — that is a *prediction* — and reads the noise
+it was actually sitting in at that instant out of its own continuous recording —
+that is a *measurement*, and it is what keeps the audit honest, because an
+earthquake that arrived while somebody walked past the sensor was not detectable
+and the tool has to say so instead of reporting a fault. Each event then lands in
+one of five categories, and only one of them is a problem: **out of reach**
+(normal, 99% of this catalog), **marginal**, **triggered**, **confirmed**, or
+**should have been seen and was not**. Over the 30 days to 2 September: 20
+cataloged events, **0 in the last category**, 12 out of reach for both channels,
+and 8 within the retrospective search's reach but earlier than the recording.
+Those 8 are the argument for the second channel written out as specific events
+rather than as a rate. Method, validation against the published figures, and
+why none of the per-event detail is published, in
+[`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
+
 Other limits, briefly: it **detects, it does not predict** — it says nothing
 about earthquakes that have not happened. Calibration belongs to one spot;
 move the box and it must reconverge. A single PGA is a noisy proxy for released
@@ -350,6 +369,7 @@ sismo-la/
 │   ├── classifier.py          # online quake-vs-noise logistic regression
 │   ├── envelope.py            # continuous envelope, one CSV per UTC day
 │   ├── retro.py               # search at the arrival time the catalog implies
+│   ├── expected.py            # what should have been felt, vs what was
 │   ├── audit.py               # out-of-sample scoring from the journal
 │   └── dashboard/index.html   # operator dashboard
 ├── sketch/                    # runs on the STM32U585 MCU (Zephyr)
@@ -371,6 +391,9 @@ sismo-la/
       on this.
 - [ ] First retrospective confirmation — 0 so far, the search went live on
       1 September and has no earlier envelope to read.
+- [x] Self-audit against the catalog: every cataloged event classified as out of
+      reach, marginal, seen, or **should have been seen and was not**. Currently
+      0 in the last category, so the silence is the catalog and not a fault.
 - [ ] Calibration curve from real recordings, with held-out residuals.
 - [ ] Contest video: replay mode plus a live tap.
 

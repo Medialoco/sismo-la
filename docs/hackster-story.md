@@ -266,6 +266,47 @@ which is what the table assumes. And the search cannot reach backwards: the
 station kept no continuous record before 1 September, only the shakes that
 crossed the trigger, which are exactly the wrong ones.
 
+## 9b. A station that knows what it misses
+
+There is a weakness in everything above that a counter at zero cannot fix. Zero
+detections is ambiguous: it can mean a quiet catalog, or a station that quietly
+stopped working — and this project has already been caught by the second, when
+the sensor link died and the dashboard went on serving an hours-old snapshot as
+though nothing had happened.
+
+So the station now audits itself against the catalog. For every cataloged
+earthquake it computes two numbers of very different kinds, and never mixes
+them. The first is *predicted*: what the refit ground-motion law says should have
+arrived at the station. The second is *measured*: the noise the station was
+actually sitting in at that instant, read out of its own continuous recording.
+The second is what makes the audit honest — an earthquake that arrived while
+somebody was walking past the box was not detectable, and this site's ambient
+level moves by a factor of four between a quiet night and a busy afternoon, so a
+tool using a fixed floor would invent faults at noon and miss them at midnight.
+
+Every event then lands in one of five categories, and only one of them is a
+problem: out of reach (normal, and 99% of this catalog), marginal, triggered,
+confirmed, or **should have been seen and was not** — which means a fault, not
+seismology. A sixth says the recording did not cover that instant, which is
+neither a success nor a failure and is counted as neither.
+
+Over the 30 days to 2 September: **20 cataloged events, none in the "should have
+been seen" category.** Twelve were out of reach for both channels. The other
+eight were within the retrospective search's reach and simply predate the
+recording — which is the argument for that second channel written out as
+specific earthquakes instead of as a rate.
+
+The whole per-event table stays on the station's own network, and that is a
+privacy decision rather than a modesty one: a detection probability is a
+monotone function of distance once the magnitude is known, so a dozen of those
+rows would locate the box as precisely as the raw distances that were stripped
+out of the published data for exactly that reason. What is published is three
+integers — events examined, events recorded, events missed — and the third is
+zero when the station is doing its job.
+
+I would rather show a station that can say *why* it has felt nothing than one
+that simply shows a zero.
+
 The honest summary of the feasibility question is therefore: **the difficult
 half of the condition is already met** — autonomy, self-calibration, continuous
 correction against a ground truth, on a $80 node that nobody calibrated —
