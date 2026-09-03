@@ -18,7 +18,7 @@ We fill this page in as the project progresses.
 - [x] **Name**: a complete sentence, describing *what it does*, catchy, no URL.
       (Not "Arduino UNO Q project" but e.g. "A neighborhood seismograph that
       learns from real Los Angeles earthquakes".) → drafted in
-      `hackster-story.md`, with two alternates.
+      `hackster-story.md` (name / pitch at the top of the video storyboard).
 - [x] **Pitch**: a single sentence, does not duplicate the name, no URL.
       → drafted; shares no significant word with the name.
 - [ ] **Cover image**: high resolution, good lighting, **no text**, shows the end

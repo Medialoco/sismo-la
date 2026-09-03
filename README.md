@@ -344,7 +344,7 @@ sismo-la/
 
 Entry in
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
-**Best Social Impact**, submissions close **13 September 2026**. Longer write-up:
+**Best Social Impact**, submissions close **13 September 2026**. Video storyboard:
 [`docs/hackster-story.md`](docs/hackster-story.md).
 
 ## License

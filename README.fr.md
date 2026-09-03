@@ -356,7 +356,7 @@ sismo-la/
 
 Candidature
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
-**Best Social Impact**, clôture **13 septembre 2026**. Texte plus long :
+**Best Social Impact**, clôture **13 septembre 2026**. Storyboard vidéo :
 [`docs/hackster-story.md`](docs/hackster-story.md).
 
 ## Licence

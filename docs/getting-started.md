@@ -251,7 +251,8 @@ can really do, and it is several times worse than the panel's number.
       model is already trained, hence the restart.
 - [ ] Shoot the live tap last: it needs retakes, and the MCU heartbeat should be
       on camera before you tap so the sensor is visibly alive.
-- [ ] Narration and subtitles: `docs/video-script.md`, `docs/video/narration.srt`.
+- [ ] Narration and subtitles: storyboard in `docs/hackster-story.md`; recut
+      `docs/video/narration.srt` after picture lock.
 
 ## 9. Hackster write-up
 - [ ] Follow `hackster-submission.md` (cover image, story in steps, code snippets…).
