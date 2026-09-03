@@ -108,7 +108,8 @@ publish:
   # page, so this is deliberately slow. Detections are not lost in between:
   # every snapshot carries the recent ones. 1200 s keeps the worst case at
   # three builds an hour, well inside GitHub Pages' ~10/hour soft limit, and
-  # the skip-if-unchanged guard means a quiet station commits nothing at all.
+  # the skip-if-unchanged guard means a quiet station commits nothing, except
+  # a heartbeat every 4 h so the public page can tell quiet from dead.
   interval_s: 1200
   # The station's coordinates stay out of what is published. The public page
   # shows the catalog and, on the events the device matched, the magnitude and

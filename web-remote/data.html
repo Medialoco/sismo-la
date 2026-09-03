@@ -337,13 +337,13 @@
       return Math.round(min / 1440) + ' d';
     };
 
-    /* Same rule as the map: snapshots land every 20 min, so two hours of
-       silence is an outage. Nothing shows when the tables are current. */
+    /* Same words as the map: last snapshot after 2 h, offline after 4 h. */
     function markFreshness(s) {
       const b = document.getElementById('badge');
       const age = s.updated ? Date.now() - new Date(s.updated).getTime() : null;
       const text = !hasSnapshot ? 'no device data'
-        : age > 2 * 3.6e6 ? `offline &middot; ${ago(age)}`
+        : age > 4 * 3.6e6 ? `offline &middot; ${ago(age)}`
+        : age > 2 * 3.6e6 ? `last snapshot &middot; ${ago(age)}`
         : s.health && s.health.stale ? 'degraded' : '';
       b.innerHTML = text;
       b.className = text ? 'badge show' : 'badge';

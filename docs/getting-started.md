@@ -130,8 +130,8 @@ station's readings from a `station.json` sitting beside it, so the target of
 `publish:` has to be `web-remote/station.json` in this repository. Every
 snapshot commit redeploys the page, so `interval_s` is 1200 — one push every
 twenty minutes at worst, which stays well inside the roughly ten builds an hour
-Pages will take, and a snapshot that differs only by its clock is skipped
-entirely, so a quiet station pushes nothing at all.
+Pages will take, and a snapshot that differs only by its clock is skipped,
+except a heartbeat every four hours so quiet is not mistaken for offline.
 Nothing is lost in between: each snapshot carries the whole confirmed history,
 rebuilt from the journal.
 

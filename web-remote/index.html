@@ -496,14 +496,13 @@
       return Math.round(min / 1440) + ' d';
     };
 
-    /* Two ways this page can be showing an old picture: the station knew it was
-       degraded when it published, or it stopped publishing at all. Both used to
-       look identical to a healthy station, which is how a dead sensor link went
-       unnoticed for hours on 2026-09-01. Snapshots land every 20 min, so two
-       hours of silence is an outage rather than lateness. */
+    /* The public file is what we have, not the MCU. Under four hours an old
+       file is a last-snapshot age (a quiet station skips clock-only commits).
+       At four hours it publishes a heartbeat anyway; past that, offline. */
     function staleness(s) {
       const age = Date.now() - new Date(s.updated).getTime();
-      if (age > 2 * 3.6e6) return `offline &middot; ${ago(age)}`;
+      if (age > 4 * 3.6e6) return `offline &middot; ${ago(age)}`;
+      if (age > 2 * 3.6e6) return `last snapshot &middot; ${ago(age)}`;
       return s.health && s.health.stale ? 'degraded' : '';
     }
 

@@ -24,7 +24,7 @@ SSH=(ssh -i "$KEY" -o ConnectTimeout=10 "arduino@$HOST")
 cd "$(dirname "$0")/.."
 
 echo "== sending tracked files to $HOST =="
-git ls-files -z python/ deploy/ \
+git ls-files -z python/ deploy/ tools/ \
   | COPYFILE_DISABLE=1 tar -cf - --null -T - \
   | "${SSH[@]}" "cat > /tmp/sismo-payload.tar && cd $APP && tar -xf /tmp/sismo-payload.tar && rm /tmp/sismo-payload.tar && echo extracted"
 

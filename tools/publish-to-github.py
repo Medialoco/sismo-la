@@ -18,7 +18,8 @@ Wired in through the ``publish.command`` block of ``python/config.yaml``.
 Every snapshot is a commit that redeploys the page, so keep ``interval_s``
 generous -- twenty minutes, not one. Pages tolerates roughly ten builds an
 hour; three is comfortable. A snapshot whose only difference is the clock is
-skipped, so a quiet station stops committing altogether.
+skipped, unless the last one is older than four hours: then it goes up
+anyway, so a quiet night still leaves a heartbeat to read.
 
 This tool publishes whatever JSON it is handed, verbatim. It does **not**
 redact. The file it normally receives has already been through
@@ -35,8 +36,12 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 
 API = "https://api.github.com"
+# After this, an unchanged snapshot is still committed. The public page calls
+# four hours without a file "offline"; a quiet station must beat that.
+FORCE_AFTER_S = 4 * 3600
 
 
 def _request(url: str, token: str, method: str = "GET", payload: dict | None = None):
@@ -110,6 +115,18 @@ def _same_but_for_time(old: bytes, new: bytes) -> bool:
     return all(a.get(k) == b.get(k) for k in keep)
 
 
+def _age_s(old: bytes) -> float | None:
+    """Seconds since the last snapshot's own ``updated`` field."""
+    try:
+        stamp = json.loads(old).get("updated")
+        if not stamp:
+            return None
+        t = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        return (datetime.now(timezone.utc) - t).total_seconds()
+    except (ValueError, TypeError):
+        return None
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print(__doc__, file=sys.stderr)
@@ -151,10 +168,18 @@ def main() -> int:
 
     # A station that detects nothing for a week would otherwise commit an
     # identical snapshot every twenty minutes, purely because the clock moved.
-    # Two snapshots that differ only by their timestamp are not news.
+    # Skip those — unless the last file is old enough that the public page
+    # would call the station offline, or that there is nothing recent to
+    # analyse. Then send a heartbeat anyway.
     if current is not None and _same_but_for_time(current, body):
-        print("publish-to-github: unchanged since last snapshot, not committing")
-        return 0
+        age = _age_s(current)
+        if age is None or age >= FORCE_AFTER_S:
+            hours = (age / 3600.0) if age is not None else float("inf")
+            print(f"publish-to-github: unchanged, but last snapshot "
+                  f"{hours:.1f}h ago — committing heartbeat")
+        else:
+            print("publish-to-github: unchanged since last snapshot, not committing")
+            return 0
 
     # Without an explicit author the commit is attributed to whatever profile
     # name the token's account carries, which is not the identity the rest of
