@@ -1,141 +1,137 @@
 1
-00:00:00,000 --> 00:00:05,500
-Los Angeles gets more than two thousand
-earthquakes in three months.
+00:00:00,000 --> 00:00:08,000
+Los Angeles County sits on active faults.
+In five years the USGS listed about two
+thousand two hundred earthquakes of
+magnitude two or more within a hundred
+and sixty kilometres of a station like this.
 
 2
-00:00:05,500 --> 00:00:10,500
-This twelve-dollar motion chip can feel the
-bigger ones.
+00:00:08,000 --> 00:00:18,000
+This twelve-dollar motion chip can feel
+the stronger ones. A raw acceleration
+number is not a magnitude. The chip has
+no idea what it felt.
 
 3
-00:00:10,500 --> 00:00:15,000
-It just has no idea what it is feeling. A raw
-acceleration number means nothing on its own.
+00:00:18,000 --> 00:00:28,000
+The official list is public. Minutes after
+every earthquake, the USGS publishes
+magnitude, place and time. That list is
+the catalog.
 
 4
-00:00:15,000 --> 00:00:21,000
-But in Los Angeles the ground truth is public.
+00:00:28,000 --> 00:00:36,000
+So the station records a shake, then asks
+the catalog whether an earthquake
+happened at that second. A match is one
+labelled example.
 
 5
-00:00:21,000 --> 00:00:27,000
-Minutes after every quake, the USGS publishes
-its magnitude and its location.
+00:00:36,000 --> 00:00:42,000
+Enough matches and it fits a model for
+this installation. That fit is what we
+call calibration.
 
 6
-00:00:27,000 --> 00:00:33,000
-So the device waits, feels a shake, then asks
-the catalog what that shake actually was.
+00:00:42,000 --> 00:00:52,000
+The UNO Q is two computers. The
+microcontroller reads the chip a hundred
+times a second and runs STA/LTA: energy
+in the last half-second over the last ten.
 
 7
-00:00:33,000 --> 00:00:40,000
-Match enough of them and it learns its own
-site-specific response — for free.
+00:00:52,000 --> 00:01:00,000
+The Linux side does WiFi, queries the
+catalog, stores the record, and serves
+the dashboard. They talk over the
+Arduino Bridge.
 
 8
-00:00:40,000 --> 00:00:45,000
-The UNO Q is two computers.
+00:01:00,000 --> 00:01:08,000
+This is the station running on its own.
+Every ten seconds the microcontroller
+reports that it is alive.
 
 9
-00:00:45,000 --> 00:00:52,000
-The microcontroller watches the accelerometer
-a hundred times a second, and runs the classic
-seismology trigger.
+00:01:08,000 --> 00:01:16,000
+I tap the box. Peak acceleration,
+duration, frequency — measured live.
 
 10
-00:00:52,000 --> 00:01:00,000
-The Linux side handles WiFi, queries the USGS,
-correlates, and serves the dashboard.
+00:01:16,000 --> 00:01:22,000
+No match in the catalog: a tap is not an
+earthquake. That is a detection of noise,
+and the station says so.
 
 11
-00:01:00,000 --> 00:01:06,000
-Here it is running on the board, on its own.
+00:01:22,000 --> 00:01:30,000
+On the second of September the catalog
+published a magnitude three point two
+near Ontario.
 
 12
-00:01:06,000 --> 00:01:11,000
-Every ten seconds it reports its noise floor.
-Now watch when I tap the desk.
+00:01:30,000 --> 00:01:40,000
+The blind trigger never fired. It needed
+about three times the amplitude that
+arrived. The station keeps a continuous
+envelope, went back, and read that second.
 
 13
-00:01:11,000 --> 00:01:18,000
-Peak acceleration, duration, dominant
-frequency — all three measured in real time.
+00:01:40,000 --> 00:01:50,000
+The envelope sat four point three four
+dispersions above the previous minutes.
+We call that a confirmation: the ground
+moved, and the catalog named the second.
 
 14
-00:01:18,000 --> 00:01:25,000
-And it correctly reports no match in the
-catalog: a tap on a desk is not an earthquake.
+00:01:50,000 --> 00:02:00,000
+Without the catalog there was nothing to
+look at. It is not a detection.
 
 15
-00:01:25,000 --> 00:01:30,000
-On the second of September, this happened for
-the first time.
+00:02:00,000 --> 00:02:10,000
+This part is a replay, not a live
+recording. Real catalog times, synthetic
+shaking, amplitudes deliberately about
+thirty-eight times too large.
 
 16
-00:01:30,000 --> 00:01:36,000
-The USGS published a magnitude three point two
-near Ontario, California.
+00:02:10,000 --> 00:02:16,000
+It shows the software: matching, fitting,
+the dashboard. It does not show what the
+sensor can feel.
 
 17
-00:01:36,000 --> 00:01:43,000
-The station's trigger never fired. But it keeps
-a continuous recording,
+00:02:16,000 --> 00:02:22,000
+Red is the device’s estimate. Colour is
+the catalog. The gap shrinks as the
+amplitude model takes points.
 
 18
-00:01:43,000 --> 00:01:50,000
-so it worked out when the waves must have
-arrived, went back, and looked. The shaking was
-there.
+00:02:22,000 --> 00:02:32,000
+The amplitude model needs eight matched
+detections. The counter is still zero.
+Confirmations are not allowed into that
+fit.
 
 19
-00:01:50,000 --> 00:01:56,000
-Confirmed, not detected: without the catalogue
-there was nothing to look at.
+00:02:32,000 --> 00:02:42,000
+The first autonomous catch has not
+happened yet. In thirty days: nineteen
+events examined, one confirmed, none that
+should have been seen and were not.
 
 20
-00:01:56,000 --> 00:02:02,000
-And the trigger itself would have needed three
-times the amplitude.
+00:02:42,000 --> 00:02:50,000
+It detects events that have already
+happened. It does not predict. One
+station gives a distance, a ring on a
+map, not a pin.
 
 21
-00:02:02,000 --> 00:02:09,000
-This next part is a replay, not a live
-recording — real cataloged quakes fed through
-the pipeline as synthetic shakes.
-
-22
-00:02:09,000 --> 00:02:15,000
-Their amplitudes are deliberately unrealistic:
-this shows the software, not what the sensor
-can feel.
-
-23
-00:02:15,000 --> 00:02:22,000
-Red is what the device thinks. Colour is what
-really happened. The dashed line is its error.
-
-24
-00:02:22,000 --> 00:02:26,000
-Now the part most demos skip.
-
-25
-00:02:26,000 --> 00:02:34,000
-The dashboard's residual is measured on the
-very points the model was fitted on, and it is
-handed the true distance. That flatters it.
-
-26
-00:02:34,000 --> 00:02:42,000
-Every detection is journalled with what the
-model predicted before it learned it. That
-journal gives the out-of-sample error.
-
-27
-00:02:42,000 --> 00:02:47,000
-It detects, it does not predict. One station
-cannot triangulate.
-
-28
-00:02:47,000 --> 00:02:52,000
-But a cheap sensor plus open public data
-improves every time the ground moves.
+00:02:50,000 --> 00:03:00,000
+A cheap sensor plus an official public
+list: the box learns how the ground feels
+here, and it keeps that model when the
+internet is unplugged.

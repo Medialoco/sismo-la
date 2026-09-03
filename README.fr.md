@@ -180,9 +180,10 @@ bruit dans lequel elle était vraiment assise à cette seconde. Cinq classes :
 | Aurait dû être vu | à portée, site assez calme, rien dans l’enregistrement → une panne |
 
 30 jours au 2 septembre 2026 : **19 événements catalogués, 1 confirmé, 0
-aurait-dû-être-vu.** L’audit public est ces trois comptes. La liste des
-événements à portée encoderait une distance et reste sur le réseau local de la
-station. Méthode :
+aurait-dû-être-vu.** La page publique publie les mêmes trois comptes sur une
+fenêtre glissante de 336 heures (14 jours), plus courte, donc le premier
+chiffre bouge. La liste des événements à portée encoderait une distance et
+reste sur le réseau local. Méthode :
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ## Autres mesures

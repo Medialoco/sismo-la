@@ -15,9 +15,9 @@ python pipeline.py --mock          # headless variant
 
 ### Web dashboard (device vs USGS map)
 A Leaflet dashboard overlays the USGS catalog (circles at epicenters, colored by
-magnitude — same legend as the `quakes.html` tool) with the device's own
-detections (intensity circle at the station location, linked to the matched USGS
-event for side-by-side comparison).
+magnitude) with the device’s estimates in red. Matched detections get a solid
+red outline; confirmations a dashed one. The public page does not plot the
+station’s coordinates.
 
 ```bash
 cd python

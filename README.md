@@ -172,8 +172,10 @@ reads the noise it was actually sitting in at that second. Five classes:
 | Should have been seen | in reach, site quiet enough, nothing in the record → a fault |
 
 30 days to 2 September 2026: **19 cataloged events, 1 confirmed, 0 should-have-
-been-seen.** The public audit is those three counts. The list of which events
-were in reach would encode distance and is kept on the station’s LAN. Method:
+been-seen.** The live page publishes the same three counts on a sliding
+336-hour (14-day) window, which is shorter, so the first number moves. The
+list of which events were in reach would encode distance and stays on the
+station’s LAN. Method:
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ## Other measurements

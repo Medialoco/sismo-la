@@ -21,8 +21,8 @@ Existing assets that drop in without a reshoot:
 | `docs/images/dashboard-replay.png` | 6 hold |
 | `docs/images/network.png` | 8 |
 
-`docs/video/narration.srt` is the old timing. Recut it from the **Say** lines
-below after picture lock.
+`docs/video/narration.srt` follows the **Say** lines below. Nudge timings
+after picture lock.
 
 ---
 
