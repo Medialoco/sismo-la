@@ -1,5 +1,7 @@
 # Sismo-LA — can a neighborhood run its own seismic network?
 
+[English](README.md) · [Français](README.fr.md)
+
 Nearly ten million people live in Los Angeles County, on some of the most
 active faults in the world. The region is already densely instrumented — hundreds of
 professional stations, and a USGS catalog that publishes magnitude, location and
