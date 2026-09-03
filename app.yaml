@@ -7,9 +7,10 @@
 name: sismo-la
 icon: 🌎
 description: >-
-  Neighborhood strong-motion node: MEMS readings matched to the live USGS
-  catalog to fit site-specific magnitude and distance models that then run
-  offline.
+  A home seismograph on Arduino UNO Q. A small accelerometer records shakes;
+  the USGS catalog says which ones were earthquakes; from those pairs the
+  station learns magnitude and distance for this installation, then runs that
+  model offline.
 
 # The dashboard served by python/main.py.
 ports:
