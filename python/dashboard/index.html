@@ -193,6 +193,16 @@
           <span style="color:#9c27b0">5+</span></span>
         </div>
         <div class="row">
+          <span class="swatch" style="background:#ff9800;border:2px solid #ff4d4d"></span>
+          <span><b style="color:var(--red)">Triggered · autonomous</b> — the
+          station fired, then matched. Solid outline on the USGS circle.</span>
+        </div>
+        <div class="row">
+          <span class="swatch" style="background:#ff9800;border:2px dashed #ff4d4d"></span>
+          <span><b style="color:var(--red)">Confirmed · known time</b> — the
+          catalog said when to look. Dashed outline; not a detection.</span>
+        </div>
+        <div class="row">
           <span class="swatch" style="background:rgba(255,77,77,.4);border:2px solid #ff4d4d"></span>
           <span><b style="color:var(--red)">Device estimates</b> — magnitude and
           distance from the sensor alone; dashed line = error. The direction is
@@ -327,69 +337,187 @@
     function fmtTime(iso) {
       try { return new Date(iso).toLocaleTimeString(); } catch (e) { return iso; }
     }
+    function mg(v) {
+      return typeof v === "number" ? (v * 1000).toFixed(2) : "—";
+    }
 
-    function renderQuakes(quakes) {
-      usgsLayer.clearLayers();
-      quakes.forEach((q) => {
-        L.circleMarker([q.lat, q.lon], {
-          radius: magRadius(q.magnitude),
-          color: magColor(q.magnitude),
-          weight: 1.5,
-          fillColor: magColor(q.magnitude),
-          fillOpacity: 0.55,
-        })
-          .bindPopup(
-            `<b>USGS — official record</b>` +
-            `<br>M${q.magnitude.toFixed(1)} · ${q.place || ""}` +
-            `<br>${q.distance_km} km from the device · depth ${q.depth_km} km` +
-            `<br><span style="color:#888">${fmtTime(q.time)}</span>`
-          )
-          .addTo(usgsLayer);
+    /* Incremental map. A 5 s poll used to clearLayers() and rebuild every
+       circle, which closed open popups and redrew the station pin for nothing.
+       Markers stay; we add / restyle / remove only when the event itself
+       changed. Same two outlines as the public page: solid = the station
+       triggered, dashed = the catalog supplied the instant. Solid wins. */
+    const usgsMarks = new Map();
+    const estMarks = new Map();
+    let stationMarks = null;
+
+    function feltOf(detections) {
+      const felt = new Map();
+      (detections || []).forEach((d) => {
+        if (d.match && d.match.event_id) felt.set(d.match.event_id, d);
+      });
+      return felt;
+    }
+    function knownOf(retro) {
+      const known = new Map();
+      ((retro && retro.confirmed) || []).forEach((c) => {
+        if (c.event_id) known.set(c.event_id, c);
+      });
+      return known;
+    }
+    function channelOf(id, felt, known) {
+      if (felt.has(id)) return "triggered";
+      if (known.has(id)) return "confirmed";
+      return "";
+    }
+    function quakeStyle(q, channel) {
+      const mine = channel === "triggered" || channel === "confirmed";
+      return {
+        radius: magRadius(q.magnitude),
+        color: mine ? "#ff4d4d" : magColor(q.magnitude),
+        weight: mine ? 2.5 : 1.5,
+        dashArray: channel === "confirmed" ? "8,6" : null,
+        fillColor: magColor(q.magnitude),
+        fillOpacity: 0.55,
+      };
+    }
+    function quakePopup(q, det, conf) {
+      return (
+        `<b>USGS — official record</b>` +
+        `<br>M${q.magnitude.toFixed(1)} · ${q.place || ""}` +
+        `<br>${q.distance_km} km from the device · depth ${q.depth_km} km` +
+        `<br><span style="color:#888">${fmtTime(q.time)}</span>` +
+        (det
+          ? `<br><b style="color:#ff4d4d">Triggered · autonomous</b>`
+          : "") +
+        (conf
+          ? `<br><b style="color:#ff4d4d">Confirmed · known time</b>` +
+            `<br>z ${conf.z ?? "—"} over ${conf.window_s ?? "—"} s` +
+            `<br>peak ${mg(conf.peak_g)} mg, noise ${mg(conf.baseline_g)} mg`
+          : "")
+      );
+    }
+    function quakeSig(q, channel, det, conf) {
+      return [
+        q.lat, q.lon, q.magnitude, q.time, q.distance_km, q.depth_km,
+        channel, det && det.id, conf && conf.z, conf && conf.peak_g,
+      ].join("|");
+    }
+
+    function syncQuakes(quakes, detections, retro) {
+      const felt = feltOf(detections);
+      const known = knownOf(retro);
+      const live = new Set();
+      (quakes || []).forEach((q) => {
+        if (!q.event_id) return;
+        live.add(q.event_id);
+        const ch = channelOf(q.event_id, felt, known);
+        const det = felt.get(q.event_id);
+        const conf = known.get(q.event_id);
+        const sig = quakeSig(q, ch, det, conf);
+        let rec = usgsMarks.get(q.event_id);
+        if (rec && rec.sig === sig) return;
+        if (rec) {
+          rec.marker.setLatLng([q.lat, q.lon]);
+          rec.marker.setStyle(quakeStyle(q, ch));
+          rec.marker.setPopupContent(quakePopup(q, det, conf));
+          rec.sig = sig;
+        } else {
+          const marker = L.circleMarker([q.lat, q.lon], quakeStyle(q, ch))
+            .bindPopup(quakePopup(q, det, conf))
+            .addTo(usgsLayer);
+          usgsMarks.set(q.event_id, { marker, sig });
+        }
+      });
+      usgsMarks.forEach((rec, id) => {
+        if (live.has(id)) return;
+        usgsLayer.removeLayer(rec.marker);
+        usgsMarks.delete(id);
       });
     }
 
-    function renderDevice(station, detections) {
-      deviceLayer.clearLayers();
-
-      L.circle([station.lat, station.lon], {
+    function ensureStation(station) {
+      if (stationMarks
+          && stationMarks.lat === station.lat
+          && stationMarks.lon === station.lon) {
+        return;
+      }
+      if (stationMarks) {
+        deviceLayer.removeLayer(stationMarks.halo);
+        deviceLayer.removeLayer(stationMarks.pin);
+      }
+      const halo = L.circle([station.lat, station.lon], {
         radius: 1200, color: "#4aa3ff", weight: 2, dashArray: "5,5",
         fillColor: "#4aa3ff", fillOpacity: 0.15,
       }).addTo(deviceLayer);
-      L.marker([station.lat, station.lon])
+      const pin = L.marker([station.lat, station.lon])
         .bindPopup("<b>Sismo-LA device</b><br>Arduino UNO Q + Modulino Movement")
         .addTo(deviceLayer);
+      stationMarks = { halo, pin, lat: station.lat, lon: station.lon };
+    }
 
-      detections.forEach((d) => {
-        if (!d.device_est) return;
-        const e = d.device_est;
-        const popup =
-          `<b style="color:#ff4d4d">Device estimate (sensor only)</b>` +
-          `<br>~M${e.mag} at ~${e.distance_km} km` +
-          (d.p_quake != null ? `<br>AI: ${(d.p_quake * 100).toFixed(0)}% real earthquake` : "") +
-          (d.match
-            ? `<br><span style="color:#888">Truth (USGS): M${d.match.magnitude.toFixed(1)}` +
-              ` at ${d.match.distance_km} km</span>`
-            : "<br><span style='color:#888'>no USGS confirmation yet</span>");
-
-        if (e.kind === "point") {
-          L.circleMarker([e.lat, e.lon], {
-            radius: magRadius(e.mag),
-            color: "#ff4d4d", weight: 2,
-            fillColor: "#ff4d4d", fillOpacity: 0.35,
-          }).bindPopup(popup).addTo(deviceLayer);
-          if (d.match) {
-            L.polyline(
-              [[e.lat, e.lon], [d.match.lat, d.match.lon]],
-              { color: "#ff4d4d", weight: 1.5, opacity: 0.6, dashArray: "3,6" }
-            ).bindPopup(popup).addTo(deviceLayer);
-          }
-        } else {
-          L.circle([station.lat, station.lon], {
-            radius: e.distance_km * 1000,
-            color: "#ff4d4d", weight: 1.5, dashArray: "6,8",
-            fill: false, opacity: 0.5,
-          }).bindPopup(popup).addTo(deviceLayer);
+    function estPopup(d) {
+      const e = d.device_est;
+      return (
+        `<b style="color:#ff4d4d">Device estimate (sensor only)</b>` +
+        `<br>~M${e.mag} at ~${e.distance_km} km` +
+        (d.p_quake != null ? `<br>AI: ${(d.p_quake * 100).toFixed(0)}% real earthquake` : "") +
+        (d.match
+          ? `<br><span style="color:#888">Truth (USGS): M${d.match.magnitude.toFixed(1)}` +
+            ` at ${d.match.distance_km} km</span>`
+          : "<br><span style='color:#888'>no USGS confirmation yet</span>")
+      );
+    }
+    function estSig(d) {
+      const e = d.device_est;
+      return [
+        d.id, e.kind, e.lat, e.lon, e.mag, e.distance_km,
+        d.match && d.match.event_id, d.p_quake,
+      ].join("|");
+    }
+    function makeEstLayers(station, d) {
+      const e = d.device_est;
+      const popup = estPopup(d);
+      const layers = [];
+      if (e.kind === "point") {
+        layers.push(L.circleMarker([e.lat, e.lon], {
+          radius: magRadius(e.mag),
+          color: "#ff4d4d", weight: 2,
+          fillColor: "#ff4d4d", fillOpacity: 0.35,
+        }).bindPopup(popup));
+        if (d.match) {
+          layers.push(L.polyline(
+            [[e.lat, e.lon], [d.match.lat, d.match.lon]],
+            { color: "#ff4d4d", weight: 1.5, opacity: 0.6, dashArray: "3,6" }
+          ).bindPopup(popup));
         }
+      } else {
+        layers.push(L.circle([station.lat, station.lon], {
+          radius: e.distance_km * 1000,
+          color: "#ff4d4d", weight: 1.5, dashArray: "6,8",
+          fill: false, opacity: 0.5,
+        }).bindPopup(popup));
+      }
+      return layers;
+    }
+
+    function syncDevice(station, detections) {
+      ensureStation(station);
+      const live = new Set();
+      (detections || []).forEach((d) => {
+        if (!d.device_est || d.id == null) return;
+        live.add(d.id);
+        const sig = estSig(d);
+        const rec = estMarks.get(d.id);
+        if (rec && rec.sig === sig) return;
+        if (rec) rec.layers.forEach((l) => deviceLayer.removeLayer(l));
+        const layers = makeEstLayers(station, d);
+        layers.forEach((l) => l.addTo(deviceLayer));
+        estMarks.set(d.id, { layers, sig });
+      });
+      estMarks.forEach((rec, id) => {
+        if (live.has(id)) return;
+        rec.layers.forEach((l) => deviceLayer.removeLayer(l));
+        estMarks.delete(id);
       });
     }
 
@@ -473,7 +601,6 @@
       document.getElementById("updated").textContent = "updated " + fmtTime(s.updated);
     }
 
-    const mg = (v) => (typeof v === "number" ? (v * 1000).toFixed(2) : "—");
     const num = (v, d) => (typeof v === "number" ? v.toFixed(d) : "—");
     function ageOf(iso) {
       const t = new Date(iso).getTime();
@@ -671,8 +798,8 @@
           map.setView([s.station.lat, s.station.lon], 8);
           stationSet = true;
         }
-        renderQuakes(s.quakes);
-        renderDevice(s.station, s.detections);
+        syncQuakes(s.quakes, s.detections, s.retro);
+        syncDevice(s.station, s.detections);
         renderPanel(s);
       } catch (e) {
         console.error("state fetch failed", e);
