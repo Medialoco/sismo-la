@@ -1,58 +1,180 @@
-# Sismo-LA — can a neighborhood run its own seismic network?
+# Sismo-LA — neighborhood seismic node, self-calibrated against USGS
 
 [English](README.md) · [Français](README.fr.md)
 
-Nearly ten million people live in Los Angeles County, on some of the most
-active faults in the world. The region is already densely instrumented — hundreds of
-professional stations, and a USGS catalog that publishes magnitude, location and
-depth within minutes of every event. Almost none of that hardware sits in
-anybody's home. The instruments that matter belong to institutions, are sited by
-institutions, and are calibrated by institutions.
+Los Angeles County (~10 million people) sits on highly active faults and already
+has a dense professional network. The USGS catalog publishes magnitude, location
+and depth within minutes of each event. This repository is one node in that
+setting, built on an Arduino UNO Q, at about $80.
 
-Suppose one node cost $80. The rest of a neighborhood network is easy — hosts,
-WiFi, a map. The hard part is the prerequisite:
+Question under test:
 
-> **Can a node that cheap detect an earthquake and put a number on it, running
-> unattended, with nobody ever calibrating it?**
+> Can a node in that price range detect an earthquake and estimate its
+> magnitude, unattended, without manual calibration?
 
-This repository is one node answering that question in Los Angeles: continuous
-operation on real hardware, and an honest account of how far it gets. Stating
-the question instead of asserting the answer is deliberate. It makes the project
-falsifiable, and the partial result is part of the result.
+Live page (no station coordinates): <https://medialoco.github.io/sismo-la/>
 
-**Where it stands, 2 September 2026.** The autonomous half is done: the station
-runs on its own power with no shell and no attached computer, detects shakes,
-correlates them against USGS, publishes a snapshot every 20 minutes, and came
-back by itself after a real power cut. And on 2 September it **confirmed a real
-earthquake for the first time** — a M3.2 near Ontario, California, standing
-clear of its own noise in its own continuous recording, at the instant the
-catalog said the waves had to arrive.
+![Operator dashboard: USGS circles and device estimates](docs/images/dashboard-replay.png)
 
-It did not *notice* that earthquake. The blind trigger never fired and could not
-have: it needed about three times the amplitude that arrived. The catalog
-supplied the second to examine and the station went back and looked. So the
-measuring half is still open on both counts that matter — **the autonomous
-detector has caught nothing, and the amplitude calibration still stands at 0 of
-the 8 matches** it needs, because a confirmation is deliberately not allowed to
-feed it. What changed this week is that the gap stopped being a mystery: the
-detection threshold is now measured, and measuring it showed that what held the
-station back was not the sensor but the cost of watching blindly. Asking the
-catalog *when* to look instead is worth a full magnitude unit, and it took the
-odds of feeling a real earthquake before the deadline from 6–28% to 28–70%.
-Within a day of that channel going live it returned the first real earthquake in
-the station's history — one event, which is an existence proof and not a rate.
+*Operator dashboard. USGS events as colored circles; device estimates in red;
+three models on the right. Screenshot from `--replay`: amplitudes are
+synthetic, 38× too large, and measure the software
+([replay residuals](#replay-and-out-of-sample-residuals)).*
 
-![Sismo-LA dashboard — device estimates in red vs USGS ground truth](docs/images/dashboard-replay.png)
+## Status (2 September 2026)
 
-*The operator dashboard. Left, USGS events as colored circles — the answer key;
-the device's own estimates in red. Right, the three models learning. Figures in
-this screenshot come from replay mode, whose amplitudes are synthetic and 38×
-too large by design; they measure the software, not the sensor;
-[see below](#what-is-established-and-what-is-not).*
+The station runs on its own power and WiFi, with no attached computer. It
+detects shakes, correlates them with USGS, writes a journal, and publishes a
+JSON snapshot every 20 minutes (a heartbeat is forced after 4 h if the file is
+unchanged). After a real unplug it reached a serving dashboard in **4 min 24 s**.
+A later 5 h 43 min outage showed the MCU rebooting into its own flash.
 
-## What a node costs
+On 2 September 2026 it recorded a cataloged earthquake in its continuous
+envelope: **`ci41540608`**, M3.2, Ontario, CA, 12:37:12 UTC. Envelope z = 4.34
+(threshold 4.0), peak 0.001095 g, baseline 0.0003816 g, 20 s window, lag 24 s.
 
-Prices checked 1 September 2026.
+The blind STA/LTA trigger did not fire (required amplitude ~0.0033 g). Amplitude
+calibration is **0 of 8**. Confirmations are excluded from that fit
+(`retro.feed_calibration: false`).
+
+## Detection and confirmation
+
+| Channel | Definition | Feeds amplitude calibration |
+|---|---|---|
+| Detection | STA/LTA fired without catalog timing | yes, once USGS matches |
+| Confirmation | catalog origin time selected the window; recorded envelope elevated there | no |
+
+The journal, dashboard and public page keep the two lists separate.
+
+## Method
+
+1. The IMU reduces each trigger to PGA, duration and dominant frequency.
+2. The Linux side queries USGS FDSN (map context ≥ M0.5, calibration matches
+   ≥ M2, radius 160 km).
+3. A time match is a labelled (measurement, catalog) pair. An unmatched trigger
+   is a noise example.
+4. Three models refit online. After convergence they run from disk offline.
+
+| Model | Input → output | Usable after |
+|---|---|---|
+| Amplitude calibration | log10(PGA), log10(distance) → magnitude | 8 matches |
+| Distance model | duration, dominant frequency → epicentral distance | 5 matches |
+| Noise filter | PGA, duration, frequency → P(earthquake) | 3 of each class |
+
+Amplitude model: `M ≈ a·log10(PGA) + b·log10(R) + c`. Coefficients absorb this
+sensor, mount, building and soil. See [`docs/calibration.md`](docs/calibration.md).
+
+A continuous envelope (peak and RMS, 0.7–12 Hz, 1 Hz samples) is searched at the
+arrival time implied by each catalog origin. That search uses a handful of
+windows per event instead of ~170 000 blind STA/LTA windows per day, so it can
+sit closer to the noise and average over the wavetrain. On this station’s noise
+the gain is a **factor 7–8 in amplitude (one magnitude unit)**.
+
+## Ground-motion law
+
+The form used here was checked against **12 324 ShakeMap PGA values** from 40
+southern California earthquakes (M3.03–5.51, 3–200 km, 1 006 stations). The
+previous coefficients over-predicted amplitude by 37.9×. The refit is
+
+`0.867·M − 1.740·log10 R − 3.305`
+
+scatter 0.390 log10, R² = 0.80. Statements made with the old law were high by
+about two magnitude units.
+
+## Detection threshold
+
+Firmware has an STA/LTA ratio, not a fixed g threshold. The floor is a site
+property. Over 163 triggers the smallest peak that fired is **0.0034 g**
+(0.0044 g in the quietest window). Through the refit law that becomes a required
+magnitude, ±0.45 (1σ); below M3 the values are extrapolations:
+
+| | 10 km | 30 km | 50 km | 100 km | 160 km |
+|---|---|---|---|---|---|
+| Blind trigger | 3.1 | 3.9 | 4.3 | 4.9 | 5.3 |
+| Retrospective search | 2.1 | 2.9 | 3.3 | 3.9 | 4.3 |
+
+Convolution with 2 185 catalog events (M ≥ 2, 160 km, 5 years) and the 0.39
+log10 scatter, with site amplification ×1 to ×4:
+
+| | events / year | mean wait | P(≥1 before 13 Sep 2026) |
+|---|---|---|---|
+| Blind trigger | 2.0 – 9.8 | 37–184 days | 6–28% |
+| Trigger + retrospective search | 9.9 – 36.9 | 10–37 days | 28–70% |
+
+The retrospective row assumes the site is at rest (~50% of hours here). During
+a busy hour the envelope wander is about ×4; during a quiet hour, ~3%. Envelope
+recording started 1 September 2026; earlier hours cannot be searched.
+
+## Confirmation `ci41540608`
+
+| | |
+|---|---|
+| Origin | 2026-09-02 12:37:12 UTC, M3.2, Ontario, CA |
+| Envelope | z = 4.34 (threshold 4.0), peak 0.001095 g, baseline 0.0003816 g |
+| Window | 20 s, lag 24 s after origin (ordinary S-wave travel time) |
+| Blind STA/LTA | required ~0.0033 g; did not fire |
+| Site | at rest (sensor electrical noise) |
+| Calibration | unchanged (0 of 8), by design |
+
+One event. z = 4.34 is a modest margin. The 1-in-1 200 false-confirmation rate
+was computed on pure sensor noise; this site also produces local impulses, so
+that rate is an upper bound until it is recomputed on the recorded envelope. The
+significance test does not use lag; the 24 s delay is independent of the z cut.
+
+## Other measured results
+
+| Observation | Value |
+|---|---|
+| Trigger rate after remount (desk → better coupling) | 22.6 → 3.2 / h (−86%); noise floor 0.00087 → 0.00066 g (−24%) |
+| Power-on to serving dashboard | 4 min 24 s (watchdog sidecar; App Lab otherwise stops the container at boot) |
+| Dominant frequency (after sign-of-centered vs uncentered fix) | taps at 2.6 / 5.0 / 10.6 Hz; the bug had reported ~25 Hz on any signal |
+
+Liveness is the MCU heartbeat (~10 s). HTTP 200 from the dashboard is not used
+as proof the sensor is up. `health.stale` drives the public badge and a
+`STATION DEGRADED` banner.
+
+## Catalog audit
+
+For each cataloged event the station computes expected amplitude from the refit
+law and reads the recorded noise at that instant. Classes: **out of reach**,
+**marginal**, **triggered**, **confirmed**, **should have been seen**. Only the
+last is a fault.
+
+30 days to 2 September 2026: **19 cataloged events, 1 confirmed, 0 should-have-
+been-seen**. The published audit is those three counts. Which events were in
+reach encodes distance and is not published. Method:
+[`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
+
+## Replay and out-of-sample residuals
+
+`--replay` synthesizes amplitudes from catalog M and R through the *pre-refit*
+law, so they are 38× too large (kept so the demo still crosses the trigger).
+The calibrator then fits the inverse of that law. Residuals there test the
+pipeline.
+
+The dashboard RMSE is an in-sample residual with *true* catalog distance. Live
+operation uses *estimated* distance. `python audit.py` scores the journal
+prequentially:
+
+| Estimator | run A (11 pts) | run B (27 pts) |
+|---|---|---|
+| In-sample, true distance (panel) | 0.20 Mw | 0.18 Mw |
+| Out-of-sample, true distance | 0.30 Mw | 0.21 Mw |
+| Out-of-sample, estimated distance (operational) | 1.10 Mw | 0.26 Mw |
+
+At 11 points the 1.10 Mw figure is dominated by early, untrained predictions.
+These numbers document the scoring method.
+
+## Limits
+
+- Detects events that have occurred; no forecast.
+- Calibration is site-specific; moving the box requires reconvergence.
+- A single PGA is a noisy energy proxy; ±0.3–0.5 magnitude is the realistic
+  ceiling.
+- Strong-motion neighborhood node. No teleseisms.
+- Requires a busy region and a promptly published catalog.
+
+## Cost (1 September 2026)
 
 | Part | Price | Source |
 |---|---|---|
@@ -61,266 +183,22 @@ Prices checked 1 September 2026.
 | USB-C supply, 5 V / 3 A | ~$15 | commodity, estimate |
 | **One node** | **$71–86** | ~$90 with tax and shipping |
 
-So: **$75–90 a node, not $25.** Any earlier claim of $25 in this project was
-unsubstantiated and is retracted; the UNO Q alone costs more than that.
+A $25 figure used earlier in this project was wrong (the UNO Q alone exceeds
+it). Raspberry Shake list price the same day: $294.99 board, $584.99 turnkey
+([raspberryshake.org](https://raspberryshake.org/pricing)). Full BOM:
+[`docs/hardware.md`](docs/hardware.md).
 
-The argument survives the correction easily. A research-grade station is a
-five-figure item once sited, installed and maintained — two orders of magnitude
-above this. The cheapest citizen instrument with a public price tag is a
-Raspberry Shake, $294.99 for the board and $584.99 turnkey
-([raspberryshake.org](https://raspberryshake.org/pricing), same date). And the
-part that actually measures the ground here — the MEMS module — is $11.80. Most
-of a node's cost is the computer that learns, not the sensor that feels.
+## Multi-station geometry
 
-Full bill of materials in [`docs/hardware.md`](docs/hardware.md).
+![One station yields a ring; three rings intersect](docs/images/network.png)
 
-## Why a cheap node can be calibrated at all
+The firmware keeps the acceleration-vector magnitude, so one station yields a
+distance and no bearing. P-wave polarization is below the trigger floor. Three
+stations would intersect. Each node would fit its own coefficients against the
+catalog. This is a geometric argument. It has not been measured: there is one
+station, one confirmation, zero autonomous detections.
 
-A MEMS accelerometer feels the ground move but has no idea how big the
-earthquake was. It is uncalibrated, and calibrating a seismic instrument
-normally takes a shake table or a professional station standing next to it.
-
-In Los Angeles it takes neither, because the answer key is free and arrives in
-minutes.
-
-![How Sismo-LA calibrates itself: the sensor measures a shake, the USGS catalog says what it really was, matching the two in time produces a labelled example, and fitting those examples lets the station estimate magnitude and distance on its own](docs/images/how-it-works.png)
-
-1. The sensor feels a shake, reduced to three numbers: peak acceleration,
-   duration, dominant frequency.
-2. The Linux side asks the USGS catalog whether a real earthquake just happened
-   nearby.
-3. **Match** → that pair (what I measured ↔ what it really was) is one training
-   example. **No match** → it was a truck, which is a training example too.
-4. Three models refit on every example. Nobody labels anything by hand.
-5. Once converged, the models live on disk and run with the network unplugged.
-
-| Model | Input → output | Usable after |
-|---|---|---|
-| Amplitude calibration | log10(PGA), log10(distance) → magnitude | 8 matches |
-| Distance model | duration, dominant frequency → epicentral distance | 5 matches |
-| Noise filter | PGA, duration, frequency → P(real earthquake) | 3 of each class |
-
-The amplitude model is a ground-motion equation fitted backwards,
-`M ≈ a·log10(PGA) + b·log10(R) + c`. Its coefficients are not universal
-constants: they absorb this sensor, this mount, this building, this soil. That
-is the point — no laboratory could have calibrated *this* installation, and a
-network of these would need no laboratory either. Details in
-[`docs/calibration.md`](docs/calibration.md).
-
-## What actually happened when we ran it
-
-Five episodes from the log, chosen because they say something about deploying
-these in people's homes.
-
-**Moving the box cut false triggers by 86%, with no code change.** Off the desk
-and onto a better mount, the trigger rate went from 22.6 to 3.2 per hour while
-the noise floor barely moved (0.00087 → 0.00066 g, −24%). Coupling, not
-firmware, is what decides whether a home node is usable — and the observable to
-give an owner is the trigger rate on the dashboard, which responds by nearly an
-order of magnitude, not the noise floor, which does not.
-
-**A power cut, and the station came back alone.** Docker starts the container at
-boot, then App Lab's daemon stops it one second later because it has no notion
-of an app that should still be running — which also marks the stop as
-deliberate, so the next boot does not even try. A watchdog sidecar recovers it:
-**4 min 24 s from power-on to a serving dashboard**, verified on a real
-unplug. A later 5 h 43 min outage confirmed the microcontroller reboots into its
-own flash unaided.
-
-**The station went blind, and nothing said so.** The MCU stopped; the USGS
-refresh lived inside the event loop, so the pipeline froze while the web server
-kept serving an hours-old snapshot as if it were live. Every liveness signal we
-had was derived from the thing that had died. There is now a `health` block
-built on the one independent signal — the MCU heartbeat — shown as a red badge
-on the public page and a `STATION DEGRADED` banner on the dashboard.
-
-**A feature was fake for weeks.** The dominant-frequency estimate compared the
-sign of a *centered* sample against an *uncentered* one, on a vector magnitude
-that is never negative, so it reported ~25 Hz whatever the ground did. Replay
-hid it, because replay synthesizes that field analytically. Real taps now give
-2.6 / 5.0 / 10.6 Hz.
-
-**Our attenuation law was wrong by a factor of 38.** Checked against **12,324
-PGA values actually recorded by USGS ShakeMap stations** during 40 southern
-California earthquakes (M3.03–5.51, 3–200 km, 1,006 stations), the law this
-repository used over-predicted ground motion 37.9×, uniformly across magnitude
-and distance. Refitting the same form gives `0.867·M − 1.740·log10 R − 3.305`,
-scatter 0.390 log10, R² = 0.80. Every "what could it feel" statement made before
-that check was optimistic by about two magnitude units.
-
-## What is established, and what is not
-
-**Established.** The station is autonomous: WiFi, its own power, no shell, no
-attached computer; it detects, correlates, learns, serves a dashboard, publishes
-to GitHub Pages every 20 minutes, and recovers from a power cut. The full
-learning chain runs end to end and converges. Every detection is journalled with
-what each model predicted *before* it learned that point, so the project can
-score itself out-of-sample instead of quoting training residuals.
-
-**Established on 2 September: this sensor can measure a real earthquake.** One
-regional event stood clear of its own noise in its own recording, at the arrival
-instant the catalog implies. That is the first hard evidence that an $80 node
-records ground motion from a real earthquake at all, and it is the whole of what
-that single event proves.
-
-**Not established: that it can find one on its own, or size one.** The blind
-trigger has fired on nothing but local noise, and it would have needed three
-times the amplitude to fire on that earthquake. The calibration is still at zero
-of eight, and that is correct rather than a bug: a confirmation is selected for
-being a large excursion near the noise, so its amplitude is biased upward by the
-selection itself, and fitting a magnitude law to such points would bake that bias
-in. Neither of those is a correlation failure — it is the threshold.
-
-*Replay figures measure the software, not the instrument.* In `--replay` the
-readings are synthesized from cataloged magnitude and distance through the
-pre-refit law above, so its amplitudes are 38× too large — kept deliberately,
-since corrected ones would sit under the trigger floor and the demo would show
-nothing — and the calibration then fits the inverse of that same law. It proves
-the pipeline is correct and stable; it is circular by construction and its
-amplitudes are not physical. The
-dashboard's RMSE is worse than that: an in-sample training residual computed
-with the *true* catalog distance, while live operation feeds it an *estimated*
-one. `python audit.py` replays the journal for genuine out-of-sample residuals:
-
-| Estimator | run A (11 pts) | run B (27 pts) |
-|---|---|---|
-| In-sample, true distance — *what the panel shows* | 0.20 Mw | 0.18 Mw |
-| Out-of-sample, true distance | 0.30 Mw | 0.21 Mw |
-| Out-of-sample, **estimated** distance — the operational path | 1.10 Mw | 0.26 Mw |
-
-Out-of-sample is consistently worse than the panel, which is the expected
-direction. But 1.10 against 0.26 for the same code is not a measurement: at ten
-points, prequential scoring is dominated by predictions made with a model that
-had barely learned anything. **The instability is the finding.** These numbers
-show the method, not an accuracy.
-
-**The detection threshold, measured.** There is no absolute g threshold in the
-firmware — only an STA/LTA ratio — so the floor is a property of the site, and
-had to be measured rather than looked up. Over 163 events the smallest peak
-acceleration that has ever triggered is **0.0034 g**, 0.0044 g in the quietest
-window. Through the refit law, that floor becomes a required magnitude, ±0.45
-(1σ); below M3 it is extrapolation:
-
-| | 10 km | 30 km | 50 km | 100 km | 160 km |
-|---|---|---|---|---|---|
-| Blind trigger needs | 3.1 | 3.9 | 4.3 | 4.9 | 5.3 |
-| Retrospective search needs | 2.1 | 2.9 | 3.3 | 3.9 | 4.3 |
-
-Crossed with the real catalog — 2,185 events of M ≥ 2 within 160 km over five
-years — and converting the 0.39 log10 scatter into a per-event probability, the
-blind trigger alone should see **2.0 to 9.8 genuine earthquakes a year** (the
-range is unknown site amplification, ×1 to ×4). That is a mean wait of 37 to 184
-days for **one** of the 8 points it needs, and a **6 to 28%** chance of a first
-one before 13 September. The station is not waiting for "an earthquake"; it is
-waiting for one of a handful of specific ones.
-
-**Which is why the trigger stopped being the only way in.** A blind detector has
-to be right about roughly 170,000 windows a day, and that is what forces its
-threshold so far above the noise — not the sensor. But the USGS publishes the
-origin time of every earthquake, so the station now also records a continuous
-envelope of the ground motion and goes back to look at the instant the waves must
-have arrived. A handful of windows per earthquake instead of 170,000 a day buys
-the same confidence much closer to the noise, and the test can average over the
-whole wavetrain instead of reacting inside half a second. Measured on this
-station's own noise: **a factor 7 to 8 in amplitude, one full magnitude unit** —
-five times what the seismic band-pass was worth, for no hardware and no money.
-
-| | earthquakes felt per year | mean wait | before 13 September |
-|---|---|---|---|
-| Blind trigger only | 2.0 – 9.8 | 37–184 days | 6–28% |
-| **Plus retrospective search** | **9.9 – 36.9** | **10–37 days** | **28–70%** |
-
-**Within a day of that going live, it found one: `ci41540608`, M3.2 near
-Ontario, California, 2 September 2026 at 12:37:12 UTC.** The recorded envelope
-stood 4.34 local dispersions above the noise of the preceding minutes, peak
-0.001095 g against a baseline of 0.0003816 g, in a 20 s window 24 s after the
-origin time. Three things are worth more than the result itself:
-
-- **The lag corroborates it independently.** 24 s after the origin is an
-  ordinary S-wave arrival, and the significance test never looks at the lag —
-  it only asks whether the envelope was elevated inside the physically allowed
-  window. So the timing is evidence the search did not manufacture.
-- **The blind trigger was three times short.** It needed about 0.0033 g and
-  0.0011 g arrived. This is not an event the previous code would also have
-  caught; it is what the second channel bought, measured on a real earthquake
-  rather than simulated.
-- **The site was at rest**, at the sensor's own electrical noise line, so
-  nobody was walking above the box. Had the same earthquake arrived during a
-  busy hour it would have been invisible — which is the caveat in the table
-  above, seen from the other side.
-
-Read as one point, not a rate. z = 4.34 against a threshold of 4.0 is a modest
-margin; the false-confirmation rate of 1 in 1,200 was computed against *pure
-sensor noise*, and this site produces its own impulses, so that figure is
-optimistic until it is recomputed on the recorded envelope; and the calibration
-counter did not move, on purpose.
-
-**And the two are not the same claim, so this repository never merges them.**
-A shake the station triggered on by itself is a detection. A shake found because
-the catalog said which second to examine is a *confirmation* — real evidence that
-the ground moved, but the station did not find it unaided. The journal tags every
-record, the dashboard and the public page show two categories, and the 0-of-8
-calibration count admits only the first kind. The distinction is what makes the
-approach defensible; erasing it would make the numbers a lie.
-
-Two limits travel with those figures. The retrospective threshold is only
-reachable when the site is at rest — measured, the envelope wanders by a factor
-4 during a busy hour and by 3% during a quiet one — and this site is at rest
-about half the time, which is what the table above assumes. And the search cannot
-reach back before it was installed: the station kept no continuous record until
-1 September, only the shakes that crossed the trigger, which are precisely the
-wrong ones.
-
-**A station that knows what it misses.** An empty detection list is an ambiguous
-result: it can mean a quiet catalog or a station that stopped working, and
-until now nothing here could tell those apart. The station now audits itself
-against the catalog. For every cataloged earthquake it computes what the refit
-law says should have arrived here — that is a *prediction* — and reads the noise
-it was actually sitting in at that instant out of its own continuous recording —
-that is a *measurement*, and it is what keeps the audit honest, because an
-earthquake that arrived while somebody walked past the sensor was not detectable
-and the tool has to say so instead of reporting a fault. Each event then lands in
-one of five categories, and only one of them is a problem: **out of reach**
-(normal, 99% of this catalog), **marginal**, **triggered**, **confirmed**, or
-**should have been seen and was not**. Over the 30 days to 2 September: **19
-cataloged events, 1 confirmed, and 0 in the last category** — so the silence is
-the catalog and not a fault. Those three counts are all the audit publishes;
-which events were within reach is an epicentral distance in disguise and stays
-on the station's own network. Method, validation against the published figures,
-and the privacy argument, in
-[`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
-
-Other limits, briefly: it **detects, it does not predict** — it says nothing
-about earthquakes that have not happened. Calibration belongs to one spot;
-move the box and it must reconverge. A single PGA is a noisy proxy for released
-energy, so ±0.3–0.5 magnitude is the realistic ceiling. It is a neighborhood
-strong-motion node, not a broadband observatory: no teleseisms. And the method
-needs a busy region with a promptly published catalog — southern California is
-close to the ideal case.
-
-## What three of these would add
-
-![One station measures a distance but no bearing, so it can only place the epicenter somewhere on a ring; three stations produce three rings that cross at a single point](docs/images/network.png)
-
-One station recovers a distance and no bearing. The firmware reduces every
-sample to the magnitude of the acceleration vector, which throws direction away,
-and the P wave — the only arrival whose polarization points back to the source —
-is far below the hundredths of a g it takes to trip this sensor. So the honest
-output of one station is a ring. Three rings cross in one place, the way GPS
-locates a receiver that no satellite knows the direction of.
-
-What would make such a network installable is not the price of the sensor, it is
-that nobody has to calibrate it: each node fits its own coefficients against the
-catalog and adapts to its own soil, building and mount. **This is an argument
-from geometry, not a demonstration.** There is one station; it has confirmed one
-earthquake and triggered on none, and nothing in that figure was measured or
-simulated.
-
-## Run it in two minutes
-
-No hardware needed. Replay mode pulls the genuine catalog for the last 24 hours
-and drives the full pipeline with it, on synthetic amplitudes that are not
-physical.
+## Run (no hardware)
 
 ```bash
 cd python
@@ -328,31 +206,20 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp config.example.yaml config.yaml
 
-python main.py --replay       # then open http://localhost:8000
+python main.py --replay       # http://localhost:8000
+python audit.py               # out-of-sample residuals
+python audit.py --include-synthetic
 ```
 
-Watch the panel: the amplitude model flips to *calibrated*, the distance model
-to *ready*, the noise filter starts telling earthquakes from trucks.
-
-![Calibration converging: the panel goes from learning 1/8 to calibrated while red device estimates fill the map](docs/video/calibration-timelapse.gif)
-
-Then grade it honestly, on the journal rather than on the panel:
+Other modes: `python main.py --mock`, `python pipeline.py --mock`,
+`python main.py` (sensor). On the board the repo is an App Lab App:
 
 ```bash
-python audit.py                      # out-of-sample residuals
-python audit.py --include-synthetic  # also score --replay events (circular)
+arduino-app-cli app start ~/ArduinoApps/sismo-la
+arduino-app-cli app logs  ~/ArduinoApps/sismo-la
 ```
 
-Other modes: `python main.py --mock` (synthetic shakes), `python pipeline.py
---mock` (headless), `python main.py` (real sensor). On the board it is one
-command, because the repository *is* an App Lab App:
-
-```bash
-arduino-app-cli app start ~/ArduinoApps/sismo-la    # builds, flashes, runs both
-arduino-app-cli app logs  ~/ArduinoApps/sismo-la    # both halves, interleaved
-```
-
-## Inside the node
+## Architecture
 
 ```
                      Arduino UNO Q
@@ -360,102 +227,72 @@ arduino-app-cli app logs  ~/ArduinoApps/sismo-la    # both halves, interleaved
  │   STM32U585 (MCU)         │   Dragonwing QRB2210 (MPU)     │
  │   Zephyr RTOS, real time  │   Debian Linux                 │
  ├───────────────────────────┼────────────────────────────────┤
- │ - reads the IMU at 100 Hz │ - WiFi + USGS FDSN feed        │
- │   (LSM6DSOX via Qwiic,    │   (context ≥ M0.5, calibration │
- │    bus Wire1)             │    matches ≥ M2, 160 km)       │
- │ - STA/LTA trigger         │ - temporal correlation         │
- │ - PGA, duration, dominant │ - calibration + distance model │
- │   frequency per event     │ - noise filter (online         │
- │ - one event ──────────────┼─►  logistic regression)        │
- │   over the Bridge         │ - Leaflet dashboard + publish  │
+ │ - IMU 100 Hz, LSM6DSOX    │ - WiFi + USGS FDSN             │
+ │   Qwiic on Wire1          │   (context ≥ M0.5, matches ≥   │
+ │ - STA/LTA 0.5 s / 10 s    │    M2, 160 km)                 │
+ │ - PGA, duration, f0       │ - correlation, models,         │
+ │ - event ──────────────────┼─►  envelope, retro, audit      │
+ │   over the Bridge         │ - dashboard + publish          │
  └───────────────────────────┴────────────────────────────────┘
                     USGS: https://earthquake.usgs.gov/fdsnws/event/1/
 ```
 
-The MCU runs STA/LTA, the trigger seismic networks have used for decades: a
-0.5 s average of signal energy against a 10 s average, with the long-term
-average frozen during an event so the earthquake cannot contaminate its own
-noise floor. Hardware: an UNO Q, a Modulino Movement on the Qwiic connector, and
-a 5 V / 3 A supply — no breadboard, no soldering. Mounting matters more than the
-sensor; see [`docs/hardware.md`](docs/hardware.md).
+Qwiic is **`Wire1`**. MCU `Serial` is D0/D1, not USB. Bridge requires matching
+`arduino-router` and bridge-library versions. Notes:
+[`docs/getting-started.md`](docs/getting-started.md),
+[`docs/hardware.md`](docs/hardware.md).
 
-UNO Q gotchas that cost us days, written up in
-[`docs/getting-started.md`](docs/getting-started.md): the Qwiic connector is on
-**`Wire1`**, the MCU's `Serial` goes to the D0/D1 pins rather than USB, and the
-MCU↔Linux Bridge needs the board's `arduino-router` and the bridge library to be
-version-matched.
+## Publish
 
-## Autonomous operation
+`python/main.py` writes a JSON snapshot (`publish:` in `config.yaml`).
+[`web-remote/`](web-remote/) renders it. Numbers:
+[`data.html`](web-remote/data.html). The snapshot has **no coordinates**.
+`publish.include_location: true` adds the station to the map.
 
-The station needs WiFi and USB-C power, nothing else. `python/main.py` pushes a
-JSON snapshot on a timer (`publish:` block in `config.yaml`: HTTP POST, file
-write, or any upload command), and [`web-remote/`](web-remote/) reads it — a
-map, and [`data.html`](web-remote/data.html) for the numbers behind it including
-every shake that was only a passing truck. Published at
-**<https://medialoco.github.io/sismo-la/>**: no backend, no build step, nothing
-to pay for.
+Journal and model state live on the host filesystem (`event_log.jsonl`), outside
+the container.
 
-**The published snapshot carries no coordinates.** The page outlines the
-catalogued events the station recognized and plots the magnitude it read against
-the magnitude USGS published; none of that needs to know where the box is. It
-also removed a dishonesty — the old red epicenter marker only landed somewhere
-because it borrowed the bearing from the event it was supposed to be estimating.
-Set `publish.include_location: true` to put the station back on the map.
-
-Nothing lives only in memory: every shake is appended to `event_log.jsonl` next
-to the three model state files, on the host filesystem rather than the
-container's, so the record survives restarts, reboots and reinstalls.
-
-## Repository layout
+## Layout
 
 ```
 sismo-la/
-├── app.yaml                   # App Lab manifest (name, ports, bricks)
-├── python/                    # runs on the Dragonwing MPU (Debian)
-│   ├── main.py                # entry point: loops + dashboard + publisher
-│   ├── pipeline.py            # detection/correlation helpers + headless CLI
-│   ├── usgs.py                # USGS FDSN client
-│   ├── calibration.py         # amplitude model + distance model (persisted)
-│   ├── classifier.py          # online quake-vs-noise logistic regression
-│   ├── envelope.py            # continuous envelope, one CSV per UTC day
-│   ├── retro.py               # search at the arrival time the catalog implies
-│   ├── expected.py            # what should have been felt, vs what was
-│   ├── audit.py               # out-of-sample scoring from the journal
+├── app.yaml                   # App Lab manifest
+├── python/                    # Dragonwing MPU (Debian)
+│   ├── main.py                # loops, dashboard, publisher
+│   ├── pipeline.py            # detection / correlation, headless CLI
+│   ├── usgs.py                # FDSN client
+│   ├── calibration.py         # amplitude + distance models
+│   ├── classifier.py          # online logistic regression
+│   ├── envelope.py            # continuous envelope, one CSV / UTC day
+│   ├── retro.py               # search at catalog arrival time
+│   ├── expected.py            # expected vs observed
+│   ├── audit.py               # out-of-sample journal score
 │   └── dashboard/index.html   # operator dashboard
-├── sketch/                    # runs on the STM32U585 MCU (Zephyr)
-├── deploy/                    # root-free autostart: watchdog sidecar
-├── docs/                      # architecture, calibration, hardware, story
-└── web-remote/                # published on GitHub Pages
+├── sketch/                    # STM32U585 (Zephyr)
+├── deploy/                    # watchdog sidecar
+├── docs/
+└── web-remote/                # GitHub Pages
 ```
 
-## Status
+## Checklist
 
-- [x] Node autonomous on real hardware: detect → correlate → learn → publish.
-- [x] Survives a power cut without a human (4 min 24 s to a serving dashboard).
-- [x] Detection threshold measured, and the expected detection rate with it.
-- [x] Attenuation law refitted on 12,324 real ShakeMap amplitudes.
-- [x] Continuous envelope recorded, and searched retrospectively at the arrival
-      time the catalog implies — a factor 7 to 8 in amplitude, kept strictly
-      apart from what the station triggers on by itself.
-- [x] **First real earthquake confirmed** (M3.2, 2 September). Found in the
-      stored envelope at the arrival instant the catalog implies — the station
-      noticed nothing at the time, and the blind trigger needed three times the
-      amplitude.
-- [ ] **First earthquake the station catches by itself — still none**, and the
-      amplitude calibration still 0 of 8, since confirmations may not feed it.
-      Everything else waits on this.
-- [x] Self-audit against the catalog: every cataloged event classified as out of
-      reach, marginal, seen, or **should have been seen and was not**. Currently
-      0 in the last category, so the silence is the catalog and not a fault.
-- [ ] Calibration curve from real recordings, with held-out residuals.
-- [ ] Contest video: replay mode plus a live tap.
+- [x] Autonomous node: detect → correlate → learn → publish.
+- [x] Power-cut recovery (4 min 24 s).
+- [x] Detection threshold and expected rates measured.
+- [x] Attenuation law refit on 12 324 ShakeMap PGA values.
+- [x] Continuous envelope + retrospective search (factor 7–8 in amplitude),
+      counted separately from detections.
+- [x] First confirmation (`ci41540608`, M3.2, 2 September 2026). Blind trigger
+      required ~3× the arrived amplitude.
+- [ ] First autonomous detection: none. Amplitude calibration 0 of 8.
+- [x] Catalog audit; 0 should-have-been-seen in the 30 days to 2 September.
+- [ ] Calibration curve from real recordings, held-out residuals.
+- [ ] Contest video: replay + live tap.
 
-Entry for the
-[Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab)
-contest — category **Best Social Impact**, submissions close
-**September 13, 2026**. Story in
+[Hackster contest](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
+**Best Social Impact**, submissions close **13 September 2026**. Write-up:
 [`docs/hackster-story.md`](docs/hackster-story.md).
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT — [`LICENSE`](LICENSE).
