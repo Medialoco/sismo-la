@@ -7,9 +7,9 @@
 name: sismo-la
 icon: 🌎
 description: >-
-  A seismograph that calibrates itself against the live USGS catalog: every
-  confirmed Los Angeles earthquake teaches the device its own site-specific
-  magnitude and distance model.
+  Neighborhood strong-motion node: MEMS readings matched to the live USGS
+  catalog to fit site-specific magnitude and distance models that then run
+  offline.
 
 # The dashboard served by python/main.py.
 ports:
