@@ -274,10 +274,14 @@
       <div id="nodes"></div>
       <div id="status">USGS catalogue only.</div>
 
-      <h2>Its reading vs the record</h2>
-      <svg id="chart" viewBox="0 0 216 215" role="img"
-           aria-label="Magnitude read by the device against magnitude published by the USGS"></svg>
-      <div id="chartnote">Each dot is what it read <b>before</b> being told the answer.</div>
+      <!-- Hidden until the trigger finds an earthquake on its own: an empty
+           grid says less than the counters above it. drawChart() reveals it. -->
+      <div id="scatter" hidden>
+        <h2>Its reading vs the record</h2>
+        <svg id="chart" viewBox="0 0 216 215" role="img"
+             aria-label="Magnitude read by the device against magnitude published by the USGS"></svg>
+        <div id="chartnote">Each dot is what it read <b>before</b> being told the answer.</div>
+      </div>
 
       <h2 id="shakes-title">Recent shakes</h2>
       <div id="list"><div class="empty">Nothing yet.</div></div>
@@ -457,6 +461,11 @@
     let lastMatched = [];
     function drawChart(pairs) {
       lastMatched = pairs;
+      // No autonomous detection yet means no axes either: the counters in the
+      // panel already publish that zero, and an empty grid only asks the reader
+      // to work out that it is empty. The first matched trigger brings it back.
+      document.getElementById('scatter').hidden = !pairs.length;
+      if (!pairs.length) return;
       const svg = document.getElementById('chart');
       const dev = css('--dev') || '#c62b39', muted = css('--muted') || '#888';
       const border = css('--border') || '#ddd';
@@ -467,8 +476,8 @@
       // Fit the axes to the data, but never below a 2-unit span: LA's small
       // quakes would otherwise crowd one corner of a mostly empty square.
       const vals = pairs.flatMap((p) => [p.usgs, p.dev]);
-      let lo = vals.length ? Math.min(...vals) - .3 : 1;
-      let hi = vals.length ? Math.max(...vals) + .3 : 4;
+      let lo = Math.min(...vals) - .3;
+      let hi = Math.max(...vals) + .3;
       if (hi - lo < 2) { const mid = (lo + hi) / 2; lo = mid - 1; hi = mid + 1; }
       lo = Math.floor(lo * 2) / 2; hi = Math.ceil(hi * 2) / 2;
       const x = (m) => L + (m - lo) / (hi - lo) * S;
@@ -502,10 +511,7 @@
                text-anchor="middle" transform="rotate(-90 7 ${T + S / 2})">DEVICE</text>` +
         pairs.map((p) =>
           `<circle cx="${x(p.usgs)}" cy="${y(p.dev)}" r="3.8" fill="${dev}"
-                   fill-opacity=".4" stroke="${dev}" stroke-width="1.3"/>`).join('') +
-        (pairs.length ? '' :
-          `<text x="${mid}" y="${T + S / 2}" fill="${muted}" font-size="10.5"
-                 text-anchor="middle">nothing triggered yet</text>`);
+                   fill-opacity=".4" stroke="${dev}" stroke-width="1.3"/>`).join('');
     }
 
     /* Only a station running the retrospective search publishes this key, so a

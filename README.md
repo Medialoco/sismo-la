@@ -23,6 +23,9 @@ Live page: <https://medialoco.github.io/sismo-la/> — **Station San Fernando**,
 city-scale pin. A second node is another row in `web-remote/stations.json`
 and another snapshot file.
 
+A technical report on the method and the measured results is being deposited on
+Zenodo on 12 September 2026; see [Publication](#publication) below.
+
 ![Station San Fernando: Arduino UNO Q and Modulino Movement](docs/images/station.png)
 
 *4 September 2026, somewhere in the San Fernando Valley. Arduino UNO Q and
@@ -49,6 +52,23 @@ synthetic and 38× too large. They test the code, not the sensor.*
 | **z** | How many local noise-dispersions the envelope sits above the minutes just before. z = 4.0 is the confirmation threshold. |
 | **Calibration** | Fitting `magnitude ≈ a·log10(PGA) + b·log10(distance) + c` on matched examples. Eight matches are required before the amplitude model is treated as usable. Coefficients belong to this installation. |
 | **Strong-motion** | Sensitive to nearby, felt-scale shaking. This node does not record distant (teleseismic) earthquakes. |
+
+### The one scale to keep in mind
+
+Everything below is in **mg**, a thousandth of *g*. Three measured numbers set
+the whole problem:
+
+| | amplitude | what it is |
+|---|---|---|
+| Sensor's own electrical noise | **0.36 mg** | the floor. Nothing quieter than this can ever be seen. |
+| Trigger threshold, site at rest | **3.08 mg** | 8.55 × the noise of that instant. |
+| One adult footstep on the floor | **4 – 11 mg** | fires the trigger easily. |
+| The M3.2 earthquake this station recorded | **1.1 mg** | never came close to firing it. |
+
+Read the last two lines together: **household noise beats the earthquake by
+roughly a factor of eight.** That single fact explains most of this repository —
+why the trigger has never once caught an earthquake, and why a second,
+catalog-guided channel was needed.
 
 ## Two channels that must stay separate
 
@@ -125,13 +145,57 @@ its own impulses, so that 1-in-1 200 is optimistic until it is recomputed on
 the recorded envelope. The z test does not look at lag: the 24 s delay is
 independent evidence.
 
+## Noise floor: the wall is the sensor
+
+**Why this matters:** the noise floor is the level the instrument shows when
+nothing is moving. Anything weaker is invisible, permanently. So before asking
+how to improve the station, you have to know *what* is setting that floor — the
+building, the street, the software, or the chip.
+
+On 1 September 2026 the at-rest noise was estimated in **two independent
+frequency bands over the same ten seconds**, and compared with the LSM6DSOX
+datasheet. Using the same ten seconds for both matters: neither figure then
+depends on comparing one night with another.
+
+| Band | Measured | Datasheet prediction | Gap |
+|---|---|---|---|
+| 0.7 – 12 Hz (the seismic band) | **0.00036 g** | 0.00040 g | 10% |
+| wideband | **0.00052 g** | 0.00050 g | 4% |
+
+So the floor is **not** the building, the street or the software: it is the
+**sensor's own electrical noise**. To within 4–10%, this station is as quiet as
+the chip allows.
+
+That closes a door. The noise is *white* — spread evenly across frequency — and
+it falls inside the seismic band, so the only bandwidth left to remove is
+bandwidth an earthquake needs. The band-pass already took the 1.43× that was
+available. **No filter goes lower.** A lower autonomous threshold needs a
+quieter chip, or several chips
+([`docs/sensor-upgrade.md`](docs/sensor-upgrade.md)).
+
 ## How large an earthquake it can catch
 
-The trigger floor is a property of the site (noise + coupling), measured on
-163 real triggers: the smallest PGA that ever fired is **0.0034 g** (0.0044 g
-in the quietest window). Passed through the ground-motion law below, that floor
-becomes a **required magnitude** at a given distance (±0.45 at 1σ). Below M3
-the numbers are extrapolations:
+STA/LTA is a *ratio*, so there is no fixed line in g. What is fixed is the
+ratio between the threshold and the noise the long average is tracking. Two
+measurements pin it down:
+
+- the smallest peak that ever fired this station is **0.0044 g** before the
+  band-pass, i.e. **0.00308 g (3.08 mg)** after it — the band-pass lowers the
+  floor by a measured 1.43×, and a ratio detector's floor follows;
+- the at-rest floor is **0.00036 g**, shown to be the sensor's own electrical
+  noise (see [Noise floor](#noise-floor-the-wall-is-the-sensor)).
+
+Their quotient is **8.55**, the only free parameter here:
+
+```
+trigger floor = 8.55 x (the envelope level measured at that instant)
+retro floor   = trigger floor / 7.4
+```
+
+That is predictive: given the noise at any second, you know what it would have
+taken to fire at that second. Passed through the ground-motion law below, the
+floor becomes a **required magnitude** at a given distance (±0.45 at 1σ). Below
+M3 the numbers are extrapolations:
 
 | Required magnitude | 10 km | 30 km | 50 km | 100 km | 160 km |
 |---|---|---|---|---|---|
@@ -239,7 +303,6 @@ almost no data. The table documents the scoring method.
 | USB-C supply, 5 V / 3 A | ~$15 | commodity, estimate |
 | **One node** | **$71–86** | ~$90 with tax and shipping |
 
-A $25 figure used earlier in this project was wrong: the UNO Q alone costs more.
 Raspberry Shake the same day: $294.99 board, $584.99 turnkey
 ([raspberryshake.org](https://raspberryshake.org/pricing)). Full list:
 [`docs/hardware.md`](docs/hardware.md).
@@ -347,12 +410,45 @@ sismo-la/
 - [ ] First autonomous detection: none. Amplitude calibration 0 of 8.
 - [x] Catalog audit; 0 should-have-been-seen in the 30 days to 2 September.
 - [ ] Calibration curve from real recordings, held-out residuals.
-- [ ] Contest video: replay + a live tap on the box.
+- [ ] Contest video: replay + a live tap on the box (around 8 September 2026).
+- [ ] Technical report deposited on Zenodo (12 September 2026).
 
 Entry in
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
 **Best Social Impact**, submissions close **13 September 2026**. Video storyboard:
 [`docs/hackster-story.md`](docs/hackster-story.md).
+
+## Publication
+
+A technical report describes the method and the measured results in full. It is
+written in French, with an English translation to follow, and is being deposited
+on **Zenodo on 12 September 2026**.
+
+> Prieur, B. (2026). *Un nœud sismique à 80 dollars peut-il être réfutable ?
+> Sensibilité mesurée, canal rétrospectif et audit permanent d'une station MEMS
+> à Los Angeles.* Zenodo. DOI to be assigned on deposit.
+>
+> ORCID: [0000-0003-0786-0049](https://orcid.org/0000-0003-0786-0049).
+
+The report is not a rewrite of this README. It asks a narrower question — whether
+a station at this price can publish, unattended, enough for a third party to
+establish that it was wrong — and answers it with five figures and the numbers
+behind them:
+
+| The report establishes | Where it appears here |
+|---|---|
+| Noise floor measured in two frequency bands, 4–10 % from the datasheet | [Noise floor](#noise-floor-the-wall-is-the-sensor) |
+| Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
+| Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
+| The 2 September confirmation, reproduced from raw envelope data | [Confirmation](#confirmation-ci41540608) |
+| Six-verdict audit against the catalog, 0 missed | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
+| Three claims in this documentation that the data corrected | — |
+
+Its figures and numeric checks come from a single script that **imports this
+repository's estimator** rather than reimplementing it, so the verification
+applies to the code the station actually runs. Inputs are the station's raw
+envelope, one full UTC day of envelope, a USGS catalog query and the public
+snapshot.
 
 ## License
 

@@ -25,6 +25,10 @@ Page publique : <https://medialoco.github.io/sismo-la/> — **Station San
 Fernando**, pin à l’échelle de la ville. Un deuxième nœud est une autre ligne
 dans `web-remote/stations.json` et un autre fichier snapshot.
 
+Un rapport technique sur la méthode et les résultats mesurés est déposé sur
+Zenodo le 12 septembre 2026 ; voir [Article scientifique](#article-scientifique)
+plus bas.
+
 ![Station San Fernando : Arduino UNO Q et Modulino Movement](docs/images/station.png)
 
 *4 septembre 2026, quelque part dans la San Fernando Valley. Arduino UNO Q et
@@ -249,8 +253,7 @@ notation.
 | Alimentation USB-C, 5 V / 3 A | ~15 $ | courant, estimation |
 | **Un nœud** | **71–86 $** | ~90 $ avec taxes et port |
 
-Un chiffre de 25 $ utilisé plus tôt dans ce projet était faux : l’UNO Q seul
-coûte plus. Raspberry Shake le même jour : 294,99 $ la carte, 584,99 $ clé en
+Raspberry Shake le même jour : 294,99 $ la carte, 584,99 $ clé en
 main ([raspberryshake.org](https://raspberryshake.org/pricing)). Liste :
 [`docs/hardware.md`](docs/hardware.md).
 
@@ -359,12 +362,46 @@ sismo-la/
 - [ ] Première détection autonome : aucune. Calibration d’amplitude 0 sur 8.
 - [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre.
 - [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
-- [ ] Vidéo du concours : replay + un tap en direct sur la boîte.
+- [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
+      8 septembre 2026).
+- [ ] Rapport technique déposé sur Zenodo (12 septembre 2026).
 
 Candidature
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
 **Best Social Impact**, clôture **13 septembre 2026**. Storyboard vidéo :
 [`docs/hackster-story.md`](docs/hackster-story.md).
+
+## Article scientifique
+
+Un rapport technique expose la méthode et les résultats mesurés en détail. Il est
+rédigé en français, une traduction anglaise suivra, et il est déposé sur
+**Zenodo le 12 septembre 2026**.
+
+> Prieur, B. (2026). *Un nœud sismique à 80 dollars peut-il être réfutable ?
+> Sensibilité mesurée, canal rétrospectif et audit permanent d'une station MEMS
+> à Los Angeles.* Zenodo. DOI attribué au dépôt.
+>
+> ORCID : [0000-0003-0786-0049](https://orcid.org/0000-0003-0786-0049).
+
+Ce rapport ne reprend pas ce README. Il pose une question plus étroite — une
+station à ce prix peut-elle publier, sans intervention, de quoi permettre à un
+tiers d'établir qu'elle s'est trompée ? — et y répond avec cinq figures et les
+chiffres qui les sous-tendent :
+
+- le plancher de bruit mesuré dans deux bandes de fréquence, à 4–10 % de la fiche
+  technique du capteur, ce qui établit que la limite est la puce elle-même ;
+- le seuil de déclenchement à 8,55 fois le bruit ambiant instantané, et les
+  magnitudes qui s'en déduisent par distance ;
+- le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
+- la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
+- l'audit contre le catalogue en six verdicts, avec zéro séisme manqué ;
+- trois affirmations de cette documentation que les données ont corrigées.
+
+Ses figures et ses vérifications numériques sont produites par un script unique
+qui **importe l'estimateur de ce dépôt** au lieu de le réimplémenter : la
+vérification porte donc sur le code que la station exécute réellement. Entrées :
+l'enveloppe brute de la station, une journée UTC complète d'enveloppe, une requête
+au catalogue de l'USGS et l'instantané public.
 
 ## Licence
 

@@ -319,9 +319,7 @@ just built.
 
 **Single-sensor bench version: $15-25 if a vice exists. Permanent two-sensor
 version: $27-37.** Only the Modulino price is sourced; everything else is a
-hardware-store estimate and is labelled as one — the same discipline that
-replaced this project's early "$25 node" with the sourced $71-86 in
-`docs/hardware.md`.
+hardware-store estimate. One node is **$71–86** in `docs/hardware.md`.
 
 ## 5. What this breaks, without minimising it
 

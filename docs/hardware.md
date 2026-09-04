@@ -32,10 +32,6 @@ board alone and **$584.99** turnkey
 ([raspberryshake.org/pricing](https://raspberryshake.org/pricing)), and a
 research-grade station is a five-figure item once sited and installed.
 
-> **There is no "$25 node".** Earlier drafts of this project quoted $25; the
-> figure was never substantiated and the UNO Q alone costs more than that. The
-> $11.80 sensor is the only part that price ever described.
-
 > **The power supply is not a detail.** Arduino's datasheet asks for 5 V at 3 A
 > (15 W) and warns that a weaker source browns out "during short activity peaks
 > such as wireless bursts"; below 4.5 V on VBUS the board resets. A 5 W or 10 W
