@@ -127,15 +127,17 @@ other than out of reach or out of coverage. The audit had given it a real
 chance on the retrospective channel and next to none on the blind trigger, and
 that is how it turned out.
 
-Three things about that table. It slides: it is a rolling window over a catalog
-that gains an event every day or two. It is the **remote** audit, which assumes
-the at-rest floor everywhere; once the tool runs on the station itself the noise
-column becomes measured for everything after the recording began, and an event
-that arrived during a busy hour can move from marginal to out of reach on that
-alone. And **it deliberately no longer prints the reach breakdown**, for the
-reason section 6 gives: the counts of "in reach" and "out of reach" narrow which
-events they were, and that is a distance band each. Earlier revisions of this
-file and of the README published that split; they should not have.
+That table is a dated write-up. The public page prints a different triple on a
+rolling 336 hours: *examined / recorded / missed*. Recorded is envelope
+coverage at that second, not a confirmation. The window is shorter, so
+*examined* follows the last two weeks of the catalog.
+
+The write-up above is a **remote** audit: it assumes the at-rest floor
+everywhere. On the station the noise column is measured after the recording
+began, and an event that arrived during a busy hour can move from marginal to
+out of reach on that alone. The reach breakdown is not published — section 6;
+"in reach" and "out of reach" are distance bands. Earlier revisions of this
+file and of the README printed that split.
 
 Over five years the same arithmetic says how the rate is made up, and the shape
 is what matters rather than the counts: a **fraction of a percent** of the

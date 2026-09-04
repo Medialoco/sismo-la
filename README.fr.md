@@ -185,11 +185,11 @@ bruit dans lequel elle était vraiment assise à cette seconde. Cinq classes :
 | Confirmé | enveloppe élevée à l’arrivée prédite |
 | Aurait dû être vu | à portée, site assez calme, rien dans l’enregistrement → une panne |
 
-30 jours au 2 septembre 2026 : **19 événements catalogués, 1 confirmé, 0
-aurait-dû-être-vu.** La page publique publie les mêmes trois comptes sur une
-fenêtre glissante de 336 heures (14 jours), plus courte, donc le premier
-chiffre bouge. La liste des événements à portée encoderait une distance et
-reste sur le réseau local. Méthode :
+**19 examinés, 1 confirmé, 0 aurait dû être vu** — 30 jours au 2 septembre
+2026. La page publique tient *examinés / enregistrés / manqués* sur les 336
+dernières heures. Enregistré veut dire que l’enveloppe existe à cette seconde,
+pas que l’événement est confirmé. Les événements à portée restent sur le
+réseau local. Méthode :
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ## Autres mesures
