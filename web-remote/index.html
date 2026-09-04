@@ -14,8 +14,8 @@
       - stations.json : public roster (city-scale pins + snapshot paths)
       - station.json  : published by this device     -> what it read
 
-    Street addresses are not published. Named pins live in stations.json.
-    The next node is another object there and another snapshot file.
+    Named pins live in stations.json. The next node is another object there
+    and another snapshot file.
     Catalog distances that would trilaterate a box stay off this page.
 
     Two channels, kept apart everywhere they appear: a solid red outline is a
@@ -216,6 +216,10 @@
     }
     .leaflet-popup-content-wrapper { border-radius: var(--r); box-shadow: 0 8px 24px -8px var(--shadow); }
     .leaflet-popup-content { margin: 10px 13px; font-size: 12.5px; line-height: 1.45; }
+    .leaflet-popup-content .node-photo {
+      display: block; width: 240px; height: auto; margin: 8px 0 4px;
+      border-radius: 3px;
+    }
     .leaflet-control-attribution { background: var(--glass) !important; color: var(--muted) !important;
                                    border-top-left-radius: var(--r-sm); padding: 0 6px; }
     .leaflet-control-attribution a { color: var(--muted) !important; }
@@ -293,7 +297,8 @@
     // Fallback if stations.json is missing. The live roster is that file.
     const FALLBACK = [
       { id: 'san-fernando', name: 'Station San Fernando',
-        lat: 34.28, lon: -118.44, snapshot: 'station.json' },
+        lat: 34.28, lon: -118.44, snapshot: 'station.json',
+        photo: 'station.png' },
     ];
     let STATIONS = FALLBACK.slice();
 
@@ -370,8 +375,12 @@
           keyboard: true,
           title: n.name,
         }).bindPopup(
-          `<b>${n.name}</b><br>Approximate public placement.<br>` +
-          `The street address is not published.`
+          `<b>${n.name}</b>` +
+          (n.photo
+            ? `<img class="node-photo" src="${n.photo}" alt="${n.name}" width="240" height="135">`
+            : '') +
+          `<div>Approximate public placement.</div>`,
+          { maxWidth: 268, minWidth: 240 }
         ).addTo(nodeLayer);
       });
       renderNodes(lastLoaded);
@@ -388,7 +397,7 @@
         return `<div class="node">${n.name}${extra}</div>`;
       }).join('') +
         `<span class="hint">City-scale pin` +
-        `${STATIONS.length > 1 ? 's' : ''}, not a street address.</span>`;
+        `${STATIONS.length > 1 ? 's' : ''}.</span>`;
     }
 
     const magColor = (m) =>

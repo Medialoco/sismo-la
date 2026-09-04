@@ -20,8 +20,8 @@ Question under test:
 > unattended, with no one calibrating it by hand?
 
 Live page: <https://medialoco.github.io/sismo-la/> — **Station San Fernando**,
-city-scale pin, street address not published. A second node is another row in
-`web-remote/stations.json` and another snapshot file.
+city-scale pin. A second node is another row in `web-remote/stations.json`
+and another snapshot file.
 
 ![Station San Fernando: Arduino UNO Q and Modulino Movement](docs/images/station.png)
 

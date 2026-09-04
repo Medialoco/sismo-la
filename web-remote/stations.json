@@ -6,7 +6,8 @@
       "name": "Station San Fernando",
       "lat": 34.28,
       "lon": -118.44,
-      "snapshot": "station.json"
+      "snapshot": "station.json",
+      "photo": "station.png"
     }
   ]
 }

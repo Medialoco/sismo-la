@@ -22,8 +22,8 @@ Question testée :
 > surveillance, sans que personne ne le calibre à la main ?
 
 Page publique : <https://medialoco.github.io/sismo-la/> — **Station San
-Fernando**, pin à l’échelle de la ville, pas d’adresse. Un deuxième nœud est
-une autre ligne dans `web-remote/stations.json` et un autre fichier snapshot.
+Fernando**, pin à l’échelle de la ville. Un deuxième nœud est une autre ligne
+dans `web-remote/stations.json` et un autre fichier snapshot.
 
 ![Station San Fernando : Arduino UNO Q et Modulino Movement](docs/images/station.png)
 
