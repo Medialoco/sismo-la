@@ -242,9 +242,14 @@ reads the noise it was actually sitting in at that second. Five classes:
 | Should have been seen | in reach, site quiet enough, nothing in the record → a fault |
 
 **19 examined, 1 confirmed, 0 should have been seen** — 30 days to 2 September
-2026. The live page reports *examined / recorded / missed* on the last 336
-hours. Recorded means the envelope exists at that second, not that the event
-was confirmed. Which events were in reach stays on the station LAN. Method:
+2026. The station keeps publishing the same three counts on the last 336 hours,
+in [`station.json`](https://medialoco.github.io/sismo-la/station.json) under
+`expected.summary`: *examined / recorded / missed*. Recorded means the envelope
+exists at that second, not that the event was confirmed — which is why the
+triplet is machine-readable rather than drawn on the page, where `7 · 2 · 0`
+reads like a score of 2 out of 7. The count that can accuse the station is the
+one on the page: a non-zero *missed* takes over the status badge. Which events
+were in reach stays on the station LAN. Method:
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ## Other measurements

@@ -190,10 +190,16 @@ bruit dans lequel elle était vraiment assise à cette seconde. Cinq classes :
 | Aurait dû être vu | à portée, site assez calme, rien dans l’enregistrement → une panne |
 
 **19 examinés, 1 confirmé, 0 aurait dû être vu** — 30 jours au 2 septembre
-2026. La page publique tient *examinés / enregistrés / manqués* sur les 336
-dernières heures. Enregistré veut dire que l’enveloppe existe à cette seconde,
-pas que l’événement est confirmé. Les événements à portée restent sur le
-réseau local. Méthode :
+2026. La station continue de publier les trois mêmes comptes sur les 336
+dernières heures, dans
+[`station.json`](https://medialoco.github.io/sismo-la/station.json) sous
+`expected.summary` : *examinés / enregistrés / manqués*. Enregistré veut dire que
+l’enveloppe existe à cette seconde, pas que l’événement est confirmé — d’où le
+choix de laisser le triplet lisible par un programme plutôt que de l’afficher sur
+la page, où « 7 · 2 · 0 » se lit comme une note de 2 sur 7. Le compte qui peut
+accuser la station est celui qui reste visible : un *manqué* non nul prend la
+place de l’indicateur d’état. Les événements à portée restent sur le réseau
+local. Méthode :
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ## Autres mesures

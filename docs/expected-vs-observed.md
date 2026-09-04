@@ -127,10 +127,18 @@ other than out of reach or out of coverage. The audit had given it a real
 chance on the retrospective channel and next to none on the blind trigger, and
 that is how it turned out.
 
-That table is a dated write-up. The public page prints a different triple on a
-rolling 336 hours: *examined / recorded / missed*. Recorded is envelope
-coverage at that second, not a confirmation. The window is shorter, so
-*examined* follows the last two weeks of the catalog.
+That table is a dated write-up. The public snapshot carries a different triple on
+a rolling 336 hours, under `expected.summary` in
+[`station.json`](https://medialoco.github.io/sismo-la/station.json): *examined /
+recorded / missed*. Recorded is envelope coverage at that second, not a
+confirmation. The window is shorter, so *examined* follows the last two weeks of
+the catalog.
+
+The public page does not draw those three numbers. Skimmed, `7 · 2 · 0` reads as
+a score of 2 out of 7, which inverts their meaning — the middle count says how
+many of the seven the station could check at all. The count that can accuse it is
+still on the page, and in the loudest place: a non-zero *missed* takes over the
+status badge, unless an outage, the worse fault, already holds it.
 
 The write-up above is a **remote** audit: it assumes the at-rest floor
 everywhere. On the station the noise column is measured after the recording
@@ -180,8 +188,9 @@ narrows down which ones they were, and that is a distance band each.
 - **On the local dashboard**, as one card. Counts, then a row for each `missed`
   and `marginal` event; the out-of-reach majority is counted and never listed,
   because listing it would bury the two verdicts that mean something.
-- **On the public page**, as one line of three integers, and a red badge if the
-  third is not zero.
+- **In the public snapshot**, as `expected.summary`, three integers refreshed
+  every 20 minutes. The page itself draws none of them, and shows a red badge
+  instead when the third is not zero.
 - **From a laptop**, `tools/expected-report.py`, in four modes:
 
 ```bash

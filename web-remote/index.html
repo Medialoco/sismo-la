@@ -107,14 +107,6 @@
     #status .cat .k { display: block; font-size: 10.5px; text-transform: uppercase;
                       letter-spacing: .08em; }
     #status .cat .v { color: var(--text); }
-    #status .cal { margin-top: 13px; }
-    /* Three integers, and they are the answer to the question a zero on the
-       lines above provokes: was there anything to feel? Counts only — a
-       per-event reach figure is an epicentral distance in disguise and stays
-       on the station's own network. */
-    #status .audit { margin-top: 6px; }
-    #status .audit b.miss { color: var(--dev); }
-
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -518,12 +510,10 @@
        snapshot without it shows the one channel it has. */
     const confirmedOf = (s) => (Array.isArray(s.confirmed) ? s.confirmed : null);
 
-    /* Zero on both channels above says nothing on its own: it can mean a quiet
-       catalogue or a station that stopped working. The station audits every
-       catalogued event against what it should have felt and publishes the three
-       counts — how many it examined, how many it had a recording for, and how
-       many were within reach and went unnoticed. The last is the only one that
-       can be wrong, and it is zero when the station is doing its job.
+    /* The station audits every catalogued event against what it should have
+       felt. The routine counts are no longer drawn (see fillPanel), but the one
+       that can accuse it still is: a `missed` above zero means an earthquake was
+       within reach and went unnoticed, and it takes over the badge below.
 
        Counts, never a list: a per-event detection probability is a monotone
        function of distance once the magnitude is known, so a dozen rows would
@@ -533,10 +523,13 @@
       return e && e.enabled && e.summary ? e.summary : null;
     };
 
+    /* The panel shows the two event counts and nothing else. The calibration
+       progress and the audit triplet read as a score out of a total on a page
+       skimmed in ten seconds, which is the opposite of what they mean; both stay
+       published, machine-readable and unabridged, under `calibration` and
+       `expected.summary` in station.json. */
     function fillPanel(s, pairs) {
-      const c = s.calibration || {};
       const known = confirmedOf(s);
-      const audit = auditOf(s);
       document.getElementById('status').innerHTML =
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b>` +
         `<div class="cat"><span class="k">Triggered &middot; autonomous</span>` +
@@ -544,16 +537,6 @@
         (known
           ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
             `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>`
-          : '') +
-        '<div class="cal">' +
-        (c.ready
-          ? `Calibrated &middot; <b>${c.n_points}</b> ${quakes(c.n_points)}`
-          : `Calibration <b>${c.n_points ?? 0}</b>/${c.min_points ?? '?'} earthquakes`) +
-        '</div>' +
-        (audit
-          ? `<div class="audit">Audited <b>${audit.n}</b> catalogued events` +
-            ` &middot; <b>${audit.covered}</b> recorded` +
-            ` &middot; <b class="${audit.missed ? 'miss' : ''}">${audit.missed}</b> missed</div>`
           : '');
     }
 
