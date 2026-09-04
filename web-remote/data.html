@@ -6,8 +6,9 @@
   <title>Sismo-LA — the numbers</title>
   <meta name="description" content="Every reading the Sismo-LA station published: the earthquakes it caught, everything else it felt, the ones found afterwards at a known time, and the CSV behind them." />
   <!--
-    The tables behind the map. Reads the same station.json as index.html, so
-    it needs no server of its own and stays correct when the device is offline.
+    The tables behind the map. Reads stations.json then that station's
+    snapshot, so it needs no server of its own. A second node is another
+    roster row and ?station=<id>.
 
     Three tables on purpose:
       - the calibration record, which accumulates and never expires;
@@ -65,6 +66,14 @@
                transition: color .12s, border-color .12s; }
     .iconbtn:hover { color: var(--text); border-color: var(--muted); }
 
+    #picker { display: none; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+    #picker.show { display: flex; }
+    #picker a {
+      color: var(--muted); font-size: 13px; text-decoration: none;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      padding: 3px 10px;
+    }
+    #picker a.on { color: var(--text); border-color: var(--muted); font-weight: 600; }
     main { max-width: 940px; margin: 0 auto; padding: 26px 16px 64px; }
     section + section { margin-top: 36px; }
     h2 { font-size: 15px; font-weight: 600; letter-spacing: -.005em; margin: 0; }
@@ -112,7 +121,7 @@
 
   <header>
     <span class="logo">Sismo-LA</span>
-    <span class="sub">Every reading the station published, and the CSV behind it.</span>
+    <span class="sub" id="sub">Every reading the station published, and the CSV behind it.</span>
     <span id="badge" class="badge"></span>
     <a href="index.html">&larr; map</a>
     <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
@@ -123,6 +132,7 @@
   </header>
 
   <main>
+    <nav id="picker" aria-label="Stations"></nav>
     <section>
       <div class="bar">
         <h2>Earthquakes it caught</h2>
@@ -189,7 +199,10 @@
   </main>
 
   <script>
-    const STATION_URL = 'station.json';
+    const ROSTER_URL = 'stations.json';
+    const FALLBACK = [
+      { id: 'san-fernando', name: 'Station San Fernando', snapshot: 'station.json' },
+    ];
 
     const root = document.documentElement;
     const saved = localStorage.getItem('sismo-theme');
@@ -363,9 +376,32 @@
     }
 
     (async () => {
-      let s = null;
+      let roster = FALLBACK;
       try {
-        const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        const r = await fetch(ROSTER_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        if (r.ok) {
+          const j = await r.json();
+          const list = j.stations || j;
+          if (Array.isArray(list) && list.length) roster = list;
+        }
+      } catch (e) { /* keep FALLBACK */ }
+
+      const want = new URLSearchParams(location.search).get('station');
+      const node = roster.find((n) => n.id === want) || roster[0];
+      const picker = document.getElementById('picker');
+      if (roster.length > 1) {
+        picker.className = 'show';
+        picker.innerHTML = roster.map((n) =>
+          `<a href="?station=${encodeURIComponent(n.id)}" class="${n.id === node.id ? 'on' : ''}">${n.name}</a>`
+        ).join('');
+      }
+      document.getElementById('sub').textContent =
+        `Every reading ${node.name} published, and the CSV behind it.`;
+
+      let s = null;
+      const url = node.snapshot || 'station.json';
+      try {
+        const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
         if (r.ok) s = await r.json();
       } catch (e) { /* handled below */ }
 

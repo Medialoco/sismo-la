@@ -11,13 +11,12 @@
     Served by GitHub Pages from web-remote/ in this repository.
 
       - USGS FDSN API : fetched live by the browser  -> what really happened
-      - station.json  : published by the device      -> what it read
+      - stations.json : public roster (city-scale pins + snapshot paths)
+      - station.json  : published by this device     -> what it read
 
-    The station's coordinates are deliberately NOT published, so nothing here
-    plots the device. A single station measures a magnitude and a distance,
-    never a direction; drawing it on a map meant borrowing the bearing from
-    the very event it was supposed to be estimating. The comparison below is
-    what the device actually produces.
+    Street addresses are not published. Named pins live in stations.json.
+    The next node is another object there and another snapshot file.
+    Catalog distances that would trilaterate a box stay off this page.
 
     Two channels, kept apart everywhere they appear: a solid red outline is a
     shake the station triggered on by itself and then matched, a dashed one is
@@ -90,6 +89,11 @@
 
     h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
          color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+    #nodes { font-size: 13px; color: var(--text); margin: 0 0 14px;
+             font-weight: 600; }
+    #nodes .node { margin: 0 0 4px; }
+    #nodes .hint { display: block; font-weight: 400; color: var(--muted);
+                   font-size: 11.5px; margin-top: 2px; }
     #status { font-size: 13px; color: var(--muted); margin-bottom: 22px;
               font-variant-numeric: tabular-nums; }
     #status b { color: var(--text); font-weight: 600; }
@@ -200,6 +204,8 @@
     .legend .sw.usgs { box-shadow: inset 0 0 0 1px rgba(0,0,0,.28); }
     .legend .sw.felt { border: 2px solid var(--dev); }
     .legend .sw.known { border: 2px dashed var(--dev); }
+    .legend .sw.node { border-radius: 2px; background: var(--ui-strong);
+                       box-shadow: inset 0 0 0 1px var(--ui-strong); }
     .legend .scale { display: flex; gap: 3px; align-items: center; color: var(--muted); }
     .legend .scale i { width: 15px; height: 9px; border-radius: 2px;
                        box-shadow: inset 0 0 0 1px rgba(0,0,0,.16); }
@@ -254,11 +260,14 @@
           <b>triggered</b> &middot; autonomous</div>
         <div class="line"><span class="sw known"></span>
           <b>confirmed</b> &middot; known time</div>
+        <div class="line"><span class="sw node"></span>
+          <b>station</b> &middot; approximate</div>
       </div>
     </div>
 
     <aside id="panel">
-      <h2>Station</h2>
+      <h2>Stations</h2>
+      <div id="nodes"></div>
       <div id="status">USGS catalogue only.</div>
 
       <h2>Its reading vs the record</h2>
@@ -275,13 +284,18 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
-    const STATION_URL = 'station.json';
+    const ROSTER_URL = 'stations.json';
     const LISTED = 6;
     const WINDOW_DAYS = 7;      // rolling; the station publishes its own value
     const USGS_LIMIT = 250;     // a week of LA micro-quakes is a few hundred
-    // Coarse Los Angeles view. Fixed on purpose: the station does not publish
-    // where it is, so nothing here is centred on the device.
+    // Catalog query: basin centre, not a street. Independent of the pins.
     const LA = { lat: 34.0522, lon: -118.2437, radius_km: 160 };
+    // Fallback if stations.json is missing. The live roster is that file.
+    const FALLBACK = [
+      { id: 'san-fernando', name: 'Station San Fernando',
+        lat: 34.28, lon: -118.44, snapshot: 'station.json' },
+    ];
+    let STATIONS = FALLBACK.slice();
 
     const since = (days) => new Date(Date.now() - days * 864e5).toISOString();
 
@@ -300,12 +314,13 @@
       root.setAttribute('data-theme', next);
       localStorage.setItem('sismo-theme', next);
       basemap();
+      drawStations();
       drawChart(lastMatched);
     };
 
     /* map */
     const MIN_ZOOM = 8;
-    const map = L.map('map').setView([LA.lat, LA.lon], MIN_ZOOM);
+    const map = L.map('map').setView([STATIONS[0].lat, STATIONS[0].lon], MIN_ZOOM);
     map.attributionControl.setPrefix(false);
 
     // Labels above the basemap but below the data, so no place name hides a circle.
@@ -337,6 +352,44 @@
     basemap();
 
     const usgsLayer = L.layerGroup().addTo(map);
+    const nodeLayer = L.layerGroup().addTo(map);
+    let lastLoaded = null;
+
+    function drawStations() {
+      nodeLayer.clearLayers();
+      const ink = css('--ui-strong') || '#1c1a16';
+      const card = css('--card') || '#fff';
+      STATIONS.forEach((n) => {
+        L.marker([n.lat, n.lon], {
+          icon: L.divIcon({
+            className: '',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6],
+            html: `<div style="width:12px;height:12px;background:${ink};border:2px solid ${card};box-shadow:0 0 0 1px ${ink}"></div>`,
+          }),
+          keyboard: true,
+          title: n.name,
+        }).bindPopup(
+          `<b>${n.name}</b><br>Approximate public placement.<br>` +
+          `The street address is not published.`
+        ).addTo(nodeLayer);
+      });
+      renderNodes(lastLoaded);
+    }
+
+    function renderNodes(loaded) {
+      const box = document.getElementById('nodes');
+      box.innerHTML = STATIONS.map((n) => {
+        const s = loaded && loaded[n.id];
+        const extra = s && s.updated
+          ? `<span class="hint">${day(s.updated)} ${clock(s.updated)}</span>`
+          : (STATIONS.length > 1
+            ? `<span class="hint">no snapshot yet</span>` : '');
+        return `<div class="node">${n.name}${extra}</div>`;
+      }).join('') +
+        `<span class="hint">City-scale pin` +
+        `${STATIONS.length > 1 ? 's' : ''}, not a street address.</span>`;
+    }
 
     const magColor = (m) =>
       m >= 5 ? '#cc4c02' : m >= 4 ? '#fe9929' : m >= 3 ? '#fec44f' : m >= 2 ? '#fee391' : '#fff7bc';
@@ -352,12 +405,12 @@
       catch (e) { return ''; }
     };
     const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+    drawStations();
 
     const mg = (v) => (typeof v === 'number' ? (v * 1000).toFixed(2) : '—');
     const quakes = (n) => `earthquake${n === 1 ? '' : 's'}`;
 
-    /* The device has no map presence of its own. Where it recognised an event,
-       that event is outlined and carries what the device read.
+    /* Stations are the STATIONS pins. A recognised earthquake is outlined.
 
        Two outlines, because there are two ways it got there. A solid ring is a
        shake the station triggered on by itself and then matched. A dashed ring
@@ -518,7 +571,8 @@
         el.className = 'det' + (d.usgs != null ? ' quake' : '');
         // Every row in this list is a shake, so no row needs to say so.
         el.innerHTML =
-          `<div class="top"><span class="who">${d.usgs != null ? 'Earthquake' : 'Not in the catalogue'}</span>` +
+          `<div class="top"><span class="who">${d.usgs != null ? 'Earthquake' : 'Not in the catalogue'}` +
+          `${STATIONS.length > 1 && d.station_name ? ` · ${d.station_name}` : ''}</span>` +
           `<span class="when">${day(d.t)} ${clock(d.t)}</span></div>` +
           (d.dev != null
             ? `<div class="vals"><span class="dev">~M${d.dev}</span> at ~${d.dev_km} km</div>` : '') +
@@ -592,56 +646,110 @@
         const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
         const pts = drawUSGS((await r.json()).features || [], felt, known);
         if (!fitted && pts.length) {
-          map.fitBounds(L.latLngBounds(pts.concat([[LA.lat, LA.lon]])), {
+          const pins = STATIONS.map((n) => [n.lat, n.lon]);
+          map.fitBounds(L.latLngBounds(pts.concat(pins)), {
             padding: [24, 24],
           });
           // A couple of distant events would otherwise pull the view out to
-          // half of California, burying the basin the station actually sits in.
-          if (map.getZoom() < MIN_ZOOM) map.setView([LA.lat, LA.lon], MIN_ZOOM);
+          // half of California, burying the basin the stations sit in.
+          if (map.getZoom() < MIN_ZOOM) {
+            map.setView([STATIONS[0].lat, STATIONS[0].lon], MIN_ZOOM);
+          }
           fitted = true;
         }
       } catch (e) { /* keep what is already drawn */ }
     }
 
+    const tag = (rows, n) => (rows || []).map((r) => Object.assign({}, r, {
+      station: n.id, station_name: n.name,
+    }));
+    const byTime = (rows) => rows.slice().sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+
+    async function loadRoster() {
+      try {
+        const r = await fetch(ROSTER_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) return;
+        const j = await r.json();
+        const list = j.stations || j;
+        if (Array.isArray(list) && list.length) STATIONS = list;
+      } catch (e) { /* keep FALLBACK */ }
+      drawStations();
+    }
+
     async function loadStation() {
       const b = document.getElementById('badge');
-      try {
-        const r = await fetch(STATION_URL + '?t=' + Date.now(), { cache: 'no-store' });
-        if (!r.ok) throw 0;
-        snap = await r.json();
-        radius = (snap.config || {}).radius_km || radius;
+      const loaded = {};
+      await Promise.all(STATIONS.map(async (n) => {
+        const url = n.snapshot || (n.id === FALLBACK[0].id ? 'station.json' : '');
+        if (!url) return;
+        try {
+          const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+          if (r.ok) loaded[n.id] = await r.json();
+        } catch (e) { /* a second file is allowed to be missing */ }
+      }));
+      lastLoaded = loaded;
+      renderNodes(loaded);
 
-        // Never offer a window wider than what the station actually published,
-        // or the map would show a month of catalogue against a week of device.
-        const max = Math.max(1, Math.round(windowOf(snap)));
-        slider.max = max;
-        if (days > max) days = max;
-        slider.value = days;
-
-        // The scatter is not windowed: it is every earthquake the station
-        // triggered on and matched, ever. Retrospective confirmations are not
-        // in it and must not be -- the device never put a magnitude on those.
-        const pairs = (snap.history || []).map((h) => ({ usgs: h.usgs, dev: h.dev }));
-        fillPanel(snap, pairs);
-        drawChart(pairs);
-        const known = confirmedOf(snap);
-        const audit = auditOf(snap);
-        // Red means one of two things on this page: an event the station
-        // recognised, or a station not doing its job. An earthquake within
-        // reach that went unnoticed is the second, so it takes the same filled
-        // badge as an outage — behind an outage, which is the worse fault.
-        const bad = staleness(snap)
-          || (audit && audit.missed ? `${audit.missed} missed` : '');
-        b.innerHTML = bad || (known
-          ? `${pairs.length} triggered &middot; ${known.length} confirmed`
-          : (pairs.length ? `${pairs.length} earthquakes caught` : 'device reporting'));
-        b.className = bad ? 'badge bad' : 'badge on';
-      } catch (e) {
+      const order = STATIONS.map((n) => n.id).filter((id) => loaded[id]);
+      const primary = order[0] ? loaded[order[0]] : null;
+      if (!primary) {
         snap = null;
         drawChart([]);
         b.textContent = 'no device data';
         b.className = 'badge';
+        applyWindow();
+        return;
       }
+
+      const recent = byTime(order.flatMap((id) => {
+        const n = STATIONS.find((s) => s.id === id);
+        return tag(shakes(loaded[id]), n);
+      }));
+      const confirmed = byTime(order.flatMap((id) => {
+        const n = STATIONS.find((s) => s.id === id);
+        return tag(confirmedOf(loaded[id]) || [], n);
+      }));
+      const history = order.flatMap((id) => {
+        const n = STATIONS.find((s) => s.id === id);
+        return tag(loaded[id].history || [], n);
+      });
+
+      snap = Object.assign({}, primary, {
+        recent,
+        confirmed: order.some((id) => confirmedOf(loaded[id]))
+          ? confirmed : primary.confirmed,
+        history,
+        updated: order.map((id) => loaded[id].updated).filter(Boolean).sort().slice(-1)[0]
+          || primary.updated,
+      });
+      radius = (primary.config || {}).radius_km || radius;
+
+      // Never offer a window wider than what the stations actually published,
+      // or the map would show a month of catalogue against a week of device.
+      const max = Math.max(1, ...order.map((id) => Math.round(windowOf(loaded[id]))));
+      slider.max = max;
+      if (days > max) days = max;
+      slider.value = days;
+
+      // The scatter is not windowed: it is every earthquake a station
+      // triggered on and matched, ever. Retrospective confirmations are not
+      // in it and must not be -- the device never put a magnitude on those.
+      const pairs = history.map((h) => ({ usgs: h.usgs, dev: h.dev }));
+      fillPanel(snap, pairs);
+      drawChart(pairs);
+      const known = confirmedOf(snap);
+      const audit = auditOf(primary);
+      // Red means one of two things on this page: an event the station
+      // recognised, or a station not doing its job. An earthquake within
+      // reach that went unnoticed is the second, so it takes the same filled
+      // badge as an outage — behind an outage, which is the worse fault.
+      const ages = order.map((id) => staleness(loaded[id])).filter(Boolean);
+      const bad = ages[0]
+        || (audit && audit.missed ? `${audit.missed} missed` : '');
+      b.innerHTML = bad || (known
+        ? `${pairs.length} triggered &middot; ${known.length} confirmed`
+        : (pairs.length ? `${pairs.length} earthquakes caught` : 'device reporting'));
+      b.className = bad ? 'badge bad' : 'badge on';
       applyWindow();
     }
 
@@ -658,7 +766,7 @@
     slider.value = days;
     label();
     drawChart([]);
-    (async () => { await loadStation(); await loadUSGS(); })();
+    (async () => { await loadRoster(); await loadStation(); await loadUSGS(); })();
     setInterval(async () => { await loadStation(); await loadUSGS(); }, 60000);
   </script>
 </body>

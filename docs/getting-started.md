@@ -16,8 +16,8 @@ python pipeline.py --mock          # headless variant
 ### Web dashboard (device vs USGS map)
 A Leaflet dashboard overlays the USGS catalog (circles at epicenters, colored by
 magnitude) with the device’s estimates in red. Matched detections get a solid
-red outline; confirmations a dashed one. The public page does not plot the
-station’s coordinates.
+red outline; confirmations a dashed one. The public page plots a city-scale
+pin from `web-remote/stations.json`, not the box.
 
 ```bash
 cd python

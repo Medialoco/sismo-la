@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Publish the station snapshot into this repository, so GitHub Pages serves it.
 
-The public page reads ``station.json`` from beside itself. When the page is
-hosted on Pages, "beside itself" means a file committed to ``web-remote/`` --
-so publishing a snapshot means writing a commit.
+The public page reads ``stations.json`` (the roster) and each node's
+snapshot beside itself. This station writes ``web-remote/station.json``.
+A second board sets ``SISMO_GITHUB_PATH`` to another file in ``web-remote/``
+and gets its own row in the roster. Two boards must not share a path.
+
+When the page is hosted on Pages, "beside itself" means a file committed to
+``web-remote/`` -- so publishing a snapshot means writing a commit.
 
 This uses the contents API rather than a git clone: the board needs no working
 copy, no ssh key and no git identity, only a token. Give it a *fine-grained*

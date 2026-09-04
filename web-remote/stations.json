@@ -1,0 +1,12 @@
+{
+  "note": "Public roster. City-scale pins, not street addresses. The next node is another object (id, name, lat, lon, snapshot). Two boards must not share a snapshot path.",
+  "stations": [
+    {
+      "id": "san-fernando",
+      "name": "Station San Fernando",
+      "lat": 34.28,
+      "lon": -118.44,
+      "snapshot": "station.json"
+    }
+  ]
+}

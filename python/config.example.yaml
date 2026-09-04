@@ -112,11 +112,11 @@ publish:
   # a heartbeat every 4 h so the public page can tell quiet from dead.
   interval_s: 1200
   # The station's coordinates stay out of what is published. The public page
-  # shows the catalog and, on the events the device matched, the magnitude and
-  # distance it read — none of which needs to know where the box sits. Set this
-  # to true only if you actually want the address on a public map. Note that
-  # the published distances to several known epicenters still trilaterate the
-  # station roughly, so this hides an address, it does not anonymize.
+  # draws named city-scale pins from web-remote/stations.json (San Fernando
+  # first). A second board is another row there and a different
+  # SISMO_GITHUB_PATH — two boards must not share station.json. Set this true
+  # only for the real address. Published distances to several epicenters still
+  # trilaterate a box roughly.
   include_location: false
   # How far back the published list of shakes reaches. The page carries a
   # slider that narrows it, so this is the widest view a visitor can ask for,
