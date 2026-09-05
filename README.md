@@ -31,12 +31,15 @@ Zenodo on 12 September 2026; see [Publication](#publication) below.
 *4 September 2026, somewhere in the San Fernando Valley. Arduino UNO Q and
 Modulino Movement, USB-C power.*
 
-![Operator dashboard: USGS circles and device estimates](docs/images/dashboard-replay.png)
+![Operator dashboard: USGS circles, the three models, and the audit](docs/images/dashboard-live.png)
 
-*Operator dashboard. Colored circles are USGS events; red marks are the
-device’s own estimates; the three models sit on the right. This screenshot is
-`--replay` (see [Replay](#replay-a-software-test)): the amplitudes are
-synthetic and 38× too large. They test the code, not the sensor.*
+*Operator dashboard, live, 4 September 2026. Circles are USGS events; the three
+models sit on the right and all three read **learning**: 0 of 8 calibration
+points, 0 distance points, 0 quakes against 4027 noises. The audit below them is
+this station's own: 6 cataloged events in 336 hours, 2 with a recording at the
+arrival instant, 0 within reach and unseen. The pin is the downtown-LA
+placeholder, not the site — this dashboard is LAN-only precisely because it
+otherwise shows the real position.*
 
 ## Terms used below
 

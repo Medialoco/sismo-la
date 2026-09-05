@@ -34,13 +34,16 @@ plus bas.
 *4 septembre 2026, quelque part dans la San Fernando Valley. Arduino UNO Q et
 Modulino Movement, alimentation USB-C.*
 
-![Tableau de bord opérateur : cercles USGS et estimations de l’appareil](docs/images/dashboard-replay.png)
+![Tableau de bord opérateur : cercles USGS, les trois modèles et l’audit](docs/images/dashboard-live.png)
 
-*Tableau de bord opérateur. Les cercles colorés sont les événements USGS ; le
-rouge, les estimations de l’appareil ; les trois modèles à droite. Cette
-capture est en `--replay` (voir [Replay](#replay-un-test-du-logiciel)) :
-amplitudes synthétiques, 38× trop grandes. Elles testent le code, pas le
-capteur.*
+*Tableau de bord opérateur, en direct, 4 septembre 2026. Les cercles sont les
+événements USGS ; les trois modèles, à droite, affichent tous **learning** : 0
+point de calibration sur 8, 0 point de distance, 0 séisme contre 4027 bruits.
+L’audit en dessous est celui de la station : 6 événements catalogués en 336
+heures, 2 avec un enregistrement à l’instant d’arrivée, 0 à portée et non vu. Le
+repère est le placeholder du centre de Los Angeles, pas le site — ce tableau de
+bord reste sur le réseau local justement parce qu’il montre sinon la position
+réelle.*
 
 ## Vocabulaire
 

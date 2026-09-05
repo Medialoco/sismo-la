@@ -18,7 +18,7 @@ Existing assets that drop in without a reshoot:
 | `docs/images/public-map-confirmed.png` | 5 |
 | `docs/images/public-data-confirmed.png` | 5 |
 | `docs/video/calibration-timelapse.mp4` | 6 |
-| `docs/images/dashboard-replay.png` | 6 hold |
+| `docs/images/dashboard-live.png` | 6 hold |
 | `docs/images/network.png` | 8 |
 
 `docs/video/narration.srt` follows the **Say** lines below. Nudge timings
