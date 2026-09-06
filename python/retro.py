@@ -291,6 +291,44 @@ class RetroLog:
         self.findings[event_id] = finding
         return bool(finding["confirmed"] and not was)
 
+    def stale_ids(self, seen: set[str], max_age_h: float,
+                  recheck_after_s: float = 3600.0) -> list[str]:
+        """Findings worth re-reading from the catalog, oldest check first.
+
+        A finding inside the scan lookback is in ``seen`` and needs nothing: the
+        pass just re-scanned it. Beyond the lookback it is frozen, and the USGS
+        goes on revising for days — so the entries between the lookback and the
+        envelope retention are re-read one by one, throttled, because each costs
+        its own request.
+
+        Past ``max_age_h`` the envelope is gone, so a re-scan could not produce a
+        finding anyway and the stored one is left as the last word.
+        """
+        now = datetime.now(timezone.utc)
+        out: list[tuple[str, str]] = []
+        for event_id, f in self.findings.items():
+            if event_id in seen or not event_id:
+                continue
+            origin, checked = f.get("origin_time"), f.get("scanned")
+            if not origin:
+                continue
+            try:
+                age_h = (now - datetime.fromisoformat(origin)).total_seconds() / 3600.0
+            except ValueError:
+                continue
+            if age_h > max_age_h:
+                continue
+            if checked:
+                try:
+                    since = (now - datetime.fromisoformat(checked)).total_seconds()
+                    if since < recheck_after_s:
+                        continue
+                except ValueError:
+                    pass
+            out.append((checked or "", event_id))
+        out.sort()
+        return [event_id for _, event_id in out]
+
     def confirmed(self) -> list[dict]:
         out = [f for f in self.findings.values() if f.get("confirmed")]
         out.sort(key=lambda f: f.get("origin_time") or "")

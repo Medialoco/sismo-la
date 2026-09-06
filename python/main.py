@@ -573,6 +573,9 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
     audit_h = float(rcfg.get("audit_hours",
                              24 * (cfg.get("envelope") or {})
                              .get("retention_days", 14)))
+    # How far back a finding can still be re-read from the catalog: exactly as
+    # far as the envelope it would be re-scanned against still exists.
+    envelope_h = 24 * float((cfg.get("envelope") or {}).get("retention_days", 14))
     print(f"[retro] search on: every {interval:.0f}s over the last "
           f"{lookback_h:.0f}h, z_min={z_min}, "
           f"{'FEEDS' if feed else 'does not feed'} the calibration", flush=True)
@@ -600,10 +603,47 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
                           f"{finding['peak_g']*1000:.2f} mg peak vs "
                           f"{finding['baseline_g']*1000:.3f} mg baseline "
                           f"- NOT an autonomous detection", flush=True)
+            # Events the lookback no longer reaches, but whose envelope is still
+            # on disk. The catalog keeps revising them: ci41540608 was reviewed
+            # from M3.36 to M3.20 at 78.5 h, i.e. 6.5 h after it left the 72 h
+            # window, and the station published the provisional magnitude for
+            # four days. Re-scanning rather than patching the number means the
+            # plausibility veto is re-applied to the revised magnitude too, so a
+            # confirmation cannot survive a revision that would have refused it.
+            # Its own try: this is housekeeping on events already decided, so a
+            # single failed request must not cost the pass its save() or the
+            # audit below. The scan that can still recover an earthquake ran
+            # above and is what matters.
+            seen = {q.event_id for q in quakes}
+            refreshed = 0
+            try:
+                for event_id in retro_log.stale_ids(seen, max_age_h=envelope_h):
+                    quake = usgs.fetch_by_id(event_id, st["lat"], st["lon"])
+                    if quake is None:     # withdrawn from the catalog
+                        continue
+                    finding = retro.scan_quake(store, quake, z_min=z_min)
+                    if finding is None:
+                        continue
+                    before = retro_log.findings.get(quake.event_id, {})
+                    if retro_log.record(finding):
+                        journal.append_retro(finding)
+                    refreshed += 1
+                    if before.get("magnitude") != finding["magnitude"]:
+                        print(f"[retro] {quake.event_id} magnitude revised "
+                              f"M{before.get('magnitude')} -> M{finding['magnitude']}"
+                              f" (now "
+                              f"{'confirmed' if finding['confirmed'] else 'not confirmed'})",
+                              flush=True)
+            except Exception as e:
+                print(f"[retro] catalog re-read failed: {e}", flush=True)
+
             retro_log.save()
             state.note_retro_scan(scanned)
             print(f"[retro] scanned {scanned} of {len(quakes)} cataloged events "
-                  f"against the envelope; {retro_log.status()}", flush=True)
+                  f"against the envelope"
+                  + (f", re-read {refreshed} older one(s) from the catalog"
+                     if refreshed else "")
+                  + f"; {retro_log.status()}", flush=True)
 
             # Same envelope, same journal, same pass: what each cataloged event
             # should have delivered here, against what was recorded. It rides
@@ -854,10 +894,19 @@ def refresh_confirmed_magnitudes(snapshot: dict) -> dict:
     reference a *device* estimate was scored against, so moving it under a
     stored residual would falsify the residual. A confirmation carries no device
     estimate at all, which is exactly why its reference is free to be updated.
+
+    The recent-catalog list only reaches back as far as the map's own window, so
+    on its own it stops reconciling the moment an event scrolls out of it: that
+    is how M3.4 came back four days after the catalog had settled on M3.2. The
+    live findings are consulted as well for that reason, since they are re-read
+    from the catalog for as long as the envelope behind them exists.
     """
     current = {q.get("event_id"): q.get("magnitude")
                for q in snapshot.get("quakes", [])
                if q.get("event_id")}
+    for f in ((snapshot.get("retro") or {}).get("confirmed") or []):
+        if f.get("event_id") and isinstance(f.get("magnitude"), (int, float)):
+            current[f["event_id"]] = f["magnitude"]
     if not current:
         return snapshot
     out = dict(snapshot)

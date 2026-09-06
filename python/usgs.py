@@ -35,6 +35,50 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
+def _quake_from_feature(feat: dict, station_lat: float,
+                        station_lon: float) -> "Quake | None":
+    props = feat.get("properties", {})
+    coords = (feat.get("geometry", {}) or {}).get("coordinates", [None, None, None])
+    lon, lat, depth = coords[0], coords[1], coords[2]
+    if lat is None or lon is None or props.get("mag") is None:
+        return None
+    return Quake(
+        event_id=feat.get("id", ""),
+        time=datetime.fromtimestamp(props["time"] / 1000.0, tz=timezone.utc),
+        magnitude=float(props["mag"]),
+        place=props.get("place", ""),
+        lat=float(lat),
+        lon=float(lon),
+        depth_km=float(depth) if depth is not None else 0.0,
+        distance_km=_haversine_km(station_lat, station_lon, lat, lon),
+    )
+
+
+def fetch_by_id(
+    event_id: str,
+    station_lat: float,
+    station_lon: float,
+    timeout: float = 15.0,
+) -> "Quake | None":
+    """Return one event by its catalog id, or None if the catalog dropped it.
+
+    Needed because the USGS keeps revising an event after it has scrolled out of
+    any recent-events window: ``ci41540608`` was reviewed from M3.36 down to
+    M3.20 a full 78.5 h after its origin time, and the station kept publishing
+    the provisional figure because its re-scan only reaches back 72 h. An event
+    can also be withdrawn outright, hence the None.
+    """
+    if not event_id:
+        return None
+    resp = requests.get(USGS_ENDPOINT,
+                        params={"format": "geojson", "eventid": event_id},
+                        timeout=timeout)
+    if resp.status_code == 404:       # withdrawn, or never existed
+        return None
+    resp.raise_for_status()
+    return _quake_from_feature(resp.json(), station_lat, station_lon)
+
+
 def fetch_recent(
     station_lat: float,
     station_lon: float,
@@ -60,23 +104,7 @@ def fetch_recent(
 
     quakes: list[Quake] = []
     for feat in data.get("features", []):
-        props = feat.get("properties", {})
-        geom = feat.get("geometry", {})
-        coords = geom.get("coordinates", [None, None, None])
-        lon, lat, depth = coords[0], coords[1], coords[2]
-        if lat is None or lon is None or props.get("mag") is None:
-            continue
-        t = datetime.fromtimestamp(props["time"] / 1000.0, tz=timezone.utc)
-        quakes.append(
-            Quake(
-                event_id=feat.get("id", ""),
-                time=t,
-                magnitude=float(props["mag"]),
-                place=props.get("place", ""),
-                lat=float(lat),
-                lon=float(lon),
-                depth_km=float(depth) if depth is not None else 0.0,
-                distance_km=_haversine_km(station_lat, station_lon, lat, lon),
-            )
-        )
+        quake = _quake_from_feature(feat, station_lat, station_lon)
+        if quake is not None:
+            quakes.append(quake)
     return quakes

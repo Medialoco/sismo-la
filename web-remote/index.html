@@ -113,16 +113,7 @@
     #chart { width: 100%; max-width: 300px; height: auto; display: block; margin-bottom: 7px; }
     #chartnote { font-size: 11.5px; line-height: 1.45; color: var(--muted); margin-bottom: 22px; }
 
-    #list { margin-bottom: 4px; }
-    .det { border-left: 2px solid var(--border); padding: 1px 0 1px 10px; margin: 0 0 14px; }
-    .det.quake { border-left-color: var(--dev); }
-    .det .top { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
-    .det .who { color: var(--muted); }
-    .det .when { color: var(--muted); font-size: 11px; white-space: nowrap;
-                 font-variant-numeric: tabular-nums; }
-    .det .vals { font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
     .dev { color: var(--dev); font-weight: 600; }
-    .empty { color: var(--muted); font-size: 13px; }
     .more { display: inline-block; margin-top: 6px; font-size: 12.5px;
             color: var(--text); text-decoration: none;
             border-bottom: 1px solid var(--border); padding-bottom: 1px; }
@@ -275,9 +266,13 @@
         <div id="chartnote">Each dot is what it read <b>before</b> being told the answer.</div>
       </div>
 
-      <h2 id="shakes-title">Recent shakes</h2>
-      <div id="list"><div class="empty">Nothing yet.</div></div>
-      <a class="more" href="data.html">All the numbers, and the CSV &rarr;</a>
+      <!-- No list of triggers here. Every one so far is household noise, and
+           300 of them came from a single 2.8-hour morning, so a rolling window
+           labelled "last 11 days" implied activity spread over eleven days that
+           never happened, while repeating one fact three hundred times. The full
+           table, with the amplitude of each and the CSV, is on data.html, whose
+           job is to be exhaustive. -->
+      <a class="more" href="data.html">Every shake it felt, and the CSV &rarr;</a>
     </aside>
   </div>
 
@@ -285,7 +280,6 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     const ROSTER_URL = 'stations.json';
-    const LISTED = 6;
     const WINDOW_DAYS = 7;      // rolling; the station publishes its own value
     const USGS_LIMIT = 250;     // a week of LA micro-quakes is a few hundred
     // Catalog query: basin centre, not a street. Independent of the pins.
@@ -550,29 +544,6 @@
       return s.health && s.health.stale ? 'degraded' : '';
     }
 
-    function fillList(rows) {
-      document.getElementById('shakes-title').textContent =
-        `Shakes, last ${days} day${days > 1 ? 's' : ''}`;
-      const dets = rows.slice(0, LISTED);
-      const list = document.getElementById('list');
-      list.innerHTML = dets.length
-        ? '' : `<div class="empty">Nothing in the last ${days} days.</div>`;
-      dets.forEach((d) => {
-        const el = document.createElement('div');
-        el.className = 'det' + (d.usgs != null ? ' quake' : '');
-        // Every row in this list is a shake, so no row needs to say so.
-        el.innerHTML =
-          `<div class="top"><span class="who">${d.usgs != null ? 'Earthquake' : 'Not in the catalogue'}` +
-          `${STATIONS.length > 1 && d.station_name ? ` · ${d.station_name}` : ''}</span>` +
-          `<span class="when">${day(d.t)} ${clock(d.t)}</span></div>` +
-          (d.dev != null
-            ? `<div class="vals"><span class="dev">~M${d.dev}</span> at ~${d.dev_km} km</div>` : '') +
-          (d.usgs != null
-            ? `<div class="top"><span class="who">USGS: M${d.usgs.toFixed(1)} at ${d.usgs_km} km</span></div>`
-            : '');
-        list.appendChild(el);
-      });
-    }
 
     const windowOf = (s) => s.window_days || WINDOW_DAYS;
     const within = (rows, d) => {
@@ -623,7 +594,6 @@
        network. Dragging the slider must stay instant. */
     function applyWindow() {
       label();
-      fillList(snap ? within(shakes(snap), days) : []);
     }
 
     async function loadUSGS() {
