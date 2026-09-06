@@ -114,6 +114,10 @@
     #status .cat.gap { border-left-color: var(--muted); border-left-style: dotted; }
     #status .cat .why { display: block; margin-top: 3px; font-size: 11.5px;
                         line-height: 1.45; }
+    #status .cat .why a { color: inherit; text-decoration: underline;
+                          text-decoration-color: var(--border);
+                          text-underline-offset: 2px; }
+    #status .cat .why a:hover { text-decoration-color: currentColor; }
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -549,11 +553,9 @@
         (n
           ? `<div class="cat gap"><span class="k">Should have shown &middot; did not</span>` +
             `<span class="v"><b>${n}</b> ${quakes(n)}</span>` +
-            `<span class="why">Close enough that the shaking should have stood out ` +
-            `in the record, and it did not. The station works this out against the ` +
-            `USGS catalogue and reports it on itself. It is the check that would ` +
-            `expose a sensor quietly going deaf — so a number here is the audit ` +
-            `running, not the device offline.</span></div>`
+            `<span class="why">The station's own audit against the USGS ` +
+            `catalogue. A count here is that check working, not the device ` +
+            `failing — <a href="data.html">what it means</a>.</span></div>`
           : '');
     }
 
