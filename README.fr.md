@@ -107,6 +107,17 @@ peut se placer plus près du bruit et moyenner le train d’ondes. Sur le bruit
 de cette station, le gain de portée est un **facteur 7–8 en amplitude, une
 unité de magnitude**.
 
+**Le catalogue bouge, donc la recherche le relit.** Un sismologue révise la
+solution automatique des heures ou des jours plus tard : `ci41540608` est passé
+de M3,36 à M3,20 au bout de 78,5 h. Une révision déplace l’heure d’origine, la
+distance ou la profondeur — qui placent ensemble la fenêtre d’arrivée — ou la
+magnitude, qui fixe le veto d’amplitude ; le verdict peut donc changer dans les
+deux sens. Chaque séisme du catalogue est ainsi rescanné en entier tant que son
+enveloppe existe, quatorze jours, au lieu de voir sa magnitude stockée
+rapiécée. Une confirmation ne survit pas à une révision qui l’aurait refusée, et
+un séisme d’abord annoncé sous M2 puis révisé au-dessus est examiné plutôt que
+compté comme un séisme manqué par la station.
+
 ## État (6 septembre 2026)
 
 La station est autonome : alimentation propre, WiFi, pas d’ordinateur branché,

@@ -291,3 +291,14 @@ found that way is a lead, not a finding.
   the ground motion was probably above the floor; the floor itself is a model of
   a detector, and 0.39 log10 is a wide distribution. Two in a row mean more than
   one.
+- **The catalog is not a fixed reference.** A revision can move the origin time,
+  the distance or the depth — which together place the arrival window — or the
+  magnitude, which sets the amplitude veto. `ci41540608` went from M3.36 to
+  M3.20 at 78.5 h. So the retrospective search re-scans every catalog event for
+  as long as its envelope survives, 14 days, in full rather than patching the
+  stored magnitude: a verdict can flip in either direction, and a confirmation
+  does not outlive a revision that would have refused it. This also covers an
+  event first announced under `usgs.min_magnitude` and revised above it, which
+  would otherwise never have been scanned at all — and would then have been
+  counted `missed` here, since this audit computes its own significance but
+  takes `confirmed` from the search's findings.

@@ -117,6 +117,16 @@ about 170 000 blind STA/LTA windows per day, so the test can sit closer to the
 noise and average over the wavetrain. On this station’s own noise the extra
 reach is a **factor 7–8 in amplitude, one magnitude unit**.
 
+**The catalog keeps moving, so the search re-reads it.** A seismologist revises
+an automatic solution hours or days later: `ci41540608` went from M3.36 to M3.20
+at 78.5 h. A revision moves the origin time, distance or depth — which together
+place the arrival window — or the magnitude, which sets the amplitude veto, so a
+verdict can flip either way. Every catalog event is therefore re-scanned in full
+for as long as its envelope survives, 14 days, rather than having its stored
+magnitude patched. A confirmation does not outlive a revision that would have
+refused it, and an earthquake first announced under M2 then revised above it
+gets examined instead of being counted as one the station missed.
+
 ## Status (6 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
