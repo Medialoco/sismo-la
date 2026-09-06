@@ -215,13 +215,15 @@ must land before the map fills.
 
 ## Shot 7 — What the station still cannot do (2:22–2:42)
 
-*On screen.* The operator dashboard on the LAN, which still prints calibration
-**0 / 8** — the front page deliberately no longer draws that counter, and the
-audit triple lives on `data.html` instead, because `7 · 2 · 0` reads as a score of
-two out of seven on a page skimmed in ten seconds. For the miss, shoot
-**`data.html`**: the three counts with their definitions, `1 missed` in red, and
-the sentence saying it means the audit ran rather than the device failed. Then,
-optional, `python audit.py` in a terminal.
+*On screen.* The operator dashboard on the LAN, which prints calibration **0 / 8**
+and the audit counts in full. Neither public page draws them: `7 · 2 · 0` reads as
+a score of two out of seven, and a lone `1 missed` reads as a broken device, so
+they stay machine-readable in `station.json`. For the miss, shoot the **raw
+snapshot** — `station.json` open in a browser, `expected.summary` on screen — or
+the operator dashboard. Then, optional, `python audit.py` in a terminal.
+
+The voiceover carries the meaning here, because the number has no caption to lean
+on. Say what `missed` is before showing it.
 
 *Say.*
 
@@ -283,7 +285,7 @@ not a measurement).
 | 4 | 22 s | Live tap, logs or dashboard | to shoot last |
 | 5 | 44 s | USGS `ci41540608` + public map + `data.html` | stills ready |
 | 6 | 12 s | `calibration-timelapse.mp4` | ready; VO must say “replay” first |
-| 7 | 38 s | `data.html` audit, 1 missed; dashboard 0 / 8 | to capture |
+| 7 | 38 s | `station.json` / dashboard, 1 missed & 0 of 8 | to capture |
 | 8 | 18 s | Board + `network.png` | diagram ready |
 
 ## Recording notes

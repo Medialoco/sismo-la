@@ -252,11 +252,11 @@ reads the noise it was actually sitting in at that second. Five classes:
 2026. The station keeps publishing the same three counts on the last 336 hours,
 in [`station.json`](https://medialoco.github.io/sismo-la/station.json) under
 `expected.summary`: *examined / recorded / missed*. Recorded means the envelope
-exists at that second, not that the event was confirmed — which is why the
-triplet is not drawn on the front page, where `7 · 2 · 0` reads like a score of
-2 out of 7. It is defined and printed in full on
-[the data page](https://medialoco.github.io/sismo-la/data.html). Which events
-were in reach stays on the station LAN. Method:
+exists at that second, not that the event was confirmed. **None of the three is
+drawn on the public pages.** Printed bare, `7 · 2 · 0` reads as a score of 2 out of
+7, which inverts their meaning; they are published complete in the snapshot the
+pages themselves read, and defined here and in the method below rather than in a
+caption. Which events were in reach stays on the station LAN. Method:
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ### The first miss, 6 September 2026
@@ -287,10 +287,16 @@ nothing above the ambient level. The two bracket the scatter from opposite ends
 with the station's own data, and show that the single confirmation sat on the
 favourable tail.
 
-A miss is therefore **not** allowed to take the status badge. A filled red badge
-reads as *this device is broken*, which would make the audit working and the
-sensor dying look identical. It gets a captioned line on the front page instead,
-and its definition on the data page.
+Presentation took three tries, and the two failures are worth recording. Giving
+the miss the status badge made a working audit and a silently dead sensor look
+identical, since a filled red badge reads as *this device is broken* — and only the
+second is a fault. Moving it to a captioned line, then defining all three counts on
+the data page, still asked a visitor to read a paragraph before a number stopped
+misleading them. So the pages show none of it, and the counts stay in
+[`station.json`](https://medialoco.github.io/sismo-la/station.json), machine-
+readable and timestamped. That is what keeps the claim refutable: the numbers are
+published, in full, every 20 minutes — what was dropped is the graphic staging of
+a figure that cannot survive being separated from its definition.
 
 ## Other measurements
 

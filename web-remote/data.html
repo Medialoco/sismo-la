@@ -87,23 +87,6 @@
                border: 2px solid var(--dev); }
     .cat .sw.known { border-style: dashed; }
     .note { color: var(--muted); font-size: 13px; margin: 0 0 12px; max-width: 66ch; }
-    /* The audit is three numbers, each meaningless without its definition, so
-       the definition sits next to the figure rather than in a caption below.
-       Only `missed` is ever coloured: it is the one that can accuse. */
-    #acounts { display: grid; gap: 10px; max-width: 78ch; }
-    .acount { display: grid; grid-template-columns: 3.2em 8.5em 1fr; gap: 12px;
-              align-items: baseline; padding: 10px 0 0;
-              border-top: 1px solid var(--border); }
-    .acount b { font-size: 21px; font-weight: 600; color: var(--text);
-                font-variant-numeric: tabular-nums; }
-    .acount .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
-                 color: var(--muted); }
-    .acount .w { color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .acount.bad b { color: var(--dev); }
-    @media (max-width: 640px) {
-      .acount { grid-template-columns: 3.2em 1fr; }
-      .acount .w { grid-column: 1 / -1; }
-    }
     .bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 6px; }
     .count { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums;
              margin-right: auto; }
@@ -213,17 +196,19 @@
       </table></div>
     </section>
 
-    <section id="asection" style="display:none">
-      <div class="bar">
-        <h2>How it would know it was broken</h2>
-        <span class="count" id="awindow"></span>
-      </div>
-      <p class="note">A station that never publishes anything able to contradict
-        it is not measuring, it is only producing numbers. So the device compares
-        every catalogued earthquake with what it should have felt, and publishes
-        the result even when the result is against it.</p>
-      <div id="acounts"></div>
-    </section>
+    <!-- The audit counts (examined / recorded / missed) are deliberately absent
+         from both public pages, here as well as on the front page. They cannot be
+         read without their definitions: `recorded` is envelope coverage rather
+         than a confirmation, and `missed` accuses the ground-motion prediction at
+         least as often as the sensor. Printed as three integers they invert into
+         a score, and a lone `1 missed` reads as a broken device. A version of
+         this page defined each count beside its figure and it still asked more of
+         a visitor than a data page should.
+
+         They remain published in full and unabridged in station.json, under
+         `expected.summary`, which is what makes the station refutable — the
+         numbers are machine-readable and timestamped, not hidden. The definitions
+         belong in prose: docs/expected-vs-observed.md and the paper. -->
 
   </main>
 
@@ -370,43 +355,6 @@
           c.z, c.win, c.lag, c.pga, c.rms, c.base]));
     }
 
-    /* The audit, which is the only thing here that can say the station failed.
-       Counts only, and deliberately: which events were in reach is a distance
-       once the magnitude is known, so a list of them would place the device.
-       The front page shows a miss on its own; the full triple lives here, where
-       there is room to define each number before printing it. */
-    function fillAudit(expected) {
-      if (!expected || !expected.enabled || !expected.summary) return;
-      const s = expected.summary;
-      document.getElementById('asection').style.display = '';
-      const hours = typeof expected.hours === 'number' ? expected.hours : null;
-      document.getElementById('awindow').textContent = hours
-        ? `Rolling ${Math.round(hours / 24)}-day window.` : '';
-      const box = document.getElementById('acounts');
-      const row = (n, k, why, bad) =>
-        `<div class="acount${bad ? ' bad' : ''}"><b>${n}</b>` +
-        `<span class="k">${k}</span><span class="w">${why}</span></div>`;
-      box.innerHTML =
-        row(s.n, 'examined',
-            'Catalogued earthquakes inside the radius during the window. This ' +
-            'is the denominator, not a target: most are far too small or too ' +
-            'distant for any sensor at this price.') +
-        row(s.covered, 'recorded',
-            'Those whose arrival instant, and the three minutes before it, are ' +
-            'both inside the continuous recording. Being recorded says nothing ' +
-            'about being detectable.') +
-        row(s.missed, 'missed',
-            s.missed
-              ? 'Close enough that the shaking should have stood out in the ' +
-                'record, and it did not. The station reaches this verdict on ' +
-                'itself, and only when the pessimistic end of the site range ' +
-                'still says it was more likely than not — so a number here is ' +
-                'the audit doing its job, not the device offline.'
-              : 'Close enough to have shown, and absent from the record. This ' +
-                'is the one count that can accuse the station, which is why it ' +
-                'is published whatever it says.',
-            !!s.missed);
-    }
 
     let hasSnapshot = true;
 
@@ -483,7 +431,6 @@
         Array.isArray(s.confirmed) ? s.confirmed
           : (s.retro && s.retro.enabled ? [] : null),
         s.retro);
-      fillAudit(s.expected);
     })();
   </script>
 </body>

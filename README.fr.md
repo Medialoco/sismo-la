@@ -247,12 +247,12 @@ bruit dans lequel elle était vraiment assise à cette seconde. Cinq classes :
 dernières heures, dans
 [`station.json`](https://medialoco.github.io/sismo-la/station.json) sous
 `expected.summary` : *examinés / enregistrés / manqués*. Enregistré veut dire que
-l’enveloppe existe à cette seconde, pas que l’événement est confirmé — d’où le
-choix de ne pas afficher le triplet sur la page d’accueil, où « 7 · 2 · 0 » se lit
-comme une note de 2 sur 7. Il est défini et imprimé en entier sur
-[la page de données](https://medialoco.github.io/sismo-la/data.html). Les
-événements à portée restent sur le réseau local. Méthode :
-[`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
+l’enveloppe existe à cette seconde, pas que l’événement est confirmé. **Aucun des
+trois n’est affiché sur les pages publiques.** Imprimés nus, « 7 · 2 · 0 » se lit
+comme une note de 2 sur 7, soit l’inverse de leur sens ; ils sont publiés complets
+dans l’instantané que ces pages lisent elles-mêmes, et définis ici et dans la
+méthode plutôt que dans une légende. Les événements à portée restent sur le réseau
+local. Méthode : [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ### Le premier manqué, 6 septembre 2026
 
@@ -283,10 +283,18 @@ n’a rien délivré au-dessus du niveau ambiant. Les deux encadrent la dispersi
 ses deux extrémités avec les données de la station, et montrent que la
 confirmation unique se trouvait sur la queue favorable.
 
-Un manqué n’a donc **pas** le droit de prendre l’indicateur d’état. Un indicateur
-rouge plein se lit « cet appareil est en panne », ce qui rendrait identiques
-l’audit qui fonctionne et le capteur qui meurt. Il reçoit une ligne légendée sur
-la page d’accueil, et sa définition sur la page de données.
+La présentation a demandé trois essais, et les deux échecs méritent d’être notés.
+Donner l’indicateur d’état au manqué rendait identiques un audit qui fonctionne et
+un capteur mort en silence, puisqu’un indicateur rouge plein se lit « cet appareil
+est en panne » — et seul le second est une panne. Le déplacer sur une ligne
+légendée, puis définir les trois comptes un à un sur la page de données, demandait
+encore à un visiteur de lire un paragraphe avant qu’un chiffre cesse de l’induire
+en erreur. Les pages n’en montrent donc rien, et les comptes restent dans
+[`station.json`](https://medialoco.github.io/sismo-la/station.json), lisibles par
+un programme et horodatés. C’est ce qui garde l’affirmation réfutable : les nombres
+sont publiés, en entier, toutes les 20 minutes — ce qui a été retiré, c’est la mise
+en scène graphique d’un chiffre qui ne survit pas à la séparation de sa
+définition.
 
 ## Autres mesures
 

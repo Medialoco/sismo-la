@@ -107,17 +107,6 @@
     #status .cat .k { display: block; font-size: 10.5px; text-transform: uppercase;
                       letter-spacing: .08em; }
     #status .cat .v { color: var(--text); }
-    /* A miss is not an event the station recognised, so it does not take the
-       red of the two categories above, and it no longer takes the badge: a
-       filled badge reads as "this thing is broken", which is the one reading
-       to avoid. Grey border, and a sentence saying what the number means. */
-    #status .cat.gap { border-left-color: var(--muted); border-left-style: dotted; }
-    #status .cat .why { display: block; margin-top: 3px; font-size: 11.5px;
-                        line-height: 1.45; }
-    #status .cat .why a { color: inherit; text-decoration: underline;
-                          text-decoration-color: var(--border);
-                          text-underline-offset: 2px; }
-    #status .cat .why a:hover { text-decoration-color: currentColor; }
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -521,27 +510,19 @@
        snapshot without it shows the one channel it has. */
     const confirmedOf = (s) => (Array.isArray(s.confirmed) ? s.confirmed : null);
 
-    /* The station audits every catalogued event against what it should have
-       felt. The routine counts are no longer drawn (see fillPanel), but the one
-       that can accuse it still is: a `missed` above zero means an earthquake was
-       within reach and left no trace, and it gets a captioned line of its own.
+    /* The panel shows the two event counts and nothing from the audit. Those
+       three counts need their definitions to mean anything — `recorded` is
+       envelope coverage, not a confirmation, and `missed` accuses the prediction
+       at least as often as the sensor — and a page read in ten seconds cannot
+       carry the definitions. Printed bare they invert: `8 · 4 · 1` skims as a
+       score, and a lone `1 missed` reads as "this device is broken".
 
-       Counts, never a list: a per-event detection probability is a monotone
-       function of distance once the magnitude is known, so a dozen rows would
-       locate the device. */
-    const auditOf = (s) => {
-      const e = s.expected;
-      return e && e.enabled && e.summary ? e.summary : null;
-    };
-
-    /* The panel shows the two event counts, plus a miss when there is one. The
-       calibration progress and the rest of the audit triplet read as a score out
-       of a total on a page skimmed in ten seconds, which is the opposite of what
-       they mean; both stay published, machine-readable and unabridged, under
-       `calibration` and `expected.summary` in station.json. */
-    function fillPanel(s, pairs, audit) {
+       They stay published in full, machine-readable and unabridged, under
+       `expected.summary` in station.json, next to `calibration`, which is left
+       out for the same reason. Definitions live in the paper and in
+       docs/expected-vs-observed.md. */
+    function fillPanel(s, pairs) {
       const known = confirmedOf(s);
-      const n = audit && audit.missed ? audit.missed : 0;
       document.getElementById('status').innerHTML =
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b>` +
         `<div class="cat"><span class="k">Triggered &middot; autonomous</span>` +
@@ -549,13 +530,6 @@
         (known
           ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
             `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>`
-          : '') +
-        (n
-          ? `<div class="cat gap"><span class="k">Should have shown &middot; did not</span>` +
-            `<span class="v"><b>${n}</b> ${quakes(n)}</span>` +
-            `<span class="why">The station's own audit against the USGS ` +
-            `catalogue. A count here is that check working, not the device ` +
-            `failing — <a href="data.html">what it means</a>.</span></div>`
           : '');
     }
 
@@ -752,14 +726,12 @@
       // triggered on and matched, ever. Retrospective confirmations are not
       // in it and must not be -- the device never put a magnitude on those.
       const pairs = history.map((h) => ({ usgs: h.usgs, dev: h.dev }));
-      const audit = auditOf(primary);
-      fillPanel(snap, pairs, audit);
+      fillPanel(snap, pairs);
       drawChart(pairs);
       const known = confirmedOf(snap);
-      // The filled badge is for freshness alone. A miss used to take it, which
-      // put "1 missed" where a visitor reads "this is broken" — the audit
-      // working and the device dead then looked identical. The miss is now a
-      // captioned line in the panel, where there is room to say what it means.
+      // The filled badge is for freshness alone. A miss took it for a few hours
+      // on 6 September, which put "1 missed" where a visitor reads "this is
+      // broken" — the audit working and the device dead then looked identical.
       const ages = order.map((id) => staleness(loaded[id])).filter(Boolean);
       const bad = ages[0];
       b.innerHTML = bad || (known

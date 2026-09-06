@@ -135,20 +135,29 @@ recorded / missed*. Recorded is envelope coverage at that second, not a
 confirmation. The window is shorter, so *examined* follows the last two weeks of
 the catalog.
 
-The front page does not draw those three numbers. Skimmed, `7 · 2 · 0` reads as
-a score of 2 out of 7, which inverts their meaning — the middle count says how
-many of the seven the station could check at all. All three are defined and
-printed on [the data page](https://medialoco.github.io/sismo-la/data.html), where
-there is room to put each definition next to its figure.
+**Neither public page draws these three numbers.** Skimmed, `7 · 2 · 0` reads as a
+score of 2 out of 7, which inverts their meaning — the middle count says how many
+of the seven the station could check at all. They are published complete in
+[`station.json`](https://medialoco.github.io/sismo-la/station.json) under
+`expected.summary`, which the pages read, and defined in prose here and in the
+paper.
 
-A non-zero *missed* gets a captioned line of its own on the front page. It
-deliberately does **not** take the status badge, which is reserved for freshness.
-An earlier revision gave it the badge, on the reasoning that the worst number
-belongs in the loudest place; a real miss showed why that was wrong. The filled
-red badge reads as *this device is broken*, so the audit working correctly and
-the sensor dying silently looked identical — and of the two, only the second is a
-fault. The badge cannot carry that distinction in three words; a line with a
-sentence under it can.
+Presentation took three attempts and the first two are recorded here so they are
+not retried. **The status badge** went first, on the reasoning that the worst
+number belongs in the loudest place; the 6 September miss disproved it within
+hours, because a filled red badge reads as *this device is broken* and made a
+correctly working audit indistinguishable from a sensor dying in silence — of the
+two, only the second is a fault. **A captioned line** went second, then all three
+counts defined one by one on the data page; both still required a visitor to read
+a paragraph before a number stopped misleading them, which is the wrong trade for
+a page that is skimmed.
+
+None of this hides the failure, and the distinction is the medium rather than the
+publication. The counts sit in a public file, unabridged, rewritten every
+20 minutes, at the same address as everything else; anyone can read them, archive
+them or watch them move, and that is what makes the claim refutable. What was
+dropped is the graphic staging of a figure that does not survive separation from
+its definition.
 
 ### The first miss, 2026-09-06
 
@@ -233,9 +242,8 @@ narrows down which ones they were, and that is a distance band each.
   and `marginal` event; the out-of-reach majority is counted and never listed,
   because listing it would bury the two verdicts that mean something.
 - **In the public snapshot**, as `expected.summary`, three integers refreshed
-  every 20 minutes. The front page draws only the third, and only when it is not
-  zero, as a captioned line rather than a badge; the data page defines and prints
-  all three.
+  every 20 minutes. Neither public page draws any of them; see the note in
+  section 5 for the three presentations that were tried and dropped.
 - **From a laptop**, `tools/expected-report.py`, in four modes:
 
 ```bash
