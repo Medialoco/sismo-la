@@ -121,11 +121,12 @@ Over the **30 days to 2026-09-02**, 19 cataloged events of M ≥ 2 within 160 km
 | confirmed by the retrospective channel | 1 |
 | should have been seen and were not | **0** |
 
-So there is no fault to chase, and the one confirmation — `ci41540608`, M3.2,
-2026-09-02 — is the first event this tool has ever had to classify as anything
-other than out of reach or out of coverage. The audit had given it a real
-chance on the retrospective channel and next to none on the blind trigger, and
-that is how it turned out.
+No fault to chase in that window, and the one confirmation — `ci41540608`, M3.2,
+2026-09-02 — is the first event this tool ever had to classify as anything other
+than out of reach or out of coverage. The audit had given it a real chance on the
+retrospective channel and next to none on the blind trigger, and that is how it
+turned out. Four days later the same arithmetic produced the opposite verdict on
+another M3.2, which is the subject of the subsection below.
 
 That table is a dated write-up. The public snapshot carries a different triple on
 a rolling 336 hours, under `expected.summary` in
@@ -134,11 +135,54 @@ recorded / missed*. Recorded is envelope coverage at that second, not a
 confirmation. The window is shorter, so *examined* follows the last two weeks of
 the catalog.
 
-The public page does not draw those three numbers. Skimmed, `7 · 2 · 0` reads as
+The front page does not draw those three numbers. Skimmed, `7 · 2 · 0` reads as
 a score of 2 out of 7, which inverts their meaning — the middle count says how
-many of the seven the station could check at all. The count that can accuse it is
-still on the page, and in the loudest place: a non-zero *missed* takes over the
-status badge, unless an outage, the worse fault, already holds it.
+many of the seven the station could check at all. All three are defined and
+printed on [the data page](https://medialoco.github.io/sismo-la/data.html), where
+there is room to put each definition next to its figure.
+
+A non-zero *missed* gets a captioned line of its own on the front page. It
+deliberately does **not** take the status badge, which is reserved for freshness.
+An earlier revision gave it the badge, on the reasoning that the worst number
+belongs in the loudest place; a real miss showed why that was wrong. The filled
+red badge reads as *this device is broken*, so the audit working correctly and
+the sensor dying silently looked identical — and of the two, only the second is a
+fault. The badge cannot carry that distinction in three words; a line with a
+sentence under it can.
+
+### The first miss, 2026-09-06
+
+`ci41542024`, M3.2, 07:13:11 UTC, close in. Predicted shaking above the
+**0.438 mg** retrospective floor of that second, and P(retro) clearing the 0.5 bar
+at the pessimistic end of the site range: verdict *should have been seen*,
+published 32 minutes after the event without anyone asking.
+
+The predicted amplitude and the probability are **not** printed here, and must not
+be added. The law inverts: either number beside the catalog magnitude yields the
+hypocentral distance to the kilometre, and a second ring next to `ci41540608`'s
+would locate the station — section 6. Recomputed from the public city-scale pin
+the same event gives 0.304 mg, *under* the floor and therefore no alarm at all,
+because the pin sits farther from the epicentre than the site does. Everything
+measured, below, is reproducible from the published envelope.
+
+What the record shows is that nothing arrived. The envelope covers the whole
+arrival window with no gap; the median rms over the minute after the origin is
+**0.5%** above the minute before, against **6.4%** for the confirmed event;
+the strongest single second of the two-minute span sits *before* the earliest
+possible P arrival; and `retro.significance` returned **z = 2.90** against `z_min`
+4.0. Scanning window lengths from 1 s to 30 s keeps z between 1.95 and 3.05 — only
+a 1 s window reaches 4.01, by picking one ordinary second of jitter, which is
+precisely why `WINDOWS_S` starts at 5 s and why `Z_MIN` was calibrated against the
+measured null with that multiplicity inside it. **Do not lower either to convert
+this into a confirmation.**
+
+So the miss is a statement about the *prediction*, not about the instrument. The
+law gives a median and this site landed below it, which the 0.390 log10 scatter
+allows freely. Read against `ci41540608` — same magnitude, nearly twice the
+distance, **7.8×** its predicted amplitude, confirmed — the two events bracket
+the site-to-site scatter from both ends and place the single confirmation on the
+favourable tail. One event is not a rate; two events with opposite signs are
+still not a rate, but they are a bound.
 
 The write-up above is a **remote** audit: it assumes the at-rest floor
 everywhere. On the station the noise column is measured after the recording
@@ -189,8 +233,9 @@ narrows down which ones they were, and that is a distance band each.
   and `marginal` event; the out-of-reach majority is counted and never listed,
   because listing it would bury the two verdicts that mean something.
 - **In the public snapshot**, as `expected.summary`, three integers refreshed
-  every 20 minutes. The page itself draws none of them, and shows a red badge
-  instead when the third is not zero.
+  every 20 minutes. The front page draws only the third, and only when it is not
+  zero, as a captioned line rather than a badge; the data page defines and prints
+  all three.
 - **From a laptop**, `tools/expected-report.py`, in four modes:
 
 ```bash

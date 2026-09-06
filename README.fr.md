@@ -107,7 +107,7 @@ peut se placer plus près du bruit et moyenner le train d’ondes. Sur le bruit
 de cette station, le gain de portée est un **facteur 7–8 en amplitude, une
 unité de magnitude**.
 
-## État (2 septembre 2026)
+## État (6 septembre 2026)
 
 La station est autonome : alimentation propre, WiFi, pas d’ordinateur branché,
 pas de shell requis. Elle publie un instantané JSON toutes les 20 minutes. Si
@@ -117,7 +117,9 @@ débranchement, le tableau de bord a répondu en **4 min 24 s**. Une panne de
 5 h 43 min a montré le MCU redémarrant depuis sa propre flash.
 
 **Calibration d’amplitude : 0 sur 8.** **Détections autonomes de séismes : 0.**
-Un séisme catalogué a été **confirmé** dans l’enveloppe (section suivante).
+Un séisme catalogué a été **confirmé** dans l’enveloppe (section suivante), et un
+autre a été **signalé par la station comme un séisme qu’elle aurait dû voir et
+qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2026)).
 
 ## Confirmation : `ci41540608`
 
@@ -246,12 +248,45 @@ dernières heures, dans
 [`station.json`](https://medialoco.github.io/sismo-la/station.json) sous
 `expected.summary` : *examinés / enregistrés / manqués*. Enregistré veut dire que
 l’enveloppe existe à cette seconde, pas que l’événement est confirmé — d’où le
-choix de laisser le triplet lisible par un programme plutôt que de l’afficher sur
-la page, où « 7 · 2 · 0 » se lit comme une note de 2 sur 7. Le compte qui peut
-accuser la station est celui qui reste visible : un *manqué* non nul prend la
-place de l’indicateur d’état. Les événements à portée restent sur le réseau
-local. Méthode :
+choix de ne pas afficher le triplet sur la page d’accueil, où « 7 · 2 · 0 » se lit
+comme une note de 2 sur 7. Il est défini et imprimé en entier sur
+[la page de données](https://medialoco.github.io/sismo-la/data.html). Les
+événements à portée restent sur le réseau local. Méthode :
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
+
+### Le premier manqué, 6 septembre 2026
+
+Ce dernier compte a quitté zéro pour la première fois. Un M3,2 survenu à
+07:13:11 UTC était assez proche pour que la loi de mouvement du sol place la
+secousse attendue **au-dessus des 0,44 mg** que le canal rétrospectif pouvait
+atteindre à cet instant, avec plus d’une chance sur deux de l’attraper même en
+supposant aucune amplification de site. L’audit a donc rendu « aurait dû être vu »
+et l’a publié contre la station, sans qu’on le lui demande, 32 minutes après le
+séisme. L’amplitude prédite n’est pas imprimée ici : la loi s’inverse, si bien que
+ce nombre à côté de la magnitude publiée donnerait la distance, et une seconde
+couronne à côté de celle du 2 septembre situerait la station.
+
+Relire l’enregistrement dit ce qui s’est passé. L’enveloppe est continue sur toute
+la fenêtre d’arrivée, sans un trou, et la trace seconde par seconde d’une minute
+de part et d’autre est indiscernable de la minute précédente : le rms médian monte
+de **0,5 %**, contre **6,4 %** pour l’événement confirmé, et la seconde la plus
+forte des deux minutes tombe *avant* que la moindre onde ait pu arriver. Le test
+de significativité a rendu **z = 2,90** pour un seuil de 4, et aucune fenêtre de
+moyennage entre 2 et 30 secondes ne dépasse 3,05. La secousse n’est pas dans l’enregistrement, et la prédiction se
+trouvait du côté optimiste d’une loi dont la dispersion courante entre sites vaut
+un facteur 2,45.
+
+Mis à côté de l’unique confirmation, cela devient instructif plutôt que décevant.
+Ontario, le 2 septembre, même magnitude à presque deux fois la distance, avait
+délivré **7,8 fois** l’amplitude prédite et a été retrouvé. Compton, plus proche,
+n’a rien délivré au-dessus du niveau ambiant. Les deux encadrent la dispersion par
+ses deux extrémités avec les données de la station, et montrent que la
+confirmation unique se trouvait sur la queue favorable.
+
+Un manqué n’a donc **pas** le droit de prendre l’indicateur d’état. Un indicateur
+rouge plein se lit « cet appareil est en panne », ce qui rendrait identiques
+l’audit qui fonctionne et le capteur qui meurt. Il reçoit une ligne légendée sur
+la page d’accueil, et sa définition sur la page de données.
 
 ## Autres mesures
 
@@ -417,7 +452,8 @@ sismo-la/
 - [x] Première confirmation (`ci41540608`, M3,2, 2 septembre 2026). Le
       déclencheur aveugle demandait ~3× l’amplitude arrivée.
 - [ ] Première détection autonome : aucune. Calibration d’amplitude 0 sur 8.
-- [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre.
+- [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre, puis
+      un premier manqué le 6 septembre, publié par la station contre elle-même.
 - [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
 - [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
       8 septembre 2026).
@@ -451,7 +487,8 @@ chiffres qui les sous-tendent :
   magnitudes qui s'en déduisent par distance ;
 - le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
 - la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
-- l'audit contre le catalogue en six verdicts, avec zéro séisme manqué ;
+- l'audit contre le catalogue en six verdicts, qui a produit son premier manqué
+  contre la station le 6 septembre ;
 - trois affirmations de cette documentation que les données ont corrigées.
 
 Ses figures et ses vérifications numériques sont produites par un script unique

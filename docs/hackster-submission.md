@@ -74,8 +74,13 @@ We fill this page in as the project progresses.
    There is **no calibration curve** to show. Do not promise one.
 10. **How we would know it is broken** — the audit: every cataloged event
     classified out-of-reach, marginal, triggered, confirmed or
-    should-have-been-seen. The last count is 0, and it is the number that would
-    break loudly if the sensor died quietly.
+    should-have-been-seen. On **6 September 2026** that last count left zero: the
+    station flagged an M3.2 as one it should have seen and did not, and published
+    it against itself half an hour later. Reading the record shows nothing
+    arrived; the prediction was on the optimistic side of a law that scatters by
+    a factor of two. Lead with this. An instrument that reports its own failure
+    unprompted is worth more than one that only ever reports successes, and it is
+    the part of this build a judge cannot get from a datasheet.
 11. **Limits & next steps** — a neighborhood strong-motion node, not a
     teleseismic instrument. 96.9 % of the local catalog is out of reach of both
     channels. One station gives a ring, not a pin.

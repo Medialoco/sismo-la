@@ -117,7 +117,7 @@ about 170 000 blind STA/LTA windows per day, so the test can sit closer to the
 noise and average over the wavetrain. On this station’s own noise the extra
 reach is a **factor 7–8 in amplitude, one magnitude unit**.
 
-## Status (2 September 2026)
+## Status (6 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
 required. It publishes a JSON snapshot every 20 minutes. If nothing changed, it
@@ -127,7 +127,9 @@ from a dead publisher. After a real unplug, the dashboard answered in
 own flash.
 
 **Amplitude calibration: 0 of 8.** **Autonomous detections of earthquakes: 0.**
-One cataloged earthquake has been **confirmed** in the envelope (next section).
+One cataloged earthquake has been **confirmed** in the envelope (next section),
+and one has been **flagged by the station as one it should have seen and did
+not** ([the first miss](#the-first-miss-6-september-2026)).
 
 ## Confirmation: `ci41540608`
 
@@ -251,11 +253,44 @@ reads the noise it was actually sitting in at that second. Five classes:
 in [`station.json`](https://medialoco.github.io/sismo-la/station.json) under
 `expected.summary`: *examined / recorded / missed*. Recorded means the envelope
 exists at that second, not that the event was confirmed — which is why the
-triplet is machine-readable rather than drawn on the page, where `7 · 2 · 0`
-reads like a score of 2 out of 7. The count that can accuse the station is the
-one on the page: a non-zero *missed* takes over the status badge. Which events
+triplet is not drawn on the front page, where `7 · 2 · 0` reads like a score of
+2 out of 7. It is defined and printed in full on
+[the data page](https://medialoco.github.io/sismo-la/data.html). Which events
 were in reach stays on the station LAN. Method:
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
+
+### The first miss, 6 September 2026
+
+That last count left zero for the first time. An M3.2 at 07:13:11 UTC was close
+enough that the ground-motion law put the expected shaking **above the 0.44 mg**
+the retrospective channel could have reached at that moment, with better than even
+odds of catching it assuming no site amplification at all. The audit therefore
+returned *should have been seen* and published that against the station,
+unprompted, 32 minutes after the earthquake. The predicted amplitude itself is not
+printed here: the law inverts, so that number next to the published magnitude
+would give the distance, and a second ring beside the one from 2 September would
+place the station.
+
+Reading the record afterwards says what happened. The envelope is continuous
+across the whole arrival window, with no gap, and the second-by-second trace for
+a minute either side is indistinguishable from the minute before: the median rms
+rises by **0.5%**, against **6.4%** for the confirmed event, and the strongest
+single second of the two-minute span falls *before* any wave could have arrived. The significance test returned **z = 2.9**
+against its threshold of 4, and no averaging window between 2 s and 30 s gets it
+past 3.05. The shaking is simply not in the record, and the prediction sat on the
+optimistic side of a law whose ordinary site-to-site scatter is a factor 2.45.
+
+Put next to the one confirmation this is informative rather than disappointing.
+Ontario, 2 September, same magnitude at nearly twice the distance, delivered
+**7.8×** its predicted amplitude and was found. Compton, closer, delivered
+nothing above the ambient level. The two bracket the scatter from opposite ends
+with the station's own data, and show that the single confirmation sat on the
+favourable tail.
+
+A miss is therefore **not** allowed to take the status badge. A filled red badge
+reads as *this device is broken*, which would make the audit working and the
+sensor dying look identical. It gets a captioned line on the front page instead,
+and its definition on the data page.
 
 ## Other measurements
 
@@ -451,7 +486,7 @@ behind them:
 | Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
 | Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
 | The 2 September confirmation, reproduced from raw envelope data | [Confirmation](#confirmation-ci41540608) |
-| Six-verdict audit against the catalog, 0 missed | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
+| Six-verdict audit against the catalog, which has now returned its first miss against the station | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
 | Three claims in this documentation that the data corrected | — |
 
 Its figures and numeric checks come from a single script that **imports this

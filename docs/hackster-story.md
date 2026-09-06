@@ -6,10 +6,13 @@ can reuse the same beats, in the same order.
 Target length: **about 3 minutes**. Language: English. The station’s coordinates
 are never on screen and never spoken.
 
-Numbers as of 5 September 2026. Before the final cut, re-check against
+Numbers as of 6 September 2026. Before the final cut, re-check against
 `web-remote/station.json`: autonomous detections still 0, amplitude calibration
-still 0 of 8, retrospective search still 3 cataloged events scanned for
-1 confirmed (`ci41540608`), audit still 0 missed.
+still 0 of 8, retrospective search still 4 cataloged events scanned for
+1 confirmed (`ci41540608`), audit still **1 missed** (`ci41542024`, 6 September).
+
+Shot 7 grew to hold that miss, which is the best material here, and the four
+seconds each came out of shots 1, 2, 3 and 6 to keep the total at three minutes.
 
 Existing assets that drop in without a reshoot:
 
@@ -213,10 +216,12 @@ must land before the map fills.
 ## Shot 7 — What the station still cannot do (2:22–2:42)
 
 *On screen.* The operator dashboard on the LAN, which still prints calibration
-**0 / 8** — the public page deliberately no longer draws that counter, nor the
-audit triple, because `7 · 2 · 0` reads as a score of two out of seven. Both
-remain in `web-remote/station.json`, so a shot of the raw snapshot works too.
-Then, optional, `python audit.py` in a terminal.
+**0 / 8** — the front page deliberately no longer draws that counter, and the
+audit triple lives on `data.html` instead, because `7 · 2 · 0` reads as a score of
+two out of seven on a page skimmed in ten seconds. For the miss, shoot
+**`data.html`**: the three counts with their definitions, `1 missed` in red, and
+the sentence saying it means the audit ran rather than the device failed. Then,
+optional, `python audit.py` in a terminal.
 
 *Say.*
 
@@ -231,8 +236,23 @@ Then, optional, `python audit.py` in a terminal.
 > The station also audits every cataloged event: expected amplitude versus the
 > noise it was sitting in. Over the thirty days to the second of September:
 > nineteen events examined, one confirmed, none that should have been seen and
-> were not. That last zero is the number that would break, loudly, if the sensor
-> quietly died.
+> were not.
+>
+> Then, on the sixth of September, that last number left zero. The catalog
+> published another magnitude three point two, this one closer in. The law said
+> the shaking should have cleared the threshold, so the station raised the flag
+> itself: an earthquake it should have seen, and did not. It published that
+> against itself half an hour later, with nobody asking.
+>
+> Reading the recording afterwards, nothing had arrived. The trace after the
+> earthquake looks like the trace before it. The prediction sat on the optimistic
+> side of a law that scatters by a factor of two either way, and this ground moved
+> less than average. The nearer earthquake was invisible and the further one was
+> found — which is what tells you the first result was luck, not skill.
+
+*This is the strongest thing in the project.* An instrument that reports its own
+failure, unprompted, in public, is the whole argument of the build. If one shot
+survives a re-cut, keep this one.
 
 ---
 
@@ -257,13 +277,13 @@ not a measurement).
 
 | # | Duration | Picture | Status |
 |---|---|---|---|
-| 1 | 18 s | Macro Modulino + wide UNO Q | to shoot |
-| 2 | 24 s | USGS + `how-it-works.png` | diagram ready |
-| 3 | 18 s | Board + code split + one heartbeat line | to shoot |
+| 1 | 14 s | Macro Modulino + wide UNO Q | to shoot |
+| 2 | 18 s | USGS + `how-it-works.png` | diagram ready |
+| 3 | 14 s | Board + code split + one heartbeat line | to shoot |
 | 4 | 22 s | Live tap, logs or dashboard | to shoot last |
 | 5 | 44 s | USGS `ci41540608` + public map + `data.html` | stills ready |
-| 6 | 16 s | `calibration-timelapse.mp4` | ready; VO must say “replay” first |
-| 7 | 20 s | Operator dashboard 0 / 8, or `station.json` | to capture |
+| 6 | 12 s | `calibration-timelapse.mp4` | ready; VO must say “replay” first |
+| 7 | 38 s | `data.html` audit, 1 missed; dashboard 0 / 8 | to capture |
 | 8 | 18 s | Board + `network.png` | diagram ready |
 
 ## Recording notes
