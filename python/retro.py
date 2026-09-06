@@ -291,6 +291,22 @@ class RetroLog:
         self.findings[event_id] = finding
         return bool(finding["confirmed"] and not was)
 
+    def is_stale(self, finding: dict, recheck_after_s: float = 3600.0) -> bool:
+        """True when this finding has not been re-read from the catalog lately.
+
+        Throttling exists because a re-read costs a request and a re-scan, and
+        the catalog does not revise an event every fifteen minutes.
+        """
+        checked = finding.get("scanned")
+        if not checked:
+            return True
+        try:
+            since = (datetime.now(timezone.utc)
+                     - datetime.fromisoformat(checked)).total_seconds()
+        except ValueError:
+            return True
+        return since >= recheck_after_s
+
     def stale_ids(self, seen: set[str], max_age_h: float,
                   recheck_after_s: float = 3600.0) -> list[str]:
         """Findings worth re-reading from the catalog, oldest check first.
@@ -318,13 +334,8 @@ class RetroLog:
                 continue
             if age_h > max_age_h:
                 continue
-            if checked:
-                try:
-                    since = (now - datetime.fromisoformat(checked)).total_seconds()
-                    if since < recheck_after_s:
-                        continue
-                except ValueError:
-                    pass
+            if not self.is_stale(f, recheck_after_s):
+                continue
             out.append((checked or "", event_id))
         out.sort()
         return [event_id for _, event_id in out]

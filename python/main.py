@@ -585,10 +585,16 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
 
     while True:
         try:
-            quakes = usgs.fetch_recent(
+            # One catalog read for the whole pass, over the longer of the two
+            # windows. The audit used to fetch its own, which meant the search
+            # and the audit could disagree about what the catalog said, and left
+            # the search blind to anything the audit could see.
+            catalog = usgs.fetch_recent(
                 st["lat"], st["lon"], us["radius_km"], us["min_magnitude"],
-                lookback_minutes=int(lookback_h * 60),
+                lookback_minutes=int(max(lookback_h, audit_h) * 60),
             )
+            cut = datetime.now(timezone.utc) - timedelta(hours=lookback_h)
+            quakes = [q for q in catalog if q.time >= cut]
             scanned = 0
             for quake in quakes:
                 finding = retro.scan_quake(store, quake, z_min=z_min)
@@ -617,23 +623,37 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
             seen = {q.event_id for q in quakes}
             refreshed = 0
             try:
-                for event_id in retro_log.stale_ids(seen, max_age_h=envelope_h):
+                # Older events the catalog still lists. Two kinds, and the second
+                # is why this exists: those already scanned, re-read because a
+                # revision can move the arrival window or flip the plausibility
+                # veto and so change the verdict either way; and those never
+                # scanned at all, because `min_magnitude` filtered them out at
+                # the time and a revision has since carried them over the
+                # threshold. Unscanned, an event in the audit window with a real
+                # wavetrain in the envelope would be counted `missed` -- the
+                # audit computes its own significance but takes `confirmed` from
+                # stored findings, so nobody having looked reads as the station
+                # having failed. About 30 events a year sit within 0.15 magnitude
+                # of the threshold inside 80 km, and the one confirmation this
+                # station has was itself revised at 78.5 h.
+                older = [q for q in catalog if q.time < cut]
+                fresh_ids = {q.event_id for q in older}
+                for quake in older:
+                    known = retro_log.findings.get(quake.event_id)
+                    if known and not retro_log.is_stale(known):
+                        continue
+                    refreshed += _rescan(retro_log, journal, store, quake,
+                                         z_min, first_look=known is None)
+                # Findings the catalog no longer returns under this filter -- a
+                # magnitude revised back below `min_magnitude`, say. Fetched one
+                # by one, since they are absent from the list above.
+                for event_id in retro_log.stale_ids(fresh_ids | seen,
+                                                    max_age_h=envelope_h):
                     quake = usgs.fetch_by_id(event_id, st["lat"], st["lon"])
                     if quake is None:     # withdrawn from the catalog
                         continue
-                    finding = retro.scan_quake(store, quake, z_min=z_min)
-                    if finding is None:
-                        continue
-                    before = retro_log.findings.get(quake.event_id, {})
-                    if retro_log.record(finding):
-                        journal.append_retro(finding)
-                    refreshed += 1
-                    if before.get("magnitude") != finding["magnitude"]:
-                        print(f"[retro] {quake.event_id} magnitude revised "
-                              f"M{before.get('magnitude')} -> M{finding['magnitude']}"
-                              f" (now "
-                              f"{'confirmed' if finding['confirmed'] else 'not confirmed'})",
-                              flush=True)
+                    refreshed += _rescan(retro_log, journal, store, quake,
+                                         z_min, first_look=False)
             except Exception as e:
                 print(f"[retro] catalog re-read failed: {e}", flush=True)
 
@@ -660,13 +680,9 @@ def retro_loop(cfg: dict, state: SharedState, store: EnvelopeStore,
             # take the search down with it. The search is the thing that can
             # still recover an earthquake.
             try:
-                audit_quakes = quakes
-                if abs(audit_h - lookback_h) > 1:
-                    audit_quakes = usgs.fetch_recent(
-                        st["lat"], st["lon"], us["radius_km"],
-                        us["min_magnitude"],
-                        lookback_minutes=int(audit_h * 60))
-                rows = expected.build(audit_quakes, store=store,
+                # The same catalog list the search just used, so the two can no
+                # longer disagree about what the catalog said in this pass.
+                rows = expected.build(catalog, store=store,
                                       journal_path=journal.path,
                                       retro_log=retro_log)
                 state.set_expected(rows, audit_h)
@@ -874,6 +890,42 @@ def strip_confirmations(snapshot: dict) -> dict:
                               for c in retro["confirmed"]]
         out["retro"] = retro
     return out
+
+
+def _rescan(retro_log, journal, store, quake, z_min: float,
+            first_look: bool) -> int:
+    """Re-scan one older catalog event. Returns 1 if a finding came of it.
+
+    Shared by the two paths that revisit an event after the search lookback has
+    moved past it. Deliberately a full ``scan_quake`` rather than a patch of the
+    stored magnitude: a revision moves the arrival window and re-applies the
+    plausibility veto, so a confirmation cannot outlive a revision that would
+    have refused it, and one that was refused can become a confirmation.
+    """
+    before = dict(retro_log.findings.get(quake.event_id) or {})
+    finding = retro.scan_quake(store, quake, z_min=z_min)
+    if finding is None:
+        return 0
+    became = retro_log.record(finding)
+    if became:
+        journal.append_retro(finding)
+        print(f"[retro] CONFIRMED{' on first look' if first_look else ' after revision'}"
+              f" M{quake.magnitude} @ {quake.distance_km:.0f}km ({quake.place}) "
+              f"z={finding['z']} over {finding['window_s']:.0f}s "
+              f"- NOT an autonomous detection", flush=True)
+    elif before.get("confirmed") and not finding["confirmed"]:
+        # Louder than the confirmation, because it withdraws a published claim.
+        print(f"[retro] WITHDRAWN {quake.event_id}: was confirmed, the revised "
+              f"M{quake.magnitude} no longer clears z_min or the amplitude veto "
+              f"(z={finding['z']})", flush=True)
+    elif first_look:
+        print(f"[retro] first look at {quake.event_id} M{quake.magnitude}, "
+              f"now over the catalog threshold: z={finding['z']}, "
+              f"nothing there", flush=True)
+    elif before.get("magnitude") != finding["magnitude"]:
+        print(f"[retro] {quake.event_id} magnitude revised "
+              f"M{before.get('magnitude')} -> M{finding['magnitude']}", flush=True)
+    return 1
 
 
 def refresh_confirmed_magnitudes(snapshot: dict) -> dict:
