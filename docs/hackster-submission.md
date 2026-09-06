@@ -12,6 +12,12 @@ We fill this page in as the project progresses.
 - Submission deadline: **September 13, 2026, 11:59 PM PDT**.
 - Appreciated bonuses: sustainability, user experience, scalability, edge AI
   (Edge Impulse), cloud integration (Arduino Cloud / AWS).
+- Two of those bonuses we do **not** have, and must not imply: there is no Edge
+  Impulse model (the noise filter is an online logistic regression in
+  `python/classifier.py`, still silent for want of a single labelled earthquake)
+  and no Arduino Cloud or AWS integration (publishing goes straight to the
+  GitHub contents API). Claiming either would be the one mistake this project
+  cannot afford.
 
 ## Quality checklist (Content Guidelines)
 
@@ -48,12 +54,31 @@ We fill this page in as the project progresses.
 4. **The real-time MCU** — STA/LTA explained simply (snippet from the `.ino`).
 5. **The Linux side (Dragonwing)** — WiFi, USGS feed, correlation (Python
    snippets).
-6. **Edge AI (Edge Impulse)** — earthquake vs noise, how the data was collected
-   and the model trained.
-7. **The App Lab dashboard** — screenshots.
-8. **Results & validation in LA** — calibration curve, examples of real
-   earthquakes correctly correlated (evidence).
-9. **Limits & next steps** — honesty: local detector, not teleseismic.
+6. **Detection vs confirmation** — the distinction the whole project rests on. A
+   shake the trigger found by itself is a detection; a shake found because the
+   catalog named the second is a confirmation. Say it before showing any result,
+   because every result below is one or the other.
+7. **The second channel: record first, search later** — the continuous envelope,
+   and why knowing the second to examine is worth about one magnitude.
+8. **The App Lab dashboard** — screenshots. Use the live one
+   (`docs/images/dashboard-live.png`), not a replay still.
+9. **Results in LA** — what there is, stated as it is:
+   - one confirmation, `ci41540608`, M3.2 near Ontario, 2 September 2026,
+     envelope 4.34 dispersions above the preceding minutes;
+   - the negative control: of three cataloged earthquakes examined, two were
+     refused although the catalog had named their exact second, because the
+     shaking they could deliver here was below the sensor's own noise;
+   - zero autonomous detections, amplitude calibration 0 of 8, noise filter
+     0 earthquakes against 4027 noise samples. These zeros are published as
+     they stand and are part of the result.
+   There is **no calibration curve** to show. Do not promise one.
+10. **How we would know it is broken** — the audit: every cataloged event
+    classified out-of-reach, marginal, triggered, confirmed or
+    should-have-been-seen. The last count is 0, and it is the number that would
+    break loudly if the sensor died quietly.
+11. **Limits & next steps** — a neighborhood strong-motion node, not a
+    teleseismic instrument. 96.9 % of the local catalog is out of reach of both
+    channels. One station gives a ring, not a pin.
 
 ## Writing & photo tips (Wulff tutorial)
 
@@ -68,18 +93,27 @@ We fill this page in as the project progresses.
 
 - [ ] **Cover photo** (final result, polished). Needs the camera, and the rules
       say **no text** on it — so no dashboard export can serve as the cover,
-      it has to be the physical station.
+      it has to be the physical station. `docs/images/cover-concept.png` is a
+      *rendered concept*, not this station: the board is lit, the screen behind
+      shows a map with concentric rings the project cannot produce, and it is
+      1536x1024 (3:2) where the guidelines ask 4:3. A project whose whole claim
+      is that its numbers are real should not open on a render. Shoot the actual
+      station — `docs/images/station.png` (1024x576, 4 September) is the framing
+      to beat, taken in better light and cropped to 4:3.
 - [ ] Macro photo of the UNO Q + IMU assembly.
 - [x] Schematic — `docs/images/wiring.png` (and `.jpg`), source `wiring.svg`.
       Not Fritzing: there is nothing to breadboard, so it shows the single
       Qwiic link and the signal path instead, and prints the one trap worth
       printing (the Qwiic port is `Wire1`, not `Wire`).
 - [ ] GIF/video of a detection (tap the desk -> trigger).
-- [x] Dashboard screenshot — `docs/images/timelapse-4-calibrated.jpg`, and
-      `dashboard-1920x1080.jpg` for a 16:9 slot (padded, nothing cropped).
-- [x] Screenshot of a successful USGS correlation — same still: the right-hand
-      panel lists "Earthquake — confirmed by USGS" with what the device said
-      next to what USGS said.
+- [x] Dashboard screenshot — `docs/images/dashboard-live.png`, the operator
+      dashboard on live data (light theme, station coordinates replaced by a
+      placeholder). `dashboard-1920x1080.jpg` fills a 16:9 slot (padded, nothing
+      cropped).
+- [x] Screenshot of the real confirmation — `docs/images/public-map-confirmed.png`
+      and `public-data-confirmed.png`, taken from the live published pages while
+      `ci41540608` was still inside `publish.window_days`. Caption it
+      **confirmed**, never *detected*.
 - [x] Diagram of the principle — `docs/images/how-it-works.png` (and `.jpg`).
       Source is `how-it-works.svg`: plain text, edit it rather than the raster.
 - [x] Diagram of the network geometry — `docs/images/network.png` (and `.jpg`),
@@ -87,4 +121,8 @@ We fill this page in as the project progresses.
       and not a measurement; do not caption it as a result.
 - [x] Calibration sequence — four stills cut from the timelapse,
       `timelapse-1-learning` to `timelapse-4-calibrated`, usable as a
-      before/after pair in the Story.
+      before/after pair in the Story. **These are replay, not measurement**:
+      real catalog times, synthetic amplitudes about 38 times too large so the
+      demo crosses the trigger. The caption has to say so in the same frame, and
+      `timelapse-4-calibrated` in particular shows a calibrated state the station
+      has never reached. It illustrates the software; it is not evidence.

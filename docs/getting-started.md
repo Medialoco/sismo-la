@@ -227,8 +227,12 @@ and `serial` remain for host-side debugging.
 
 ## 7. Calibration & AI (over time)
 - [ ] Let it run in LA; accumulate M2+ correlations (calibration points).
-- [ ] Collect noise samples (truck, door, footsteps) for Edge Impulse.
-- [ ] Train + deploy the earthquake-vs-noise classifier.
+- [x] Collect noise samples (truck, door, footsteps). Automatic: every unmatched
+      trigger is one. 4027 of them so far.
+- [ ] Get the other class. The filter in `python/classifier.py` trains itself on
+      each new sample but stays silent until it has three earthquakes as well,
+      and it has none. Swapping it for an Edge Impulse model would not help:
+      the missing ingredient is labelled earthquakes, not a better model.
 
 ### Grading the calibration honestly
 Every detection is appended to `event_log.jsonl` with what the models predicted

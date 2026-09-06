@@ -205,8 +205,10 @@ M3 the numbers are extrapolations:
 | Blind trigger | 3.1 | 3.9 | 4.3 | 4.9 | 5.3 |
 | Retrospective search | 2.1 | 2.9 | 3.3 | 3.9 | 4.3 |
 
-Those thresholds, crossed with 2 185 real USGS events (M ≥ 2, 160 km, 5 years)
-and the law’s 0.39 log10 scatter, with unknown site amplification ×1 to ×4:
+Those thresholds, crossed with the **2 016** real USGS events of M ≥ 2 within
+160 km over five years — counted from the public city-scale pin, so the figure
+is reproducible from public data — and the law’s 0.39 log10 scatter, with
+unknown site amplification ×1 to ×4:
 
 | | earthquakes / year | mean wait | P(at least one before 13 Sep 2026) |
 |---|---|---|---|

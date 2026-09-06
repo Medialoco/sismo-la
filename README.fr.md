@@ -138,11 +138,57 @@ capteur pur* ; cette maison produit aussi ses propres impulsions, donc ce
 1-sur-1 200 est optimiste jusqu’à recalcul sur l’enveloppe enregistrée. Le
 test z ne regarde pas le décalage : les 24 s sont une preuve indépendante.
 
+## Plancher de bruit : le mur, c'est le capteur
+
+**Pourquoi cela compte :** le plancher de bruit est le niveau qu'affiche
+l'instrument quand rien ne bouge. Tout ce qui est plus faible reste invisible,
+définitivement. Avant de chercher à améliorer la station, il faut donc savoir
+*ce qui* fixe ce plancher : le bâtiment, la rue, le logiciel ou la puce.
+
+Le 1er septembre 2026, le bruit au repos a été estimé dans **deux bandes de
+fréquence indépendantes sur les mêmes dix secondes**, puis comparé à la fiche
+technique du LSM6DSOX. Utiliser les mêmes dix secondes pour les deux importe :
+aucun des deux chiffres ne dépend alors de la comparaison d'une nuit avec une
+autre.
+
+| Bande | Mesuré | Prédiction fiche technique | Écart |
+|---|---|---|---|
+| 0,7 – 12 Hz (la bande sismique) | **0,00036 g** | 0,00040 g | 10 % |
+| large bande | **0,00052 g** | 0,00050 g | 4 % |
+
+Le plancher ne vient donc ni du bâtiment, ni de la rue, ni du logiciel : c'est
+le **bruit électrique propre du capteur**. À 4–10 % près, cette station est
+aussi silencieuse que la puce le permet.
+
+Cela ferme une porte. Ce bruit est *blanc* — réparti uniformément en fréquence —
+et il tombe à l'intérieur de la bande sismique, si bien que la seule bande
+passante qu'il resterait à retirer est celle dont un séisme a besoin. Le filtre
+passe-bande a déjà pris le facteur 1,43 disponible. **Aucun filtre ne descend
+plus bas.** Un seuil autonome plus bas demande une puce plus silencieuse, ou
+plusieurs puces ([`docs/sensor-upgrade.md`](docs/sensor-upgrade.md)).
+
 ## Quelle taille de séisme elle peut attraper
 
-Le plancher du déclencheur est une propriété du site (bruit + couplage),
-mesuré sur 163 vrais déclenchements : le plus petit PGA qui ait tiré est
-**0,0034 g** (0,0044 g dans la fenêtre la plus calme). Passé dans la loi de
+STA/LTA compare deux moyennes, c'est donc un *rapport* : il n'existe pas de
+seuil fixe exprimé en g. Ce qui est fixe, c'est le rapport entre le seuil et le
+bruit que suit la moyenne longue. Deux mesures le déterminent :
+
+- le plus petit pic qui ait jamais déclenché cette station vaut **0,0044 g**
+  avant le filtre passe-bande, soit **0,00308 g (3,08 mg)** après — le filtre
+  abaisse le plancher d'un facteur mesuré 1,43, et le plancher d'un détecteur à
+  rapport suit ;
+- le plancher au repos vaut **0,00036 g**, et c'est le bruit électrique propre
+  du capteur (voir [Plancher de bruit](#plancher-de-bruit--le-mur-cest-le-capteur)).
+
+Leur quotient vaut **8,55**, seul paramètre libre ici :
+
+```
+plancher du déclencheur = 8,55 x (niveau de l'enveloppe mesuré à cet instant)
+plancher rétrospectif   = plancher du déclencheur / 7,4
+```
+
+Cette formulation est prédictive : connaissant le bruit à une seconde donnée, on
+sait ce qu'il aurait fallu pour déclencher à cette seconde. Passé dans la loi de
 mouvement du sol ci-dessous, ce plancher devient une **magnitude requise** à
 une distance donnée (±0,45 à 1σ). Sous M3, les chiffres sont des
 extrapolations :
@@ -152,8 +198,10 @@ extrapolations :
 | Déclencheur aveugle | 3,1 | 3,9 | 4,3 | 4,9 | 5,3 |
 | Recherche rétrospective | 2,1 | 2,9 | 3,3 | 3,9 | 4,3 |
 
-Ces seuils, croisés avec 2 185 vrais événements USGS (M ≥ 2, 160 km, 5 ans)
-et la dispersion 0,39 log10 de la loi, amplification de site inconnue ×1 à ×4 :
+Ces seuils, croisés avec les **2 016** vrais événements USGS de M ≥ 2 dans
+160 km sur cinq ans — comptés depuis le repère public à l'échelle de la ville,
+donc reproductibles à partir de données publiques — et la dispersion 0,39 log10
+de la loi, amplification de site inconnue ×1 à ×4 :
 
 | | séismes / an | attente moyenne | P(au moins un avant le 13 sep 2026) |
 |---|---|---|---|

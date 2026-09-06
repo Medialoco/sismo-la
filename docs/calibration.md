@@ -43,12 +43,15 @@ Mw_estimated ≈ a'·log10(PGA) + b'·log10(distance) + c'
 
 A local shake is associated with a USGS earthquake if:
 
-- the earthquake is **≤ 160 km** from LA and **≥ M3**;
+- the earthquake is **≤ 160 km** from LA and **≥ M2** (`usgs.min_magnitude`);
 - the time gap between the local timestamp and the USGS origin time is within a
   window `[0, match_window_s]` accounting for wave travel time and clock drift.
 
 Local triggers **without** a matching USGS earthquake are "noise" candidates →
-training set for the Edge Impulse model.
+training set for the earthquake-vs-noise filter in `python/classifier.py`. That
+filter is an online logistic regression, not an Edge Impulse model, and it needs
+three examples of each class before it will answer. Having seen 4027 noise
+samples and no earthquake, it abstains.
 
 ## Robustness
 

@@ -6,9 +6,10 @@ can reuse the same beats, in the same order.
 Target length: **about 3 minutes**. Language: English. The station’s coordinates
 are never on screen and never spoken.
 
-Numbers as of 2 September 2026. Before the final cut, re-check: autonomous
-detections still 0, amplitude calibration still 0 of 8, confirmations still 1
-(`ci41540608`).
+Numbers as of 5 September 2026. Before the final cut, re-check against
+`web-remote/station.json`: autonomous detections still 0, amplitude calibration
+still 0 of 8, retrospective search still 3 cataloged events scanned for
+1 confirmed (`ci41540608`), audit still 0 missed.
 
 Existing assets that drop in without a reshoot:
 
@@ -84,8 +85,8 @@ on its mount. No dashboard yet.
 *Say.*
 
 > Los Angeles County sits on active faults. In five years the USGS listed about
-> two thousand two hundred earthquakes of magnitude two or more within a
-> hundred and sixty kilometres of a station like this.
+> two thousand earthquakes of magnitude two or more within a hundred and sixty
+> kilometres of a station like this.
 >
 > This twelve-dollar motion chip can feel the stronger ones. A raw acceleration
 > number is not a magnitude. The chip has no idea what it felt.
@@ -177,8 +178,18 @@ No arrows. No calibration counter in frame.
 > minutes. We call that a confirmation: the ground moved, and the catalog
 > named the second. Without the catalog there was nothing to look at. It is
 > not a detection.
+>
+> The obvious objection is that if you are told which second to examine, you
+> will always find something. So watch what it does when there is nothing to
+> find. It has examined three cataloged earthquakes and confirmed one. Twice it
+> was handed the exact second and had the recording, and it returned nothing:
+> the shaking those two could deliver here was smaller than the sensor's own
+> electrical noise.
 
 *One event, one point.* Do not say “the station detected its first earthquake.”
+
+*Protect the last paragraph.* It answers the first question a sceptic asks. If
+the cut runs long, take the seconds out of shot 6, not out of this.
 
 ---
 
@@ -201,8 +212,11 @@ must land before the map fills.
 
 ## Shot 7 — What the station still cannot do (2:22–2:42)
 
-*On screen.* Public header or dashboard: **0 triggered · 1 confirmed**,
-calibration **0 / 8**. Then, optional, `python audit.py` in a terminal.
+*On screen.* The operator dashboard on the LAN, which still prints calibration
+**0 / 8** — the public page deliberately no longer draws that counter, nor the
+audit triple, because `7 · 2 · 0` reads as a score of two out of seven. Both
+remain in `web-remote/station.json`, so a shot of the raw snapshot works too.
+Then, optional, `python audit.py` in a terminal.
 
 *Say.*
 
@@ -215,8 +229,10 @@ calibration **0 / 8**. Then, optional, `python audit.py` in a terminal.
 > back in the envelope. The first autonomous catch has not happened yet.
 >
 > The station also audits every cataloged event: expected amplitude versus the
-> noise it was sitting in. In thirty days: nineteen events examined, one
-> confirmed, none that should have been seen and were not.
+> noise it was sitting in. Over the thirty days to the second of September:
+> nineteen events examined, one confirmed, none that should have been seen and
+> were not. That last zero is the number that would break, loudly, if the sensor
+> quietly died.
 
 ---
 
@@ -245,9 +261,9 @@ not a measurement).
 | 2 | 24 s | USGS + `how-it-works.png` | diagram ready |
 | 3 | 18 s | Board + code split + one heartbeat line | to shoot |
 | 4 | 22 s | Live tap, logs or dashboard | to shoot last |
-| 5 | 38 s | USGS `ci41540608` + public map + `data.html` | stills ready |
-| 6 | 22 s | `calibration-timelapse.mp4` | ready; VO must say “replay” first |
-| 7 | 20 s | 0 triggered · 1 confirmed, 0 / 8 | to capture |
+| 5 | 44 s | USGS `ci41540608` + public map + `data.html` | stills ready |
+| 6 | 16 s | `calibration-timelapse.mp4` | ready; VO must say “replay” first |
+| 7 | 20 s | Operator dashboard 0 / 8, or `station.json` | to capture |
 | 8 | 18 s | Board + `network.png` | diagram ready |
 
 ## Recording notes

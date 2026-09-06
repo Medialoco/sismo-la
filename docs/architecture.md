@@ -31,15 +31,20 @@ communicate over the Arduino Bridge (RPC):
    code reads through an "event source" abstraction so both work.
 
 5. **USGS correlation (MPU)** — for each local event, search for a USGS
-   earthquake **≥ M3** within a 160 km radius of LA and within a time window (see
+   earthquake **≥ M2** within a 160 km radius of LA and within a time window (see
    clock note below). A match is a high-confidence calibration point.
 
 6. **Calibration (MPU)** — update the amplitude → magnitude regression (see
    `calibration.md`). Persisted to disk so it survives restarts.
 
-7. **Classification (MPU, Edge Impulse)** — a lightweight model classifies the
-   event window: `earthquake` vs `noise` (truck, door, footsteps...). This cuts
-   the false positives inherent to a low-cost MEMS sensor.
+7. **Classification (MPU)** — `python/classifier.py`, an online logistic
+   regression on three features of the event window (log peak acceleration, log
+   duration, dominant frequency), separates `earthquake` from `noise` (truck,
+   door, footsteps...). It needs at least three examples of **each** class
+   before it returns anything, and it has only ever seen one class: as of
+   5 September 2026, 0 earthquakes against 4027 noise samples. So it abstains,
+   and the published state says so rather than guessing. An Edge Impulse model
+   could take its place (see the note in `app.yaml`); none is deployed.
 
 8. **Presentation (MPU)** — web dashboard (App Lab brick): live acceleration,
    local events, recent USGS earthquakes, calibration state, estimated magnitude.
