@@ -118,6 +118,23 @@ publish:
   # only for the real address. Published distances to several epicenters still
   # trilaterate a box roughly.
   include_location: false
+  # The city-scale pin the published catalog list is centred on, normally the
+  # same coordinates as this station's row in web-remote/stations.json. Without
+  # it the station's own position is snapped to a quarter of a degree, about
+  # 28 by 23 km at this latitude, and that is used instead.
+  #
+  # Withholding the coordinates is not enough by itself. The list of cataloged
+  # earthquakes drawn on the map is everything inside radius_km of wherever it
+  # was queried from, so it traces the edge of that disc: 98 % of the catalog
+  # inside the radius is listed and almost nothing outside is. Anyone can query
+  # the catalog themselves, sort events into listed and absent, and fit the
+  # circle. On the published history to 6 September 2026 one week of it placed
+  # the station within about 15 km, no better than the pin, but a month of
+  # uninterrupted collection reaches 1.2 km and six months the width of the
+  # search grid. Re-centring on the pin means the edge gives away the pin.
+  map_center:
+    lat: 34.0522
+    lon: -118.2437
   # How far back the published list of shakes reaches. The page carries a
   # slider that narrows it, so this is the widest view a visitor can ask for,
   # not what they see by default. The calibration history is NOT windowed: it

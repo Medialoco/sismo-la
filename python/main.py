@@ -819,7 +819,23 @@ def detection_loop(cfg: dict, mode: str, state: SharedState,
             print(f"[{ts}] shake {shake} no USGS match | {ai_txt} | {model.status()}")
 
 
-def strip_location(snapshot: dict) -> dict:
+def public_pin(pub_cfg: dict, st_cfg: dict) -> tuple[float, float]:
+    """The coordinates the published catalog list is allowed to be centred on.
+
+    ``publish.map_center`` when the operator set one -- the same city-scale pin
+    the public roster draws. Without it, the station's own position snapped to a
+    quarter of a degree, which is a cell roughly 28 by 23 km here: coarse enough
+    that recovering the cell recovers nothing finer than the pin, and it fails
+    closed rather than falling back to the exact position.
+    """
+    centre = pub_cfg.get("map_center") or {}
+    lat, lon = centre.get("lat"), centre.get("lon")
+    if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+        return float(lat), float(lon)
+    return (round(float(st_cfg["lat"]) * 4) / 4, round(float(st_cfg["lon"]) * 4) / 4)
+
+
+def strip_location(snapshot: dict, pin: tuple[float, float] | None = None) -> dict:
     """Drop the station's coordinates from a snapshot before publishing.
 
     The public page does not need them: it draws the catalog, and the device's
@@ -837,11 +853,25 @@ def strip_location(snapshot: dict) -> dict:
     estimate is compared against. That is the measurement the project exists to
     show, and it only appears for earthquakes the station recognised, so it
     trilaterates nothing until there are several.
+
+    Dropping the field is still not enough, which is the third pass at this. The
+    list itself is the boundary of the disc it was queried over: 98 % of the
+    catalog inside the radius appears in it and almost nothing outside does, so
+    an observer who queries the catalog independently and sorts events into
+    listed and absent recovers the centre of that disc. Measured against the
+    published history on 6 September, one week of it places the station within
+    about 15 km -- no better than the pin -- but a month of complete collection
+    reaches 1.2 km and six months the width of the grid. The list is therefore
+    re-centred on ``pin`` here, keeping the same radius, so what the boundary
+    gives away is the pin, which is published on purpose.
     """
     out = dict(snapshot)
     out["station"] = {"label": snapshot.get("station", {}).get("label", "Los Angeles")}
+    radius = float((snapshot.get("config") or {}).get("radius_km") or 0)
     out["quakes"] = [{k: v for k, v in q.items() if k != "distance_km"}
-                     for q in snapshot.get("quakes", [])]
+                     for q in snapshot.get("quakes", [])
+                     if pin is None or radius <= 0
+                     or usgs._haversine_km(pin[0], pin[1], q["lat"], q["lon"]) <= radius]
     out["detections"] = []
     for d in snapshot.get("detections", []):
         d = dict(d)
@@ -1002,7 +1032,8 @@ def strip_watchlist(snapshot: dict) -> dict:
 
 
 def publisher_loop(pub_cfg: dict, state: SharedState,
-                   journal_path: str = "") -> None:
+                   journal_path: str = "",
+                   pin: tuple[float, float] | None = None) -> None:
     """Periodically publish the station snapshot to a remote site, so the
     device is fully autonomous and a public web page can display its data.
 
@@ -1054,7 +1085,7 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
         snapshot = strip_watchlist(snapshot)
         snapshot = strip_confirmations(snapshot)
         if not with_location:
-            snapshot = strip_location(snapshot)
+            snapshot = strip_location(snapshot, pin=pin)
         payload = json.dumps(snapshot).encode("utf-8")
         try:
             if method == "post":
@@ -1213,14 +1244,23 @@ def main() -> None:
 
     pub_cfg = cfg.get("publish") or {}
     if pub_cfg.get("enabled"):
+        pin = public_pin(pub_cfg, cfg["station"])
         pub = threading.Thread(
             target=publisher_loop,
-            args=(pub_cfg, state, calcfg.get("journal_file", "event_log.jsonl")),
+            args=(pub_cfg, state, calcfg.get("journal_file", "event_log.jsonl"),
+                  pin),
             daemon=True,
         )
         pub.start()
         print(f"[Sismo-LA] publisher on ({pub_cfg.get('method', 'post')}, "
               f"every {pub_cfg.get('interval_s', 60)}s)")
+        if not pub_cfg.get("include_location"):
+            print(f"[publish] catalog list re-centred on {pin[0]:.4f}, "
+                  f"{pin[1]:.4f} so its edge gives away the public pin and not "
+                  f"the station"
+                  f"{'' if pub_cfg.get('map_center') else ' (no map_center set:'
+                     ' the station position snapped to a quarter degree)'}",
+                  flush=True)
 
     handler = partial(DashboardHandler, state=state)
     httpd = ThreadingHTTPServer((args.host, args.port), handler)
