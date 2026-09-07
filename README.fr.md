@@ -435,6 +435,19 @@ alignées de `arduino-router` et de la bibliothèque bridge.
 [`data.html`](web-remote/data.html) sont les tableaux. L’instantané **n’a pas
 de coordonnées**. `publish.include_location: true` place la station.
 
+Retenir les coordonnées a demandé trois correctifs, bons à connaître si vous
+publiez une station depuis chez vous. Chaque séisme du catalogue portait sa
+distance à la station, et une dizaine d’entre eux la trilatèrent. La probabilité
+de détection par événement est une fonction monotone de cette distance, donc
+publier les lignes de l’audit l’encodait tout autant. Le plus discret est la
+*liste* des séismes dessinés sur la carte : c’est le contenu d’un disque de
+160 km, donc elle en trace le bord — 98 % du catalogue situé dans le rayon y
+figure et presque rien au dehors, si bien que n’importe qui peut interroger le
+catalogue de son côté, trier les événements en listés et absents, et ajuster le
+cercle. Un mois de collecte ramène le site à 1,2 km. La liste est donc recentrée
+sur `publish.map_center`, le repère à l’échelle de la ville que la carte publie
+déjà ; sans ce réglage, la position de la station est arrondie au quart de degré.
+
 Le journal (`event_log.jsonl`) et les fichiers de modèles sont sur le disque
 hôte, à côté du conteneur, et survivent aux redémarrages.
 

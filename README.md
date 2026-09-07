@@ -433,6 +433,19 @@ pins D0/D1, not USB. The MCU↔Linux Bridge needs matching versions of
 [`data.html`](web-remote/data.html) is the tables. The snapshot contains
 **no coordinates**. Set `publish.include_location: true` to plot the station.
 
+Keeping the coordinates out took three fixes, worth knowing if you publish a
+station from your home. Each catalog event used to carry its distance to the
+station, and a dozen of those trilaterate it. The per-event detection
+probability is a monotone function of that distance, so publishing the audit
+rows encoded it just as well. The quietest one is the *list* of earthquakes the
+map draws: it is the contents of a 160 km disc, so it traces that disc's edge —
+98% of the catalog inside the radius is listed and almost nothing outside is, so
+anyone can query the catalog themselves, sort events into listed and absent, and
+fit the circle. A month of collection gets to 1.2 km. The list is therefore
+re-centred on `publish.map_center`, the same city-scale pin the roster already
+publishes; without that setting the station's position is snapped to a quarter
+degree instead.
+
 The journal (`event_log.jsonl`) and the model files live on the host disk, next
 to the container, so they survive restarts.
 
