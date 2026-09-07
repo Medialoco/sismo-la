@@ -19,14 +19,15 @@ Question under test:
 > Can a node at that price detect an earthquake and estimate its magnitude,
 > unattended, with no one calibrating it by hand?
 
-Live page: <https://medialoco.github.io/sismo-la/> — **Station San Fernando**,
-city-scale pin. A second node is another row in `web-remote/stations.json`
-and another snapshot file.
+Live page: <https://medialoco.github.io/sismo-la/> — one node, drawn as a
+**20 km disc over the San Fernando Valley** rather than a marker, because a
+marker is a claim about a position and the node's is not published. A second
+node is another row in `web-remote/stations.json` and another snapshot file.
 
 A technical report on the method and the measured results is being deposited on
 Zenodo on 12 September 2026; see [Publication](#publication) below.
 
-![Station San Fernando: Arduino UNO Q and Modulino Movement](docs/images/station.png)
+![The node: Arduino UNO Q and Modulino Movement](docs/images/station.png)
 
 *4 September 2026, somewhere in the San Fernando Valley. Arduino UNO Q and
 Modulino Movement, USB-C power.*

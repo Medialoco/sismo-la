@@ -21,15 +21,17 @@ Question testée :
 > Un nœud à ce prix peut-il détecter un séisme et estimer sa magnitude, sans
 > surveillance, sans que personne ne le calibre à la main ?
 
-Page publique : <https://medialoco.github.io/sismo-la/> — **Station San
-Fernando**, pin à l’échelle de la ville. Un deuxième nœud est une autre ligne
-dans `web-remote/stations.json` et un autre fichier snapshot.
+Page publique : <https://medialoco.github.io/sismo-la/> — un nœud, dessiné comme
+un **disque de 20 km sur la San Fernando Valley** plutôt qu’un repère, parce
+qu’un repère affirme une position et que celle du nœud n’est pas publiée. Un
+deuxième nœud est une autre ligne dans `web-remote/stations.json` et un autre
+fichier snapshot.
 
 Un rapport technique sur la méthode et les résultats mesurés est déposé sur
 Zenodo le 12 septembre 2026 ; voir [Article scientifique](#article-scientifique)
 plus bas.
 
-![Station San Fernando : Arduino UNO Q et Modulino Movement](docs/images/station.png)
+![Le nœud : Arduino UNO Q et Modulino Movement](docs/images/station.png)
 
 *4 septembre 2026, quelque part dans la San Fernando Valley. Arduino UNO Q et
 Modulino Movement, alimentation USB-C.*
