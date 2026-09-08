@@ -21,11 +21,10 @@ Question testée :
 > Un nœud à ce prix peut-il détecter un séisme et estimer sa magnitude, sans
 > surveillance, sans que personne ne le calibre à la main ?
 
-Page publique : <https://medialoco.github.io/sismo-la/> — un nœud, dessiné comme
-un **disque de 20 km sur la San Fernando Valley** plutôt qu’un repère, parce
-qu’un repère affirme une position et que celle du nœud n’est pas publiée. Un
-deuxième nœud est une autre ligne dans `web-remote/stations.json` et un autre
-fichier snapshot.
+Page publique : <https://medialoco.github.io/sismo-la/>. Le nœud y apparaît comme
+un **disque de 20 km sur la San Fernando Valley** ; sa position n’est pas
+publiée. Un deuxième nœud est une autre ligne dans `web-remote/stations.json`
+avec son propre fichier snapshot.
 
 Un rapport technique sur la méthode et les résultats mesurés est déposé sur
 Zenodo le 12 septembre 2026 ; voir [Article scientifique](#article-scientifique)
@@ -39,13 +38,12 @@ Modulino Movement, alimentation USB-C.*
 ![Tableau de bord opérateur : cercles USGS, les trois modèles et l’audit](docs/images/dashboard-live.png)
 
 *Tableau de bord opérateur, en direct, 4 septembre 2026. Les cercles sont les
-événements USGS ; les trois modèles, à droite, affichent tous **learning** : 0
-point de calibration sur 8, 0 point de distance, 0 séisme contre 7129 bruits.
-L’audit en dessous est celui de la station : 6 événements catalogués en 336
-heures, 2 avec un enregistrement à l’instant d’arrivée, 0 à portée et non vu. Le
-repère est le placeholder du centre de Los Angeles, pas le site — ce tableau de
-bord reste sur le réseau local justement parce qu’il montre sinon la position
-réelle.*
+événements USGS. Les trois modèles, à droite, affichent tous **learning** : 0
+point de calibration sur 8, 0 point de distance, 0 séisme contre 4027 bruits. En
+dessous, l’audit de la station sur 336 heures : 6 événements catalogués, 2 avec
+un enregistrement à l’instant d’arrivée, 0 à portée et non vu. Le repère est un
+placeholder du centre de Los Angeles ; ce tableau de bord reste sur le réseau
+local et affiche la position réelle.*
 
 ## Vocabulaire
 
@@ -62,10 +60,26 @@ réelle.*
 | **Calibration** | Ajuster `magnitude ≈ a·log10(PGA) + b·log10(distance) + c` sur des exemples appariés. Huit correspondances avant que le modèle d’amplitude soit traité comme utilisable. Les coefficients appartiennent à cette installation. |
 | **Mouvement fort** | Sensible aux secousses proches, d’échelle « ressentie ». Ce nœud n’enregistre pas les séismes lointains (téléséismes). |
 
+### La seule échelle à retenir
+
+Tout ce qui suit est en **mg**, un millième de *g*. Quatre nombres mesurés posent
+le problème en entier :
+
+| | amplitude | ce que c’est |
+|---|---|---|
+| Bruit électrique propre du capteur | **0,36 mg** | le plancher. Rien de plus faible ne sera jamais visible. |
+| Seuil de déclenchement, site au repos | **3,08 mg** | 8,55 fois le bruit de cet instant. |
+| Un pas d’adulte sur le plancher | **4 – 11 mg** | déclenche sans difficulté. |
+| Le séisme M3,2 que la station a enregistré | **1,1 mg** | n’a jamais approché le seuil. |
+
+Le bruit domestique dépasse le séisme enregistré d’**un facteur huit**. Le
+déclencheur aveugle n’a donc jamais attrapé de séisme, et c’est un second canal,
+guidé par le catalogue, qui fait ce travail.
+
 ## Deux canaux à tenir séparés
 
-Une puce MEMS ne distingue pas un séisme d’une porte claquée. L’USGS si. La
-station a donc deux façons de regarder le sol, comptées à part.
+Une puce MEMS ne distingue pas un séisme d’une porte claquée ; le catalogue, si.
+La station regarde donc le sol de deux façons, comptées à part.
 
 | Canal | Ce qui s’est passé | Peut entraîner le modèle d’amplitude ? |
 |---|---|---|
@@ -109,18 +123,17 @@ peut se placer plus près du bruit et moyenner le train d’ondes. Sur le bruit
 de cette station, le gain de portée est un **facteur 7–8 en amplitude, une
 unité de magnitude**.
 
-**Le catalogue bouge, donc la recherche le relit.** Un sismologue révise la
+**Le catalogue est révisé, donc la recherche le relit.** Un sismologue révise la
 solution automatique des heures ou des jours plus tard : `ci41540608` est passé
 de M3,36 à M3,20 au bout de 78,5 h. Une révision déplace l’heure d’origine, la
-distance ou la profondeur — qui placent ensemble la fenêtre d’arrivée — ou la
-magnitude, qui fixe le veto d’amplitude ; le verdict peut donc changer dans les
-deux sens. Chaque séisme du catalogue est ainsi rescanné en entier tant que son
-enveloppe existe, quatorze jours, au lieu de voir sa magnitude stockée
-rapiécée. Une confirmation ne survit pas à une révision qui l’aurait refusée, et
-un séisme d’abord annoncé sous M2 puis révisé au-dessus est examiné plutôt que
-compté comme un séisme manqué par la station.
+distance ou la profondeur, qui placent la fenêtre d’arrivée, ou la magnitude, qui
+fixe le veto d’amplitude ; le verdict peut changer dans les deux sens. Chaque
+séisme du catalogue est rescanné en entier tant que son enveloppe existe,
+quatorze jours. Une confirmation ne survit pas à une révision qui l’aurait
+refusée, et un séisme annoncé sous M2 puis révisé au-dessus est examiné plutôt
+que compté comme manqué par la station.
 
-## État (6 septembre 2026)
+## État (7 septembre 2026)
 
 La station est autonome : alimentation propre, WiFi, pas d’ordinateur branché,
 pas de shell requis. Elle publie un instantané JSON toutes les 20 minutes. Si
@@ -171,15 +184,14 @@ autre.
 | 0,7 – 12 Hz (la bande sismique) | **0,00036 g** | 0,00040 g | 10 % |
 | large bande | **0,00052 g** | 0,00050 g | 4 % |
 
-Le plancher ne vient donc ni du bâtiment, ni de la rue, ni du logiciel : c'est
-le **bruit électrique propre du capteur**. À 4–10 % près, cette station est
-aussi silencieuse que la puce le permet.
+Le plancher est le **bruit électrique propre du capteur**. À 4–10 % près, cette
+station est aussi silencieuse que la puce le permet.
 
-Cela ferme une porte. Ce bruit est *blanc* — réparti uniformément en fréquence —
-et il tombe à l'intérieur de la bande sismique, si bien que la seule bande
-passante qu'il resterait à retirer est celle dont un séisme a besoin. Le filtre
-passe-bande a déjà pris le facteur 1,43 disponible. **Aucun filtre ne descend
-plus bas.** Un seuil autonome plus bas demande une puce plus silencieuse, ou
+Ce bruit est *blanc* — réparti uniformément en fréquence — et il tombe à
+l'intérieur de la bande sismique, si bien que la seule bande passante qu'il
+resterait à retirer est celle dont un séisme a besoin. Le filtre passe-bande a
+déjà pris le facteur 1,43 disponible, et aucun filtrage supplémentaire n'abaisse
+le plancher. Un seuil autonome plus bas demande une puce plus silencieuse, ou
 plusieurs puces ([`docs/sensor-upgrade.md`](docs/sensor-upgrade.md)).
 
 ## Quelle taille de séisme elle peut attraper
@@ -260,12 +272,13 @@ bruit dans lequel elle était vraiment assise à cette seconde. Cinq classes :
 dernières heures, dans
 [`station.json`](https://medialoco.github.io/sismo-la/station.json) sous
 `expected.summary` : *examinés / enregistrés / manqués*. Enregistré veut dire que
-l’enveloppe existe à cette seconde, pas que l’événement est confirmé. **Aucun des
-trois n’est affiché sur les pages publiques.** Imprimés nus, « 7 · 2 · 0 » se lit
-comme une note de 2 sur 7, soit l’inverse de leur sens ; ils sont publiés complets
-dans l’instantané que ces pages lisent elles-mêmes, et définis ici et dans la
-méthode plutôt que dans une légende. Les événements à portée restent sur le réseau
-local. Méthode : [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
+l’enveloppe existe à cette seconde, pas que l’événement est confirmé.
+
+Aucune des deux pages publiques ne les affiche. Imprimés nus, « 7 · 2 · 0 » se lit
+comme une note de 2 sur 7, soit l’inverse de leur sens, et ces comptes ne sont
+informatifs qu’à côté de leurs définitions. Ils restent complets dans l’instantané
+que ces pages lisent. Les événements à portée restent sur le réseau local.
+Méthode : [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ### Le premier manqué, 6 septembre 2026
 
@@ -289,25 +302,21 @@ moyennage entre 2 et 30 secondes ne dépasse 3,05. La secousse n’est pas dans 
 trouvait du côté optimiste d’une loi dont la dispersion courante entre sites vaut
 un facteur 2,45.
 
-Mis à côté de l’unique confirmation, cela devient instructif plutôt que décevant.
-Ontario, le 2 septembre, même magnitude à presque deux fois la distance, avait
-délivré **7,8 fois** l’amplitude prédite et a été retrouvé. Compton, plus proche,
-n’a rien délivré au-dessus du niveau ambiant. Les deux encadrent la dispersion par
-ses deux extrémités avec les données de la station, et montrent que la
-confirmation unique se trouvait sur la queue favorable.
+L’unique confirmation se trouve à l’autre extrémité de la même dispersion.
+Ontario, le 2 septembre, était de même magnitude à presque deux fois la distance
+et a délivré **7,8 fois** l’amplitude prédite. Compton, plus proche, n’a rien
+délivré au-dessus du niveau ambiant. Les deux encadrent la dispersion entre sites
+avec les données de la station, et placent la confirmation unique sur sa queue
+favorable.
 
-La présentation a demandé trois essais, et les deux échecs méritent d’être notés.
-Donner l’indicateur d’état au manqué rendait identiques un audit qui fonctionne et
-un capteur mort en silence, puisqu’un indicateur rouge plein se lit « cet appareil
-est en panne » — et seul le second est une panne. Le déplacer sur une ligne
-légendée, puis définir les trois comptes un à un sur la page de données, demandait
-encore à un visiteur de lire un paragraphe avant qu’un chiffre cesse de l’induire
-en erreur. Les pages n’en montrent donc rien, et les comptes restent dans
-[`station.json`](https://medialoco.github.io/sismo-la/station.json), lisibles par
-un programme et horodatés. C’est ce qui garde l’affirmation réfutable : les nombres
-sont publiés, en entier, toutes les 20 minutes — ce qui a été retiré, c’est la mise
-en scène graphique d’un chiffre qui ne survit pas à la séparation de sa
-définition.
+Trois façons d’afficher le manqué sur les pages publiques ont été essayées puis
+abandonnées : l’indicateur d’état, qui rendait identiques un audit qui fonctionne
+et un capteur mort ; une ligne légendée sur la page d’accueil ; puis les trois
+comptes définis un à un sur la page de données. Chacune demandait encore un
+paragraphe de définitions avant qu’un entier nu cesse d’induire en erreur. Les
+comptes restent dans
+[`station.json`](https://medialoco.github.io/sismo-la/station.json), complets et
+horodatés, toutes les 20 minutes.
 
 ## Autres mesures
 
@@ -316,6 +325,7 @@ définition.
 | Taux de déclenchement après passage d’un bureau à un support plus raide | 22,6 → 3,2 événements / h (−86 %). Plancher 0,00087 → 0,00066 g (−24 %). Le couplage domine les faux déclenchements. |
 | Mise sous tension → tableau de bord qui répond | 4 min 24 s. Un sidecar watchdog relance le conteneur ; App Lab l’arrête sinon une seconde après le boot. |
 | Fréquence dominante (après un bug de signe : échantillon centré vs non centré) | vrais taps à 2,6 / 5,0 / 10,6 Hz. Le bug imprimait ~25 Hz sur tout signal. |
+| Pic médian de l’enveloppe par jour, 1er–7 septembre | 0,721 – 0,784 mg, soit 4 % d’écart sur sept jours pleins. Sur les mêmes jours, les déclenchements aveugles vont de 0 à 3 112 et le maximum quotidien de 1,4 à 24 mg. Le nombre de déclenchements suit la présence de quelqu’un dans la maison, pas le plancher de bruit : les 4, 5 et 6 septembre n’en ont produit aucun. |
 
 Le seul signal indépendant « le capteur est vivant » est le battement MCU
 (~10 s). Un 200 du tableau de bord web veut dire que le processus Linux tourne.
@@ -328,8 +338,8 @@ Le seul signal indépendant « le capteur est vivant » est le battement MCU
 loi (avant réajustement), donc les fausses amplitudes sont 38× trop grandes.
 C’est volontaire : des valeurs corrigées resteraient sous le déclencheur et la
 démo ne montrerait rien. Le calibreur ajuste alors l’inverse de cette même loi.
-Les résidus du replay testent le pipeline. Ils sont circulaires. Ils ne sont
-pas physiques.
+Les résidus du replay testent le pipeline ; ils sont circulaires et n’ont pas de
+sens physique.
 
 Le RMSE du tableau de bord est un résidu **intra-échantillon** (le modèle noté
 sur des points qu’il a déjà ajustés) et on lui donne la *vraie* distance
@@ -437,18 +447,19 @@ alignées de `arduino-router` et de la bibliothèque bridge.
 [`data.html`](web-remote/data.html) sont les tableaux. L’instantané **n’a pas
 de coordonnées**. `publish.include_location: true` place la station.
 
-Retenir les coordonnées a demandé trois correctifs, bons à connaître si vous
-publiez une station depuis chez vous. Chaque séisme du catalogue portait sa
-distance à la station, et une dizaine d’entre eux la trilatèrent. La probabilité
-de détection par événement est une fonction monotone de cette distance, donc
-publier les lignes de l’audit l’encodait tout autant. Le plus discret est la
-*liste* des séismes dessinés sur la carte : c’est le contenu d’un disque de
-160 km, donc elle en trace le bord — 98 % du catalogue situé dans le rayon y
-figure et presque rien au dehors, si bien que n’importe qui peut interroger le
-catalogue de son côté, trier les événements en listés et absents, et ajuster le
-cercle. Un mois de collecte ramène le site à 1,2 km. La liste est donc recentrée
-sur `publish.map_center`, le repère à l’échelle de la ville que la carte publie
-déjà ; sans ce réglage, la position de la station est arrondie au quart de degré.
+Trois champs ont dû être retirés ou recentrés avant que les coordonnées soient
+réellement absentes, ce qui vaut d’être connu avant de publier une station depuis
+une adresse personnelle. Chaque séisme du catalogue portait sa distance à la
+station, et une dizaine d’entre eux la trilatèrent. La probabilité de détection
+par événement est une fonction monotone de cette distance et l’encodait tout
+autant, donc les lignes de l’audit sont parties aussi. Le troisième est la *liste*
+des séismes dessinés sur la carte : c’est le contenu d’un disque de 160 km, dont
+elle trace le bord. 98 % du catalogue situé dans le rayon y figure et presque rien
+au dehors, si bien que trier le catalogue en listés et absents puis ajuster le
+cercle en retrouve le centre — à 1,2 km après un mois de collecte. La liste est
+désormais recentrée sur `publish.map_center`, le repère à l’échelle de la ville
+que la carte publie déjà. Sans ce réglage, la position de la station est arrondie
+au quart de degré.
 
 Le journal (`event_log.jsonl`) et les fichiers de modèles sont sur le disque
 hôte, à côté du conteneur, et survivent aux redémarrages.

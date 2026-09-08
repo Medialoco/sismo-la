@@ -19,10 +19,10 @@ Question under test:
 > Can a node at that price detect an earthquake and estimate its magnitude,
 > unattended, with no one calibrating it by hand?
 
-Live page: <https://medialoco.github.io/sismo-la/> — one node, drawn as a
-**20 km disc over the San Fernando Valley** rather than a marker, because a
-marker is a claim about a position and the node's is not published. A second
-node is another row in `web-remote/stations.json` and another snapshot file.
+Live page: <https://medialoco.github.io/sismo-la/>. The node appears there as a
+**20 km disc over the San Fernando Valley**; its position is not published. A
+second node is another row in `web-remote/stations.json` with its own snapshot
+file.
 
 A technical report on the method and the measured results is being deposited on
 Zenodo on 12 September 2026; see [Publication](#publication) below.
@@ -34,13 +34,12 @@ Modulino Movement, USB-C power.*
 
 ![Operator dashboard: USGS circles, the three models, and the audit](docs/images/dashboard-live.png)
 
-*Operator dashboard, live, 4 September 2026. Circles are USGS events; the three
-models sit on the right and all three read **learning**: 0 of 8 calibration
-points, 0 distance points, 0 quakes against 7129 noises. The audit below them is
-this station's own: 6 cataloged events in 336 hours, 2 with a recording at the
-arrival instant, 0 within reach and unseen. The pin is the downtown-LA
-placeholder, not the site — this dashboard is LAN-only precisely because it
-otherwise shows the real position.*
+*Operator dashboard, live, 4 September 2026. Circles are USGS events. The three
+models on the right all read **learning**: 0 of 8 calibration points, 0 distance
+points, 0 quakes against 4027 noises. Below them, the station's own audit over
+336 hours: 6 cataloged events, 2 with a recording at the arrival instant, 0
+within reach and unseen. The pin is a downtown-LA placeholder; the dashboard is
+LAN-only and plots the real position.*
 
 ## Terms used below
 
@@ -69,16 +68,14 @@ the whole problem:
 | One adult footstep on the floor | **4 – 11 mg** | fires the trigger easily. |
 | The M3.2 earthquake this station recorded | **1.1 mg** | never came close to firing it. |
 
-Read the last two lines together: **household noise beats the earthquake by
-roughly a factor of eight.** That single fact explains most of this repository —
-why the trigger has never once caught an earthquake, and why a second,
-catalog-guided channel was needed.
+Household noise exceeds the recorded earthquake by **a factor of eight**. The
+blind trigger has consequently never caught an earthquake, and a second channel,
+guided by the catalog, does that work instead.
 
 ## Two channels that must stay separate
 
-A MEMS chip does not know an earthquake from a slammed door. USGS does. The
-station therefore uses two different ways of looking at the ground, and counts
-them apart.
+A MEMS chip cannot tell an earthquake from a slammed door; the catalog can. The
+station looks at the ground two ways and counts them apart.
 
 | Channel | What happened | May train the amplitude model? |
 |---|---|---|
@@ -118,17 +115,16 @@ about 170 000 blind STA/LTA windows per day, so the test can sit closer to the
 noise and average over the wavetrain. On this station’s own noise the extra
 reach is a **factor 7–8 in amplitude, one magnitude unit**.
 
-**The catalog keeps moving, so the search re-reads it.** A seismologist revises
+**The catalog gets revised, so the search re-reads it.** A seismologist revises
 an automatic solution hours or days later: `ci41540608` went from M3.36 to M3.20
-at 78.5 h. A revision moves the origin time, distance or depth — which together
-place the arrival window — or the magnitude, which sets the amplitude veto, so a
-verdict can flip either way. Every catalog event is therefore re-scanned in full
-for as long as its envelope survives, 14 days, rather than having its stored
-magnitude patched. A confirmation does not outlive a revision that would have
-refused it, and an earthquake first announced under M2 then revised above it
-gets examined instead of being counted as one the station missed.
+at 78.5 h. A revision moves the origin time, distance or depth, which place the
+arrival window, or the magnitude, which sets the amplitude veto; a verdict can
+change either way. Every catalog event is re-scanned in full for as long as its
+envelope survives, 14 days. A confirmation does not outlive a revision that would
+have refused it, and an earthquake announced under M2 and revised above it is
+examined rather than counted as one the station missed.
 
-## Status (6 September 2026)
+## Status (7 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
 required. It publishes a JSON snapshot every 20 minutes. If nothing changed, it
@@ -163,10 +159,9 @@ independent evidence.
 
 ## Noise floor: the wall is the sensor
 
-**Why this matters:** the noise floor is the level the instrument shows when
-nothing is moving. Anything weaker is invisible, permanently. So before asking
-how to improve the station, you have to know *what* is setting that floor — the
-building, the street, the software, or the chip.
+The noise floor is the level the instrument shows when nothing is moving.
+Anything weaker is invisible, permanently, so what sets that floor decides what
+the station can be: the building, the street, the software, or the chip.
 
 On 1 September 2026 the at-rest noise was estimated in **two independent
 frequency bands over the same ten seconds**, and compared with the LSM6DSOX
@@ -178,15 +173,14 @@ depends on comparing one night with another.
 | 0.7 – 12 Hz (the seismic band) | **0.00036 g** | 0.00040 g | 10% |
 | wideband | **0.00052 g** | 0.00050 g | 4% |
 
-So the floor is **not** the building, the street or the software: it is the
-**sensor's own electrical noise**. To within 4–10%, this station is as quiet as
-the chip allows.
+The floor is the **sensor's own electrical noise**. To within 4–10%, this station
+is as quiet as the chip allows.
 
-That closes a door. The noise is *white* — spread evenly across frequency — and
-it falls inside the seismic band, so the only bandwidth left to remove is
-bandwidth an earthquake needs. The band-pass already took the 1.43× that was
-available. **No filter goes lower.** A lower autonomous threshold needs a
-quieter chip, or several chips
+The noise is *white* — spread evenly across frequency — and falls inside the
+seismic band, so the only bandwidth left to remove is bandwidth an earthquake
+needs. The band-pass already took the 1.43× available, and no further filtering
+lowers the floor. A lower autonomous threshold needs a quieter chip, or several
+chips
 ([`docs/sensor-upgrade.md`](docs/sensor-upgrade.md)).
 
 ## How large an earthquake it can catch
@@ -260,14 +254,15 @@ reads the noise it was actually sitting in at that second. Five classes:
 | Should have been seen | in reach, site quiet enough, nothing in the record → a fault |
 
 **19 examined, 1 confirmed, 0 should have been seen** — 30 days to 2 September
-2026. The station keeps publishing the same three counts on the last 336 hours,
+2026. The same three counts are published continuously over the last 336 hours,
 in [`station.json`](https://medialoco.github.io/sismo-la/station.json) under
 `expected.summary`: *examined / recorded / missed*. Recorded means the envelope
-exists at that second, not that the event was confirmed. **None of the three is
-drawn on the public pages.** Printed bare, `7 · 2 · 0` reads as a score of 2 out of
-7, which inverts their meaning; they are published complete in the snapshot the
-pages themselves read, and defined here and in the method below rather than in a
-caption. Which events were in reach stays on the station LAN. Method:
+exists at that second, not that the event was confirmed.
+
+Neither public page draws them. Printed bare, `7 · 2 · 0` reads as a score of 2
+out of 7, which inverts the meaning, and the counts are only informative next to
+their definitions. They stay complete in the snapshot the pages read. Which
+events were in reach stays on the station LAN. Method:
 [`docs/expected-vs-observed.md`](docs/expected-vs-observed.md).
 
 ### The first miss, 6 September 2026
@@ -291,23 +286,19 @@ against its threshold of 4, and no averaging window between 2 s and 30 s gets it
 past 3.05. The shaking is simply not in the record, and the prediction sat on the
 optimistic side of a law whose ordinary site-to-site scatter is a factor 2.45.
 
-Put next to the one confirmation this is informative rather than disappointing.
-Ontario, 2 September, same magnitude at nearly twice the distance, delivered
-**7.8×** its predicted amplitude and was found. Compton, closer, delivered
-nothing above the ambient level. The two bracket the scatter from opposite ends
-with the station's own data, and show that the single confirmation sat on the
-favourable tail.
+The one confirmation sits at the other end of the same scatter. Ontario, on
+2 September, was the same magnitude at nearly twice the distance and delivered
+**7.8×** its predicted amplitude. Compton, closer, delivered nothing above the
+ambient level. The two bracket the site-to-site scatter with the station's own
+data, and place the single confirmation on its favourable tail.
 
-Presentation took three tries, and the two failures are worth recording. Giving
-the miss the status badge made a working audit and a silently dead sensor look
-identical, since a filled red badge reads as *this device is broken* — and only the
-second is a fault. Moving it to a captioned line, then defining all three counts on
-the data page, still asked a visitor to read a paragraph before a number stopped
-misleading them. So the pages show none of it, and the counts stay in
-[`station.json`](https://medialoco.github.io/sismo-la/station.json), machine-
-readable and timestamped. That is what keeps the claim refutable: the numbers are
-published, in full, every 20 minutes — what was dropped is the graphic staging of
-a figure that cannot survive being separated from its definition.
+Three ways of showing the miss on the public pages were tried and dropped: the
+status badge, which made a working audit and a dead sensor look identical; a
+captioned line on the front page; then all three counts defined on the data page.
+Each still required a paragraph of definitions before a bare integer stopped
+misleading a visitor. The counts remain in
+[`station.json`](https://medialoco.github.io/sismo-la/station.json), complete and
+timestamped, every 20 minutes.
 
 ## Other measurements
 
@@ -316,6 +307,7 @@ a figure that cannot survive being separated from its definition.
 | Trigger rate after moving the box from a desk to a stiffer mount | 22.6 → 3.2 events / h (−86%). Noise floor 0.00087 → 0.00066 g (−24%). Coupling dominates false triggers. |
 | Power-on → dashboard answering | 4 min 24 s. A watchdog sidecar restarts the container; App Lab otherwise stops it one second after boot. |
 | Dominant frequency (after a sign bug: centered vs uncentered sample) | real taps at 2.6 / 5.0 / 10.6 Hz. The bug had printed ~25 Hz on every signal. |
+| Median envelope peak per day, 1–7 September | 0.721 – 0.784 mg, a 4% spread over seven full days. Blind triggers over the same days ran 0 to 3112, and the daily maximum 1.4 to 24 mg. The trigger count tracks whether anyone is home, not the noise floor: 4–6 September fired nothing at all. |
 
 The only independent “the sensor is alive” signal is the MCU heartbeat (~10 s).
 A 200 from the web dashboard means the Linux process is up. `health.stale`
@@ -327,8 +319,8 @@ drives the public badge and a `STATION DEGRADED` banner.
 *invents* PGA from magnitude and distance using the *old* (pre-refit) law, so
 the fake amplitudes are 38× too large. That is on purpose: corrected values
 would sit under the trigger and the demo would show nothing. The calibrator
-then fits the inverse of that same law. Residuals in replay test the pipeline.
-They are circular. They are not physical.
+then fits the inverse of that same law. Residuals in replay test the pipeline;
+they are circular and carry no physical meaning.
 
 The dashboard RMSE is an **in-sample** residual (the model scored on points it
 already fitted) and it is given the *true* catalog distance. Live operation
@@ -434,18 +426,18 @@ pins D0/D1, not USB. The MCU↔Linux Bridge needs matching versions of
 [`data.html`](web-remote/data.html) is the tables. The snapshot contains
 **no coordinates**. Set `publish.include_location: true` to plot the station.
 
-Keeping the coordinates out took three fixes, worth knowing if you publish a
-station from your home. Each catalog event used to carry its distance to the
-station, and a dozen of those trilaterate it. The per-event detection
-probability is a monotone function of that distance, so publishing the audit
-rows encoded it just as well. The quietest one is the *list* of earthquakes the
-map draws: it is the contents of a 160 km disc, so it traces that disc's edge —
-98% of the catalog inside the radius is listed and almost nothing outside is, so
-anyone can query the catalog themselves, sort events into listed and absent, and
-fit the circle. A month of collection gets to 1.2 km. The list is therefore
-re-centred on `publish.map_center`, the same city-scale pin the roster already
-publishes; without that setting the station's position is snapped to a quarter
-degree instead.
+Three fields had to be removed or re-centred before the coordinates were
+actually out, which is worth knowing before publishing a station from a home
+address. Each catalog event carried its distance to the station, and a dozen of
+those trilaterate it. The per-event detection probability is a monotone function
+of that distance and encoded it just as well, so the audit rows went too. The
+third is the *list* of earthquakes the map draws: it is the contents of a 160 km
+disc and traces that disc's edge. 98% of the catalog inside the radius is listed
+and almost nothing outside is, so sorting the catalog into listed and absent and
+fitting the circle recovers the centre — to 1.2 km after a month of collection.
+The list is now re-centred on `publish.map_center`, the city-scale pin the roster
+already publishes. Without that setting the station's position is snapped to a
+quarter degree.
 
 The journal (`event_log.jsonl`) and the model files live on the host disk, next
 to the container, so they survive restarts.
@@ -483,7 +475,8 @@ sismo-la/
 - [x] First confirmation (`ci41540608`, M3.2, 2 September 2026). Blind trigger
       needed ~3× the arrived amplitude.
 - [ ] First autonomous detection: none. Amplitude calibration 0 of 8.
-- [x] Catalog audit; 0 should-have-been-seen in the 30 days to 2 September.
+- [x] Catalog audit, which returned its first `missed` against the station on
+      6 September and published it unprompted.
 - [ ] Calibration curve from real recordings, held-out residuals.
 - [ ] Contest video: replay + a live tap on the box (around 8 September 2026).
 - [ ] Technical report deposited on Zenodo (12 September 2026).
