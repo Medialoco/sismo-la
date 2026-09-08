@@ -2,24 +2,40 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-Sismo-LA est une petite station dans le comté de Los Angeles. Elle est dans une
-maison, tourne sur une alimentation USB-C et le WiFi, et coûte environ 80 $. Un
-accéléromètre MEMS (une puce qui mesure l’accélération, la même famille que
-dans un téléphone) enregistre quand le sol ou le bâtiment tremble. Le
-[catalogue USGS](https://earthquake.usgs.gov/) est la liste officielle des
-séismes : en quelques minutes il publie la **magnitude** (la taille, notée M3,2
-par exemple), le lieu, la profondeur et l’heure exacte.
+Sismo-LA est une petite station installée dans une maison du comté de Los
+Angeles. Elle fonctionne sur USB-C et WiFi, pour environ 80 $. Son
+accéléromètre MEMS, une puce de la même famille que celles des téléphones,
+mesure les vibrations du sol et du bâtiment. Le [catalogue USGS](https://earthquake.usgs.gov/)
+publie quelques minutes après chaque événement sa **magnitude**, son lieu, sa
+profondeur et son heure exacte.
 
-Le travail de la station : apparier *ce que cette boîte a mesuré* et *ce que
-l’USGS dit qu’il s’est passé*, puis ajuster un modèle **lié au site** : comment
-*ce* capteur, sur *cette* étagère, dans *ce* bâtiment, convertit une secousse
-en magnitude et en distance. Après cet ajustement, le modèle peut tourner le
-réseau débranché.
+La station compare donc deux sources : *ce que cette boîte a mesuré* et *ce que
+l'USGS rapporte*. Ces correspondances servent à ajuster un modèle propre au
+site : comment ce capteur, posé sur cette étagère dans ce bâtiment, transforme
+une secousse en amplitude, en magnitude et en distance. Le modèle est ensuite
+capable de fonctionner sans connexion réseau.
 
 Question testée :
 
-> Un nœud à ce prix peut-il détecter un séisme et estimer sa magnitude, sans
-> surveillance, sans que personne ne le calibre à la main ?
+> Un nœud de ce prix peut-il détecter un séisme et estimer sa magnitude, sans
+> surveillance et sans calibration manuelle ?
+
+**Réponse courte au 8 septembre 2026 :** pas encore pour la détection autonome.
+La station n'a trouvé aucun séisme toute seule et sa calibration reste à 0 sur
+8 points. En revanche, elle a confirmé un séisme en relisant son enregistrement
+à l'heure indiquée par l'USGS, puis elle a publié un premier cas où sa propre
+loi disait qu'elle aurait dû voir un séisme sans en trouver la trace. C'est cette
+capacité à publier un échec, et non un compteur de succès, qui constitue le
+résultat principal.
+
+### Comment lire ce projet
+
+Le raisonnement tient en trois questions : **que peut voir le capteur ?**,
+**que s'est-il passé au moment où un séisme a eu lieu ?**, et **la station
+reconnaît-elle ses propres erreurs ?** Les nombres qui suivent n'ont pas tous le
+même statut : une mesure vient du capteur, une prédiction vient d'un modèle, et
+une confirmation vient d'une vérification guidée par l'USGS. Cette dernière
+n'est donc pas une détection autonome.
 
 Page publique : <https://medialoco.github.io/sismo-la/>. Le nœud y apparaît comme
 un **disque de 20 km sur la San Fernando Valley** ; sa position n’est pas
@@ -46,6 +62,12 @@ placeholder du centre de Los Angeles ; ce tableau de bord reste sur le réseau
 local et affiche la position réelle.*
 
 ## Vocabulaire
+
+Une magnitude décrit la taille du séisme à sa source. Le PGA décrit, lui,
+l'accélération reçue par cette station. Deux séismes de même magnitude peuvent
+produire des PGA très différents selon leur distance, leur profondeur et le sol.
+Il ne faut donc pas lire un PGA comme une magnitude, ni comparer les deux sans
+indiquer la distance.
 
 | Terme | Sens ici |
 |---|---|
@@ -86,9 +108,9 @@ La station regarde donc le sol de deux façons, comptées à part.
 | **Détection** | Le STA/LTA aveugle a tiré tout seul. Si l’USGS a ensuite un séisme à cette seconde, le couple (PGA, M et distance catalogue) est un exemple de calibration. | oui |
 | **Confirmation** | L’USGS a publié une heure d’origine. La station a calculé quand les ondes devaient arriver et a lu l’enveloppe stockée. Si l’enveloppe est élevée (z ≥ 4), le sol a bougé. La station n’a pas trouvé cette seconde toute seule. | non |
 
-Les confirmations sont exclues parce qu’elles sont *sélectionnées* pour être une
+Les confirmations sont exclues parce qu'elles sont *sélectionnées* pour être une
 grande excursion près du bruit : leur PGA est biaisé vers le haut. Ajuster une
-loi de magnitude sur cet ensemble cuirait le biais
+loi de magnitude sur cet ensemble reproduirait ce biais
 (`retro.feed_calibration: false`).
 
 Le journal, le tableau de bord et la page publique tiennent deux listes.
@@ -133,7 +155,7 @@ quatorze jours. Une confirmation ne survit pas à une révision qui l’aurait
 refusée, et un séisme annoncé sous M2 puis révisé au-dessus est examiné plutôt
 que compté comme manqué par la station.
 
-## État (7 septembre 2026)
+## État (8 septembre 2026)
 
 La station est autonome : alimentation propre, WiFi, pas d’ordinateur branché,
 pas de shell requis. Elle publie un instantané JSON toutes les 20 minutes. Si
@@ -142,7 +164,7 @@ la page publique distingue une nuit calme d’un publisher mort. Après un vrai
 débranchement, le tableau de bord a répondu en **4 min 24 s**. Une panne de
 5 h 43 min a montré le MCU redémarrant depuis sa propre flash.
 
-**Calibration d’amplitude : 0 sur 8.** **Détections autonomes de séismes : 0.**
+**Calibration d'amplitude : 0 sur 8.** **Détections autonomes de séismes : 0.**
 Un séisme catalogué a été **confirmé** dans l’enveloppe (section suivante), et un
 autre a été **signalé par la station comme un séisme qu’elle aurait dû voir et
 qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2026)).
@@ -260,7 +282,7 @@ distance connus, estimer M. Les coefficients ont été ajustés sur **12 324
 valeurs de PGA** réellement enregistrées par des stations ShakeMap USGS pendant
 40 séismes du sud de la Californie (M3,03–5,51, 3–200 km, 1 006 stations) :
 
-`PGA_pred = 0,867·M − 1,740·log10 R − 3,305`  (log10 g)
+`log10(PGA en g) = 0,867·M − 1,740·log10(R en km) − 3,305`
 
 dispersion 0,390 log10, R² = 0,80. Un jeu de coefficients antérieur
 surestimait l’amplitude de 37,9× (environ deux unités de magnitude).

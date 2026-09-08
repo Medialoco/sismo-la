@@ -2,22 +2,37 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-Sismo-LA is one small station in Los Angeles County. It sits in a house, runs
-on USB-C power and WiFi, and costs about $80. A MEMS accelerometer (a tiny chip
-that measures acceleration, the same class of sensor as in a phone) records
-when the ground or the building shakes. The [USGS catalog](https://earthquake.usgs.gov/)
-is the official list of earthquakes: within minutes of an event it publishes
-**magnitude** (size, written M3.2 for example), place, depth and exact time.
+Sismo-LA is a small station installed in a house in Los Angeles County. It runs
+on USB-C power and WiFi, for about $80. Its MEMS accelerometer, a chip from the
+same family as the sensors in phones, measures vibrations in the ground and the
+building. Within minutes of an event, the [USGS catalog](https://earthquake.usgs.gov/)
+publishes its **magnitude**, location, depth and exact origin time.
 
-The station’s job is to pair *what this box measured* with *what USGS says
-happened*, and from those pairs to fit a **site-specific** model: how *this*
-sensor, on *this* shelf, in *this* building, converts a shake into a magnitude
-and a distance. After that fit, the model can run with the network unplugged.
+The station compares two sources: *what this box measured* and *what USGS
+reports*. Those matches fit a **site-specific** model: how this sensor, on this
+shelf in this building, turns a shake into amplitude, magnitude and distance.
+The model can then operate without a network connection.
 
 Question under test:
 
 > Can a node at that price detect an earthquake and estimate its magnitude,
-> unattended, with no one calibrating it by hand?
+> unattended and without manual calibration?
+
+**Short answer, 8 September 2026:** not yet for autonomous detection. The
+station has found no earthquake by itself, and its calibration remains at 0 of 8
+points. It has confirmed one earthquake by reading its stored record at the time
+provided by USGS, and it has published a first case where its own model said it
+should have seen an earthquake but found no trace. That ability to publish a
+failure, rather than a success counter, is the main result.
+
+### How to read this project
+
+The reasoning follows three questions: **what can the sensor see?**, **what
+happened when an earthquake occurred?**, and **can the station recognize its own
+mistakes?** The numbers below do not all have the same status: a measurement
+comes from the sensor, a prediction comes from a model, and a confirmation comes
+from a check guided by USGS. A confirmation is therefore not an autonomous
+detection.
 
 Live page: <https://medialoco.github.io/sismo-la/>. The node appears there as a
 **20 km disc over the San Fernando Valley**; its position is not published. A
@@ -42,6 +57,12 @@ within reach and unseen. The pin is a downtown-LA placeholder; the dashboard is
 LAN-only and plots the real position.*
 
 ## Terms used below
+
+Magnitude describes the size of an earthquake at its source. PGA describes the
+acceleration received at this station. Two earthquakes with the same magnitude
+can produce very different PGA values depending on distance, depth and local
+ground. Do not read PGA as magnitude, or compare the two without stating the
+distance.
 
 | Term | Meaning here |
 |---|---|
@@ -84,7 +105,7 @@ station looks at the ground two ways and counts them apart.
 
 Confirmations are excluded because they are *selected* for being a large
 excursion next to the noise: their PGA is biased high. Fitting a magnitude law
-on that set would bake the bias in (`retro.feed_calibration: false`).
+on that set would reproduce the bias (`retro.feed_calibration: false`).
 
 The journal, the dashboard and the public page keep two lists.
 
@@ -124,7 +145,7 @@ envelope survives, 14 days. A confirmation does not outlive a revision that woul
 have refused it, and an earthquake announced under M2 and revised above it is
 examined rather than counted as one the station missed.
 
-## Status (7 September 2026)
+## Status (8 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
 required. It publishes a JSON snapshot every 20 minutes. If nothing changed, it
@@ -245,7 +266,7 @@ The coefficients were fitted on **12 324 PGA values** actually recorded by USGS
 ShakeMap stations during 40 southern California earthquakes (M3.03–5.51,
 3–200 km, 1 006 stations):
 
-`PGA_pred = 0.867·M − 1.740·log10 R − 3.305`  (log10 g)
+`log10(PGA in g) = 0.867·M − 1.740·log10(R in km) − 3.305`
 
 scatter 0.390 log10, R² = 0.80. An earlier coefficient set over-predicted
 amplitude by 37.9× (about two magnitude units).
