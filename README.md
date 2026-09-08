@@ -36,7 +36,7 @@ Modulino Movement, USB-C power.*
 
 *Operator dashboard, live, 4 September 2026. Circles are USGS events; the three
 models sit on the right and all three read **learning**: 0 of 8 calibration
-points, 0 distance points, 0 quakes against 4027 noises. The audit below them is
+points, 0 distance points, 0 quakes against 7129 noises. The audit below them is
 this station's own: 6 cataloged events in 336 hours, 2 with a recording at the
 arrival instant, 0 within reach and unseen. The pin is the downtown-LA
 placeholder, not the site — this dashboard is LAN-only precisely because it

@@ -388,10 +388,10 @@
           : (STATIONS.length > 1
             ? `<span class="hint">no snapshot yet</span>` : '');
         return `<div class="node">${n.name}${extra}</div>`;
-      }).join('') +
-        `<span class="hint">Drawn as ${STATIONS.length > 1 ? 'areas' : 'an area'},` +
-        ` not ${STATIONS.length > 1 ? 'points' : 'a point'}: somewhere inside,` +
-        ` and no closer than that.</span>`;
+      }).join('');
+      // No caption about the placement here. The legend already reads "node ·
+      // somewhere inside" and the popup carries the full sentence; a third copy
+      // in the panel was saying it once too often.
     }
 
     const magColor = (m) =>

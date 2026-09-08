@@ -69,7 +69,7 @@ We fill this page in as the project progresses.
      refused although the catalog had named their exact second, because the
      shaking they could deliver here was below the sensor's own noise;
    - zero autonomous detections, amplitude calibration 0 of 8, noise filter
-     0 earthquakes against 4027 noise samples. These zeros are published as
+     0 earthquakes against 7129 noise samples. These zeros are published as
      they stand and are part of the result.
    There is **no calibration curve** to show. Do not promise one.
 10. **How we would know it is broken** — the audit: every cataloged event

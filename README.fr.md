@@ -40,7 +40,7 @@ Modulino Movement, alimentation USB-C.*
 
 *Tableau de bord opérateur, en direct, 4 septembre 2026. Les cercles sont les
 événements USGS ; les trois modèles, à droite, affichent tous **learning** : 0
-point de calibration sur 8, 0 point de distance, 0 séisme contre 4027 bruits.
+point de calibration sur 8, 0 point de distance, 0 séisme contre 7129 bruits.
 L’audit en dessous est celui de la station : 6 événements catalogués en 336
 heures, 2 avec un enregistrement à l’instant d’arrivée, 0 à portée et non vu. Le
 repère est le placeholder du centre de Los Angeles, pas le site — ce tableau de

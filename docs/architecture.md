@@ -42,7 +42,7 @@ communicate over the Arduino Bridge (RPC):
    duration, dominant frequency), separates `earthquake` from `noise` (truck,
    door, footsteps...). It needs at least three examples of **each** class
    before it returns anything, and it has only ever seen one class: as of
-   5 September 2026, 0 earthquakes against 4027 noise samples. So it abstains,
+   7 September 2026, 0 earthquakes against 7129 noise samples. So it abstains,
    and the published state says so rather than guessing. An Edge Impulse model
    could take its place (see the note in `app.yaml`); none is deployed.
 
