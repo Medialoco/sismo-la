@@ -160,11 +160,23 @@ qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2
 | Site | au repos | bruit électrique du capteur ; personne au-dessus de la boîte |
 | Compteur de calibration | toujours 0 sur 8 | une confirmation n’a pas le droit de l’incrémenter |
 
-Un événement, pas un taux. z = 4,34 est une marge mince au-dessus de 4,0. Un
-taux de fausse confirmation de 1 sur 1 200 a été calculé sur du *bruit de
-capteur pur* ; cette maison produit aussi ses propres impulsions, donc ce
-1-sur-1 200 est optimiste jusqu’à recalcul sur l’enveloppe enregistrée. Le
-test z ne regarde pas le décalage : les 24 s sont une preuve indépendante.
+Un événement, pas un taux, et z = 4,34 est une marge mince au-dessus de 4,0.
+
+**Le taux de fausse confirmation, maintenant mesuré sur l’enveloppe enregistrée.**
+Un taux de 1 sur 1 200 avait été calculé sur du *bruit de capteur pur*, et cette
+maison produit ses propres impulsions ; le chiffre a donc été rejoué contre
+2 781 fenêtres témoins réparties sur cinq journées, même recherche et même
+géométrie, à des instants où aucun séisme n’a eu lieu. Le seuil z = 4,34 y est
+franchi **22 % du temps — une fois sur cinq, et non sur 1 200.** Le taux suit
+l’occupation : environ 3 % maison vide, 25 % avec quelqu’un à la maison.
+
+L’amplitude est ce qui fait tenir la confirmation. Ces fausses confirmations ont
+un pic médian de **10 mg**, soit des pas, quand ce séisme culminait à 1,095 mg,
+sous le seuil du déclencheur. En exigeant les deux — z ≥ 4,34 et un pic aussi
+faible — il reste **1,87 %, une sur 53**. C’est le chiffre qui s’applique ici.
+Rejouée aux heures voisines du 2 septembre, la recherche donne 29 % de témoins au
+moins aussi forts : la confirmation pèse donc moins lourd que ne le suggère un
+seuil à quatre écarts. Méthode et tableau par journée : §10.4 du rapport.
 
 ## Plancher de bruit : le mur, c'est le capteur
 
@@ -495,7 +507,9 @@ sismo-la/
 - [x] Enveloppe continue + recherche rétrospective (facteur 7–8 en amplitude),
       comptée à part des détections.
 - [x] Première confirmation (`ci41540608`, M3,2, 2 septembre 2026). Le
-      déclencheur aveugle demandait ~3× l’amplitude arrivée.
+      déclencheur aveugle demandait ~3× l’amplitude arrivée. Son taux de fausse
+      confirmation est désormais mesuré sur des enregistrements réels et non sur
+      du bruit simulé : une sur 53.
 - [ ] Première détection autonome : aucune. Calibration d’amplitude 0 sur 8.
 - [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre, puis
       un premier manqué le 6 septembre, publié par la station contre elle-même.
@@ -532,14 +546,16 @@ chiffres qui les sous-tendent :
   magnitudes qui s'en déduisent par distance ;
 - le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
 - la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
+- le taux de fausse confirmation mesuré sur 2 781 fenêtres témoins : une sur cinq
+  pour la significativité seule, une sur 53 avec la condition d'amplitude ;
 - l'audit contre le catalogue en six verdicts, qui a produit son premier manqué
   contre la station le 6 septembre ;
-- trois affirmations de cette documentation que les données ont corrigées.
+- quatre affirmations de cette documentation que les données ont corrigées.
 
 Ses figures et ses vérifications numériques sont produites par un script unique
 qui **importe l'estimateur de ce dépôt** au lieu de le réimplémenter : la
 vérification porte donc sur le code que la station exécute réellement. Entrées :
-l'enveloppe brute de la station, une journée UTC complète d'enveloppe, une requête
+l'enveloppe brute de la station, cinq journées UTC complètes d'enveloppe, une requête
 au catalogue de l'USGS et l'instantané public.
 
 ## Licence
