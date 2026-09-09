@@ -2,18 +2,23 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-Sismo-LA est une petite station installée dans une maison du comté de Los
-Angeles. Elle fonctionne sur USB-C et WiFi, pour environ 80 $. Son
-accéléromètre MEMS, une puce de la même famille que celles des téléphones,
-mesure les vibrations du sol et du bâtiment. Le [catalogue USGS](https://earthquake.usgs.gov/)
-publie quelques minutes après chaque événement sa **magnitude**, son lieu, sa
-profondeur et son heure exacte.
+Sismo-LA est une petite station dans une maison du comté de Los Angeles. Elle
+fonctionne sur USB-C et WiFi, pour environ 80 $. Son accéléromètre MEMS — une
+puce de la même famille que le capteur d'inclinaison d'un téléphone — mesure
+les vibrations du sol et du bâtiment.
 
-La station compare donc deux sources : *ce que cette boîte a mesuré* et *ce que
-l'USGS rapporte*. Ces correspondances servent à ajuster un modèle propre au
-site : comment ce capteur, posé sur cette étagère dans ce bâtiment, transforme
-une secousse en amplitude, en magnitude et en distance. Le modèle est ensuite
-capable de fonctionner sans connexion réseau.
+Le [catalogue USGS](https://earthquake.usgs.gov/) est la liste officielle des
+séismes de la région. Quelques minutes après chaque événement, il publie
+magnitude, lieu, profondeur et heure exacte. Au-dessus d'environ M1,5 ici, il
+permet aussi d'affirmer qu'**aucun autre séisme n'a eu lieu**. C'est ce second
+fait qui rend une station silencieuse vérifiable.
+
+La station compare *ce que cette boîte a mesuré* et *ce que l'USGS rapporte*.
+Une liste de détections vide admet alors trois lectures : rien n'était assez
+proche ; la station est aveugle ; ou elle est arrêtée. Distinguer ces trois
+cas est l'objet du projet. Les correspondances, quand elles existent,
+ajusteraient un modèle propre à ce capteur, sur cette étagère, dans ce
+bâtiment. Ce modèle a encore **0 point sur 8**.
 
 Question testée :
 
@@ -21,21 +26,22 @@ Question testée :
 > surveillance et sans calibration manuelle ?
 
 **Réponse courte au 8 septembre 2026 :** pas encore pour la détection autonome.
-La station n'a trouvé aucun séisme toute seule et sa calibration reste à 0 sur
-8 points. En revanche, elle a confirmé un séisme en relisant son enregistrement
-à l'heure indiquée par l'USGS, puis elle a publié un premier cas où sa propre
-loi disait qu'elle aurait dû voir un séisme sans en trouver la trace. C'est cette
-capacité à publier un échec, et non un compteur de succès, qui constitue le
-résultat principal.
+La station n'a trouvé aucun séisme toute seule. Elle a confirmé un séisme en
+relisant son enregistrement à l'heure indiquée par l'USGS, puis elle a publié
+un premier cas où sa propre loi disait qu'elle aurait dû voir un séisme sans
+en trouver la trace. Publier cet échec est le résultat principal.
 
 ### Comment lire ce projet
 
-Le raisonnement tient en trois questions : **que peut voir le capteur ?**,
-**que s'est-il passé au moment où un séisme a eu lieu ?**, et **la station
-reconnaît-elle ses propres erreurs ?** Les nombres qui suivent n'ont pas tous le
-même statut : une mesure vient du capteur, une prédiction vient d'un modèle, et
-une confirmation vient d'une vérification guidée par l'USGS. Cette dernière
-n'est donc pas une détection autonome.
+Trois questions, dans cet ordre : **que peut voir le capteur ?**, **que
+s'est-il passé au moment où un séisme a eu lieu ?**, et **la station
+reconnaît-elle ses propres erreurs ?**
+
+Les nombres ci-dessous sont de trois sortes. Une **mesure** vient du capteur.
+Une **prédiction** vient d'un modèle (quelle secousse un séisme du catalogue
+aurait dû produire ici). Un **contrôle** est le même test, à un instant où
+aucun séisme n'a eu lieu. Une **confirmation** est une mesure prise à une
+seconde que l'USGS a désignée ; ce n'est pas une détection.
 
 Page publique : <https://medialoco.github.io/sismo-la/>. Le nœud y apparaît comme
 un **disque de 20 km sur la San Fernando Valley** ; sa position n’est pas
@@ -72,13 +78,15 @@ indiquer la distance.
 | Terme | Sens ici |
 |---|---|
 | **Station / nœud** | Cette boîte : Arduino UNO Q + module MEMS + alimentation + WiFi. |
+| **Catalogue** | Liste officielle USGS des séismes. Il dit quels événements ont eu lieu, et au-dessus d'environ M1,5 ici, qu'aucun autre n'a eu lieu. La station n'appartient pas à ce réseau et n'y change rien. |
 | **MCU** | Le microcontrôleur temps réel (STM32). Il lit le capteur 100 fois par seconde et décide du début d’une secousse. |
 | **Côté Linux** | Le processeur d’application de la carte. Il parle à l’USGS, stocke, ajuste les modèles, sert le tableau de bord. |
 | **PGA** | Peak ground acceleration : la plus grande accélération d’une secousse, en *g* (1 g ≈ 9,8 m/s²). Un pas dans cette maison, c’est quelques millièmes de g. |
-| **STA/LTA** | Short-term average / long-term average. Déclencheur sismique classique : énergie des 0,5 dernières secondes divisée par celle des 10 dernières. Quand le rapport saute, le MCU déclare un événement. Il n’y a pas de ligne fixe « tirer à 0,01 g » ; le plancher suit le bruit récent. |
+| **STA/LTA** | Une alarme qui compare *maintenant* (0,5 s) et *d'habitude* (10 s). Quand le rapport saute, le MCU déclare un événement. Il n’y a pas de ligne fixe « tirer à 0,01 g » ; le plancher suit le bruit récent. |
 | **Déclencheur aveugle** | Le STA/LTA qui tire tout seul, sans l’aide du catalogue. |
-| **Enveloppe** | Une trace à 1 Hz de la force du mouvement filtré (0,7–12 Hz). Un fichier CSV par jour UTC. Permet de *revenir* sur une seconde où le déclencheur n’a pas tiré. |
-| **z** | Nombre de dispersions de bruit local au-dessus des minutes précédentes. z = 4,0 est le seuil de confirmation. |
+| **Enveloppe** | Une silhouette à 1 Hz du mouvement filtré (0,7–12 Hz) : un maximum et une moyenne par seconde. Un fichier CSV par jour UTC. Suffit pour *revenir* sur une seconde où le déclencheur n’a pas tiré. |
+| **z** | À quel point l'enveloppe sort de l'ordinaire des minutes précédentes, en unités de la dispersion de ce site. z = 4,0 est le seuil de confirmation. |
+| **Contrôle** | La même recherche, à un instant où aucun séisme n'a eu lieu. Si le seuil est encore franchi, c'est une fausse confirmation. |
 | **Calibration** | Ajuster `magnitude ≈ a·log10(PGA) + b·log10(distance) + c` sur des exemples appariés. Huit correspondances avant que le modèle d’amplitude soit traité comme utilisable. Les coefficients appartiennent à cette installation. |
 | **Mouvement fort** | Sensible aux secousses proches, d’échelle « ressentie ». Ce nœud n’enregistre pas les séismes lointains (téléséismes). |
 
@@ -100,18 +108,26 @@ guidé par le catalogue, qui fait ce travail.
 
 ## Deux canaux à tenir séparés
 
-Une puce MEMS ne distingue pas un séisme d’une porte claquée ; le catalogue, si.
-La station regarde donc le sol de deux façons, comptées à part.
+Une puce MEMS ne distingue pas un séisme d’une porte claquée. Le catalogue le
+peut, donc la station regarde le sol de deux façons et tient deux comptes.
 
 | Canal | Ce qui s’est passé | Peut entraîner le modèle d’amplitude ? |
 |---|---|---|
 | **Détection** | Le STA/LTA aveugle a tiré tout seul. Si l’USGS a ensuite un séisme à cette seconde, le couple (PGA, M et distance catalogue) est un exemple de calibration. | oui |
 | **Confirmation** | L’USGS a publié une heure d’origine. La station a calculé quand les ondes devaient arriver et a lu l’enveloppe stockée. Si l’enveloppe est élevée (z ≥ 4), le sol a bougé. La station n’a pas trouvé cette seconde toute seule. | non |
 
-Les confirmations sont exclues parce qu'elles sont *sélectionnées* pour être une
-grande excursion près du bruit : leur PGA est biaisé vers le haut. Ajuster une
-loi de magnitude sur cet ensemble reproduirait ce biais
-(`retro.feed_calibration: false`).
+Les confirmations sont exclues pour trois raisons distinctes. Elles sont
+*sélectionnées* pour être une grande excursion près du bruit, donc leur PGA est
+biaisé vers le haut, et les événements qui n'ont rien délivré ne fournissent
+aucun point — l'échantillon est tronqué exactement du côté dont le modèle a
+besoin. La distance est circulaire : elle vient du catalogue qui fournit aussi
+la magnitude cible, et c'est elle qui localise la fenêtre où le PGA est lu. Et
+ce n'est pas la même grandeur : un déclenchement mesure un pic sur 0,5 s à
+95 Hz, l'enveloppe une moyenne glissante sur 5 à 20 s à 1 Hz.
+
+La séparation est structurelle et non un réglage : aucun chemin de la boucle
+rétrospective n'appelle `add_point`. Seul un déclenchement aveugle apparié au
+catalogue alimente les modèles.
 
 Le journal, le tableau de bord et la page publique tiennent deux listes.
 
@@ -145,15 +161,13 @@ peut se placer plus près du bruit et moyenner le train d’ondes. Sur le bruit
 de cette station, le gain de portée est un **facteur 7–8 en amplitude, une
 unité de magnitude**.
 
-**Le catalogue est révisé, donc la recherche le relit.** Un sismologue révise la
-solution automatique des heures ou des jours plus tard : `ci41540608` est passé
-de M3,36 à M3,20 au bout de 78,5 h. Une révision déplace l’heure d’origine, la
-distance ou la profondeur, qui placent la fenêtre d’arrivée, ou la magnitude, qui
-fixe le veto d’amplitude ; le verdict peut changer dans les deux sens. Chaque
-séisme du catalogue est rescanné en entier tant que son enveloppe existe,
-quatorze jours. Une confirmation ne survit pas à une révision qui l’aurait
-refusée, et un séisme annoncé sous M2 puis révisé au-dessus est examiné plutôt
-que compté comme manqué par la station.
+**Le catalogue est révisé, donc la recherche le relit.** Une solution automatique
+peut changer des heures ou des jours plus tard : `ci41540608` est passé de M3,36
+à M3,20 au bout de 78,5 h. Une révision peut déplacer la fenêtre d’arrivée (heure,
+distance, profondeur) ou le contrôle d’amplitude (magnitude), donc un verdict
+peut apparaître ou disparaître. Chaque séisme du catalogue est rescanné en entier
+tant que son enveloppe existe, quatorze jours. Un séisme d’abord annoncé sous M2
+puis révisé au-dessus est examiné, plutôt que compté comme manqué.
 
 ## État (8 septembre 2026)
 
@@ -184,21 +198,20 @@ qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2
 
 Un événement, pas un taux, et z = 4,34 est une marge mince au-dessus de 4,0.
 
-**Le taux de fausse confirmation, maintenant mesuré sur l’enveloppe enregistrée.**
-Un taux de 1 sur 1 200 avait été calculé sur du *bruit de capteur pur*, et cette
-maison produit ses propres impulsions ; le chiffre a donc été rejoué contre
-2 781 fenêtres témoins réparties sur cinq journées, même recherche et même
-géométrie, à des instants où aucun séisme n’a eu lieu. Le seuil z = 4,34 y est
-franchi **22 % du temps — une fois sur cinq, et non sur 1 200.** Le taux suit
-l’occupation : environ 3 % maison vide, 25 % avec quelqu’un à la maison.
+**À quelle fréquence le second canal se trompe, maintenant mesuré sur
+l’enveloppe enregistrée.** Un taux de 1 sur 1 200 avait été calculé sur du
+*bruit de capteur pur*. Cette maison produit aussi des pas, donc la même
+recherche a été rejouée à 2 781 instants de **contrôle** — des heures où aucun
+séisme n’a eu lieu. Le seuil z = 4,34 y est franchi **22 % du temps, une fois
+sur cinq**. Le taux suit l’occupation : environ 3 % maison vide, 25 % avec
+quelqu’un à la maison.
 
-L’amplitude est ce qui fait tenir la confirmation. Ces fausses confirmations ont
-un pic médian de **10 mg**, soit des pas, quand ce séisme culminait à 1,095 mg,
-sous le seuil du déclencheur. En exigeant les deux — z ≥ 4,34 et un pic aussi
-faible — il reste **1,87 %, une sur 53**. C’est le chiffre qui s’applique ici.
-Rejouée aux heures voisines du 2 septembre, la recherche donne 29 % de témoins au
-moins aussi forts : la confirmation pèse donc moins lourd que ne le suggère un
-seuil à quatre écarts. Méthode et tableau par journée : §10.4 du rapport.
+Ces faux succès ont un pic médian de **10 mg** (des pas). Ce séisme culminait
+à 1,095 mg, sous le seuil du déclencheur. En exigeant les deux — z ≥ 4,34
+*et* un pic aussi faible — il reste **1,87 %, une sur 53**. C’est le chiffre
+qui s’applique ici. Rejouée aux heures voisines du 2 septembre, la recherche
+donne encore 29 % de témoins au moins aussi forts. Méthode et tableau par
+journée : §10.4 du rapport.
 
 ## Plancher de bruit : le mur, c'est le capteur
 
@@ -289,13 +302,15 @@ surestimait l’amplitude de 37,9× (environ deux unités de magnitude).
 
 ## Un silence, c’est « en panne » ou « il ne s’est rien passé » ?
 
-Une liste de détections vide est ambiguë. Pour chaque séisme catalogué, la
-station (1) prédit le PGA que la loi dit qui aurait dû arriver, et (2) lit le
-bruit dans lequel elle était vraiment assise à cette seconde. Cinq classes :
+Une liste de détections vide est la réponse habituelle, pas une panne à
+elle seule : **96,9 %** du catalogue M ≥ 2 dans 160 km sur cinq ans tombe sous
+les deux canaux (rapport, fig. 2). Pour chaque séisme catalogué, la station
+(1) prédit le PGA que la loi dit qui aurait dû arriver, et (2) lit le bruit
+dans lequel elle était vraiment assise à cette seconde. Cinq classes :
 
 | Classe | Sens |
 |---|---|
-| Hors de portée | PGA attendu sous ce que ce site peut voir ; normal pour ~99 % du catalogue |
+| Hors de portée | PGA attendu sous ce que ce site peut voir ; le cas normal |
 | Marginal | près du plancher ; à ne pas traiter comme un oubli |
 | Déclenché | le STA/LTA aveugle a tiré et a été apparié |
 | Confirmé | enveloppe élevée à l’arrivée prédite |
@@ -481,19 +496,12 @@ alignées de `arduino-router` et de la bibliothèque bridge.
 [`data.html`](web-remote/data.html) sont les tableaux. L’instantané **n’a pas
 de coordonnées**. `publish.include_location: true` place la station.
 
-Trois champs ont dû être retirés ou recentrés avant que les coordonnées soient
-réellement absentes, ce qui vaut d’être connu avant de publier une station depuis
-une adresse personnelle. Chaque séisme du catalogue portait sa distance à la
-station, et une dizaine d’entre eux la trilatèrent. La probabilité de détection
-par événement est une fonction monotone de cette distance et l’encodait tout
-autant, donc les lignes de l’audit sont parties aussi. Le troisième est la *liste*
-des séismes dessinés sur la carte : c’est le contenu d’un disque de 160 km, dont
-elle trace le bord. 98 % du catalogue situé dans le rayon y figure et presque rien
-au dehors, si bien que trier le catalogue en listés et absents puis ajuster le
-cercle en retrouve le centre — à 1,2 km après un mois de collecte. La liste est
-désormais recentrée sur `publish.map_center`, le repère à l’échelle de la ville
-que la carte publie déjà. Sans ce réglage, la position de la station est arrondie
-au quart de degré.
+Tout ce qui dérive de la position de la station peut situer la maison : une
+liste de distances, une liste de probabilités de détection, ou même l’ensemble
+des séismes dessinés sur la carte (un disque de 160 km trace son propre bord).
+Ces champs sont donc retirés ou recentrés sur `publish.map_center`, le repère à
+l’échelle de la ville que la carte publie déjà. Sans ce réglage, la position
+de la station est arrondie au quart de degré.
 
 Le journal (`event_log.jsonl`) et les fichiers de modèles sont sur le disque
 hôte, à côté du conteneur, et survivent aux redémarrages.

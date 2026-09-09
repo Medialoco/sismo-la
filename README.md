@@ -2,16 +2,21 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-Sismo-LA is a small station installed in a house in Los Angeles County. It runs
-on USB-C power and WiFi, for about $80. Its MEMS accelerometer, a chip from the
-same family as the sensors in phones, measures vibrations in the ground and the
-building. Within minutes of an event, the [USGS catalog](https://earthquake.usgs.gov/)
-publishes its **magnitude**, location, depth and exact origin time.
+Sismo-LA is a small station in a house in Los Angeles County. It runs on USB-C
+and WiFi, for about $80. Its MEMS accelerometer — a chip from the same family
+as a phone's tilt sensor — measures vibrations in the ground and the building.
 
-The station compares two sources: *what this box measured* and *what USGS
-reports*. Those matches fit a **site-specific** model: how this sensor, on this
-shelf in this building, turns a shake into amplitude, magnitude and distance.
-The model can then operate without a network connection.
+The [USGS catalog](https://earthquake.usgs.gov/) is the official list of
+earthquakes in the region. A few minutes after each event it publishes
+magnitude, location, depth and exact origin time. Above about M1.5 here, it
+also lets one say that **no other earthquake occurred**. That second fact is
+what makes a silent station checkable.
+
+The station compares *what this box measured* with *what USGS reports*. An
+empty detection list then has three readings: nothing was close enough; the
+station is blind; or it has stopped. Distinguishing those three is the point of
+the project. Matches, when they exist, would fit a model for this sensor on
+this shelf in this building. That model still has **0 of 8** points.
 
 Question under test:
 
@@ -19,20 +24,22 @@ Question under test:
 > unattended and without manual calibration?
 
 **Short answer, 8 September 2026:** not yet for autonomous detection. The
-station has found no earthquake by itself, and its calibration remains at 0 of 8
-points. It has confirmed one earthquake by reading its stored record at the time
-provided by USGS, and it has published a first case where its own model said it
-should have seen an earthquake but found no trace. That ability to publish a
-failure, rather than a success counter, is the main result.
+station has found no earthquake by itself. It has confirmed one earthquake by
+reading its stored record at the time USGS provided, and it has published a
+first case where its own model said it should have seen an earthquake but
+found no trace. Publishing that failure is the main result.
 
 ### How to read this project
 
-The reasoning follows three questions: **what can the sensor see?**, **what
-happened when an earthquake occurred?**, and **can the station recognize its own
-mistakes?** The numbers below do not all have the same status: a measurement
-comes from the sensor, a prediction comes from a model, and a confirmation comes
-from a check guided by USGS. A confirmation is therefore not an autonomous
-detection.
+Three questions, in that order: **what can the sensor see?**, **what happened
+when an earthquake occurred?**, and **can the station recognize its own
+mistakes?**
+
+The numbers below are of three kinds. A **measurement** comes from the
+sensor. A **prediction** comes from a model (how large a catalog earthquake
+should have been here). A **control** is the same test run at a time when no
+earthquake occurred. A **confirmation** is a measurement taken at a second
+USGS pointed to; it is not a detection.
 
 Live page: <https://medialoco.github.io/sismo-la/>. The node appears there as a
 **20 km disc over the San Fernando Valley**; its position is not published. A
@@ -67,14 +74,16 @@ distance.
 | Term | Meaning here |
 |---|---|
 | **Station / node** | This one box: Arduino UNO Q + MEMS module + power + WiFi. |
+| **Catalog** | USGS official list of earthquakes. It says which events happened, and above ~M1.5 here, that no other one did. The station does not belong to that network and cannot change it. |
 | **MCU** | The real-time microcontroller (STM32). It reads the sensor 100 times per second and decides when a shake starts. |
 | **Linux side** | The board’s application processor. It talks to USGS, stores records, fits models, serves the dashboard. |
 | **PGA** | Peak ground acceleration: the largest acceleration in a shake, in *g* (1 g ≈ 9.8 m/s²). Footsteps in this house are a few thousandths of a g. |
-| **STA/LTA** | Short-term average / long-term average. A classic seismic trigger: energy in the last 0.5 s divided by energy in the last 10 s. When the ratio jumps, the MCU declares an event. There is no fixed “fire at 0.01 g” line; the floor moves with the recent noise. |
+| **STA/LTA** | An alarm that compares *now* (0.5 s) with *usual* (10 s). When the ratio jumps, the MCU declares an event. There is no fixed “fire at 0.01 g” line; the floor moves with the recent noise. |
 | **Blind trigger** | STA/LTA firing on its own, with no help from the catalog. |
-| **Envelope** | A 1 Hz trace of how strong the filtered ground motion (0.7–12 Hz) was. One CSV file per UTC day. Lets the station look *back* at a second it did not trigger on. |
-| **z** | How many local noise-dispersions the envelope sits above the minutes just before. z = 4.0 is the confirmation threshold. |
-| **Calibration** | Fitting `magnitude ≈ a·log10(PGA) + b·log10(distance) + c` on matched examples. Eight matches are required before the amplitude model is treated as usable. Coefficients belong to this installation. |
+| **Envelope** | A 1 Hz outline of the filtered motion (0.7–12 Hz): one max and one average per second. One CSV file per UTC day. Enough to look *back* at a second the trigger missed. |
+| **z** | How unusual the envelope is compared with the minutes just before, in units of that site's own scatter. z = 4.0 is the confirmation threshold. |
+| **Control** | The same search, at a time when no earthquake occurred. If it still crosses the threshold, that is a false confirmation. |
+| **Calibration** | Fitting `magnitude ≈ a·log10(PGA) + b·log10(distance) + c` on matched examples. Eight matches before the amplitude model is treated as usable. Coefficients belong to this installation. |
 | **Strong-motion** | Sensitive to nearby, felt-scale shaking. This node does not record distant (teleseismic) earthquakes. |
 
 ### The one scale to keep in mind
@@ -95,17 +104,25 @@ guided by the catalog, does that work instead.
 
 ## Two channels that must stay separate
 
-A MEMS chip cannot tell an earthquake from a slammed door; the catalog can. The
-station looks at the ground two ways and counts them apart.
+A MEMS chip cannot tell an earthquake from a slammed door. The catalog can, so
+the station looks at the ground two ways and keeps two counts.
 
 | Channel | What happened | May train the amplitude model? |
 |---|---|---|
 | **Detection** | The blind STA/LTA trigger fired by itself. If USGS later has an earthquake at that second, the pair (PGA, catalog M and distance) is a calibration example. | yes |
 | **Confirmation** | USGS published an origin time. The station computed when the waves should have arrived and read the stored envelope there. If the envelope is elevated (z ≥ 4), the ground moved. The station did not find that second on its own. | no |
 
-Confirmations are excluded because they are *selected* for being a large
-excursion next to the noise: their PGA is biased high. Fitting a magnitude law
-on that set would reproduce the bias (`retro.feed_calibration: false`).
+Confirmations are excluded for three separate reasons. They are *selected* for
+being a large excursion next to the noise, so their PGA is biased high, and the
+events that delivered nothing supply no point at all — the sample is truncated
+on exactly the side the model needs. The distance is circular: it comes from the
+catalog that also supplies the target magnitude, and it is what locates the
+window the PGA is read from. And it is a different quantity — a trigger measures
+a peak over 0.5 s at 95 Hz, the envelope a sliding mean over 5–20 s at 1 Hz.
+
+The separation is structural rather than a setting: no code path in the
+retrospective loop calls `add_point`. Only a blind trigger matched to a catalog
+event feeds the models.
 
 The journal, the dashboard and the public page keep two lists.
 
@@ -136,14 +153,13 @@ about 170 000 blind STA/LTA windows per day, so the test can sit closer to the
 noise and average over the wavetrain. On this station’s own noise the extra
 reach is a **factor 7–8 in amplitude, one magnitude unit**.
 
-**The catalog gets revised, so the search re-reads it.** A seismologist revises
-an automatic solution hours or days later: `ci41540608` went from M3.36 to M3.20
-at 78.5 h. A revision moves the origin time, distance or depth, which place the
-arrival window, or the magnitude, which sets the amplitude veto; a verdict can
-change either way. Every catalog event is re-scanned in full for as long as its
-envelope survives, 14 days. A confirmation does not outlive a revision that would
-have refused it, and an earthquake announced under M2 and revised above it is
-examined rather than counted as one the station missed.
+**The catalog gets revised, so the search re-reads it.** An automatic solution
+can change hours or days later: `ci41540608` went from M3.36 to M3.20 at 78.5 h.
+A revision can move the arrival window (origin time, distance, depth) or the
+amplitude check (magnitude), so a verdict can appear or disappear. Every catalog
+event is re-scanned in full for as long as its envelope survives, 14 days. An
+earthquake first announced under M2 and later revised above it is examined,
+rather than counted as a miss.
 
 ## Status (8 September 2026)
 
@@ -174,20 +190,19 @@ USGS event M3.2, Ontario, California, 2 September 2026, 12:37:12 UTC.
 
 One event, not a rate, and z = 4.34 is a thin margin over 4.0.
 
-**The false-confirmation rate, now measured on the recorded envelope.** A rate of
-1 in 1 200 had been computed on *pure sensor noise*, and this house makes its own
-impulses, so the figure was replayed against 2 781 control windows over five days:
-the same search, the same geometry, at instants when no earthquake occurred. It
-reaches z = 4.34 in **22% of them — one in five, not one in 1 200.** The rate
-tracks occupancy, from about 3% in an empty house to 25% with someone home.
+**How often the second channel is fooled, now measured on the recorded
+envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
+house also produces footsteps, so the same search was replayed at 2 781
+**control** instants — times when no earthquake occurred. It reaches z = 4.34
+in **22% of them, one in five**. The rate tracks occupancy: about 3% in an
+empty house, 25% with someone home.
 
-Amplitude is what keeps the confirmation standing. Those false confirmations
-have a median peak of **10 mg** — footsteps — where this earthquake peaked at
-1.095 mg, below the trigger floor. Requiring both z ≥ 4.34 and a peak that small
-leaves **1.87%, one in 53**. That is the number that applies here. Replaying the
-search at neighbouring hours of 2 September gives 29% of controls at least as
-strong, so the confirmation carries less weight than a four-sigma threshold
-suggests. Method and the per-day table: the report's §10.4.
+Those false hits have a median peak of **10 mg** (footsteps). This earthquake
+peaked at 1.095 mg, below the trigger floor. Requiring both z ≥ 4.34 *and* a
+peak that small leaves **1.87%, one in 53**. That is the number that applies
+here. Replaying the search at neighbouring hours of 2 September still gives
+29% of controls at least as strong. Method and the per-day table: the
+report's §10.4.
 
 ## Noise floor: the wall is the sensor
 
@@ -273,13 +288,15 @@ amplitude by 37.9× (about two magnitude units).
 
 ## Does silence mean “broken” or “nothing happened”?
 
-An empty detection list is ambiguous. For every cataloged earthquake the
-station now (1) predicts the PGA the law says should have arrived, and (2)
-reads the noise it was actually sitting in at that second. Five classes:
+An empty detection list is the usual answer, not a fault by itself: **96.9 %**
+of the M ≥ 2 catalog within 160 km over five years sits below both channels
+(report, fig. 2). For every cataloged earthquake the station still (1) predicts
+the PGA the law says should have arrived, and (2) reads the noise it was
+actually sitting in at that second. Five classes:
 
 | Class | Meaning |
 |---|---|
-| Out of reach | expected PGA below what this site can see; normal for ~99% of the catalog |
+| Out of reach | expected PGA below what this site can see; the normal case |
 | Marginal | close to the floor; do not treat as a miss |
 | Triggered | blind STA/LTA fired and matched |
 | Confirmed | envelope elevated at the predicted arrival |
@@ -458,16 +475,10 @@ pins D0/D1, not USB. The MCU↔Linux Bridge needs matching versions of
 [`data.html`](web-remote/data.html) is the tables. The snapshot contains
 **no coordinates**. Set `publish.include_location: true` to plot the station.
 
-Three fields had to be removed or re-centred before the coordinates were
-actually out, which is worth knowing before publishing a station from a home
-address. Each catalog event carried its distance to the station, and a dozen of
-those trilaterate it. The per-event detection probability is a monotone function
-of that distance and encoded it just as well, so the audit rows went too. The
-third is the *list* of earthquakes the map draws: it is the contents of a 160 km
-disc and traces that disc's edge. 98% of the catalog inside the radius is listed
-and almost nothing outside is, so sorting the catalog into listed and absent and
-fitting the circle recovers the centre — to 1.2 km after a month of collection.
-The list is now re-centred on `publish.map_center`, the city-scale pin the roster
+Anything derived from the station's position can locate the house: a list of
+distances, a list of detection probabilities, or even the set of earthquakes
+drawn on the map (a 160 km disc traces its own edge). Those fields are therefore
+removed or re-centred on `publish.map_center`, the city-scale pin the roster
 already publishes. Without that setting the station's position is snapped to a
 quarter degree.
 
@@ -549,7 +560,7 @@ behind them:
 Its figures and numeric checks come from a single script that **imports this
 repository's estimator** rather than reimplementing it, so the verification
 applies to the code the station actually runs. Inputs are the station's raw
-envelope, one full UTC day of envelope, a USGS catalog query and the public
+envelope, five complete UTC envelope days, a USGS catalog query and the public
 snapshot.
 
 ## License
