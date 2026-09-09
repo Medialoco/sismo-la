@@ -184,15 +184,20 @@
         triggered on these. <b>z</b> is how far its recorded envelope stood above
         the local noise of the preceding three minutes.<span id="czmin"></span>
         Peak, rms and baseline are in g.</p>
-      <p class="note">This is a count of <b>threshold crossings, not of recorded
-        earthquakes</b>. Replayed at times when no earthquake occurred, the same
-        search crosses the threshold in about one case in five, or one in 54 once
-        a small peak is also required. A crossing just above z = 4 on a distant,
-        low-magnitude event is more likely to be envelope noise than ground
-        motion. The threshold has been frozen since 1 September and is not tuned
-        after the fact, so these rows are published as the criterion returns them
-        &mdash; <a href="https://github.com/Medialoco/sismo-la#confirmation-ci41540608">how
-        to read them</a>.</p>
+      <p class="note"><b>How much a row here is worth.</b> The test is simple: was
+        the recording louder than usual at the second the waves should have
+        arrived? To find out how often plain noise passes it, the same search was
+        replayed at moments when no earthquake happened at all. It passed
+        <b>about one time in five</b>. Most of those are footsteps, which are far
+        louder than any earthquake this sensor has recorded, so ruling them out by
+        amplitude brings it down to <b>one time in 54</b>.</p>
+      <p class="note">So a row with a large <b>z</b> and a small peak, on a nearby
+        earthquake, is good evidence. A row barely above z = 4 on a small, distant
+        earthquake is probably noise that happened to land in the window. The
+        threshold has not been changed since 1 September and is never adjusted
+        afterwards, so what you see is what the test returned &mdash;
+        <a href="https://github.com/Medialoco/sismo-la#confirmation-ci41540608">the
+        worked examples</a>.</p>
       <div class="wrap"><table id="ctable">
         <thead><tr>
           <th class="l">When (LA)</th>
