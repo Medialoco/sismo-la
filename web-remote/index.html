@@ -107,6 +107,14 @@
     #status .cat .k { display: block; font-size: 10.5px; text-transform: uppercase;
                       letter-spacing: .08em; }
     #status .cat .v { color: var(--text); }
+    /* the events under a count, one line each, linked to their USGS page */
+    #status .evs { margin: 4px 0 0 11px; }
+    #status .ev { display: block; padding: 2px 0; font-size: 11.5px;
+                  color: var(--text); text-decoration: none; }
+    #status a.ev:hover { text-decoration: underline; }
+    #status .ev .ep { display: block; color: var(--muted); font-size: 10.5px; }
+    #status .fine { margin: 7px 0 0 11px; font-size: 10.5px; line-height: 1.5;
+                    color: var(--muted); }
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -176,6 +184,13 @@
        narrows, so the track gives ground before they touch. */
     @media (max-width: 1000px) { .window input[type=range] { width: 130px; } }
     @media (max-width: 620px) { .window input[type=range] { width: 110px; } }
+
+    /* Leaflet's own scale bar, restyled to match the boxes on this map. */
+    .leaflet-control-scale { margin-left: 10px !important; margin-top: 8px !important; }
+    .leaflet-control-scale-line {
+      background: var(--soft); border-color: var(--ui); color: var(--text);
+      font-size: 10.5px; padding: 1px 5px 0;
+    }
 
     .legend { left: 14px; padding: 9px 12px; font-size: 12px; }
     .legend .line { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
@@ -319,6 +334,12 @@
     const MIN_ZOOM = 8;
     const map = L.map('map').setView([STATIONS[0].lat, STATIONS[0].lon], MIN_ZOOM);
     map.attributionControl.setPrefix(false);
+    // Every distance on this page is in km while the site is in California, and
+    // the node is drawn as a disc whose radius only means something against a
+    // scale. Both units, so neither reader has to convert.
+    // Top left, under the zoom buttons: the bottom left corner already holds the
+    // legend, which is absolutely positioned and would sit on top of it.
+    L.control.scale({ position: 'topleft', metric: true, imperial: true }).addTo(map);
 
     // Labels above the basemap but below the data, so no place name hides a circle.
     map.createPane('labels');
@@ -525,10 +546,44 @@
         `Last snapshot <b>${day(s.updated)} ${clock(s.updated)}</b>` +
         `<div class="cat"><span class="k">Triggered &middot; autonomous</span>` +
         `<span class="v"><b>${pairs.length}</b> ${quakes(pairs.length)}</span></div>` +
+        rows(pairs) +
         (known
           ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
-            `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>`
+            `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>` +
+            rows(known) + CROSSINGS
           : '');
+    }
+
+    /* Why this caveat sits on the front page. The number above counts threshold
+       crossings, and the threshold is wrong at a rate that has been measured on
+       this station's own recordings: about one in five on significance alone,
+       one in 54 once a small peak is also required. On 8 September a crossing
+       landed on an event whose expected shaking was 33x below the sensor's own
+       noise, so it cannot have been ground motion. The threshold is frozen and
+       is not retuned to erase such a row, which is the whole point -- so the
+       page has to say what the count is instead of quietly inflating it. */
+    const CROSSINGS = '<div class="fine">Crossings of a fixed threshold, not a ' +
+      'tally of recorded earthquakes: on this station\'s own record the same ' +
+      'test fires about <b>1 time in 54</b> when nothing happened. ' +
+      '<a href="data.html">How to read it</a></div>';
+
+    /* Under each count, the events themselves, each linking to its USGS page so
+       a visitor can check magnitude and time against the source rather than
+       taking ours. One line apiece: both lists are short by construction, unlike
+       the trigger list this panel used to carry. An entry without an `id` still
+       renders, unlinked, so an older snapshot loses the link and nothing else. */
+    function rows(list) {
+      if (!list || !list.length) return '';
+      return '<div class="evs">' + list.map((c) => {
+        const when = c.t ? `${day(c.t)} ${clock(c.t)}` : '';
+        const mag = typeof c.usgs === 'number' ? `M${c.usgs.toFixed(1)}` : '';
+        const label = [mag, when].filter(Boolean).join(' &middot; ');
+        const place = c.place ? `<span class="ep">${c.place}</span>` : '';
+        return c.id
+          ? `<a class="ev" href="https://earthquake.usgs.gov/earthquakes/eventpage/${c.id}"` +
+            ` target="_blank" rel="noopener">${label}${place}</a>`
+          : `<span class="ev">${label}${place}</span>`;
+      }).join('') + '</div>';
     }
 
     const ago = (ms) => {
@@ -699,7 +754,9 @@
       // The scatter is not windowed: it is every earthquake a station
       // triggered on and matched, ever. Retrospective confirmations are not
       // in it and must not be -- the device never put a magnitude on those.
-      const pairs = history.map((h) => ({ usgs: h.usgs, dev: h.dev }));
+      // The whole row travels, not just the two magnitudes: the panel lists each
+      // one with its time and its USGS link, and drawChart reads usgs/dev only.
+      const pairs = history.slice();
       fillPanel(snap, pairs);
       drawChart(pairs);
       const known = confirmedOf(snap);

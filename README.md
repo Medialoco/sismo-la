@@ -161,7 +161,7 @@ event is re-scanned in full for as long as its envelope survives, 14 days. An
 earthquake first announced under M2 and later revised above it is examined,
 rather than counted as a miss.
 
-## Status (8 September 2026)
+## Status (9 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
 required. It publishes a JSON snapshot every 20 minutes. If nothing changed, it
@@ -172,8 +172,13 @@ own flash.
 
 **Amplitude calibration: 0 of 8.** **Autonomous detections of earthquakes: 0.**
 One cataloged earthquake has been **confirmed** in the envelope (next section),
-and one has been **flagged by the station as one it should have seen and did
-not** ([the first miss](#the-first-miss-6-september-2026)).
+and one was **flagged by the station as one it should have seen and did not**
+([the first miss](#the-first-miss-6-september-2026)) — a verdict a catalog
+revision has since withdrawn.
+
+The station's counter now reads **2 confirmed**. Only one is real. The second,
+on the evening of 8 September, is a measured false confirmation
+([below](#the-second-crossing-is-a-false-confirmation)).
 
 ## Confirmation: `ci41540608`
 
@@ -192,17 +197,56 @@ One event, not a rate, and z = 4.34 is a thin margin over 4.0.
 
 **How often the second channel is fooled, now measured on the recorded
 envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
-house also produces footsteps, so the same search was replayed at 2 781
+house also produces footsteps, so the same search was replayed at 2 980
 **control** instants — times when no earthquake occurred. It reaches z = 4.34
-in **22% of them, one in five**. The rate tracks occupancy: about 3% in an
+in **21% of them, one in five**. The rate tracks occupancy: about 3% in an
 empty house, 25% with someone home.
 
 Those false hits have a median peak of **10 mg** (footsteps). This earthquake
 peaked at 1.095 mg, below the trigger floor. Requiring both z ≥ 4.34 *and* a
-peak that small leaves **1.87%, one in 53**. That is the number that applies
+peak that small leaves **1.85%, one in 54**. That is the number that applies
 here. Replaying the search at neighbouring hours of 2 September still gives
 29% of controls at least as strong. Method and the per-day table: the
 report's §10.4.
+
+### The second crossing is a false confirmation
+
+That rate was measured on the morning of 8 September 2026. The same evening the
+channel crossed its threshold, and the station has published **2 confirmed**
+since. The second one cannot be real, and showing why needs no threshold at all.
+
+USGS event M2.33, Johannesburg swarm, 9 September 2026 01:46:03 UTC
+(8 September, 18:46 local).
+
+| Quantity | Value |
+|---|---|
+| Envelope z | 4.02, threshold 4.00 — a margin of 0.02 |
+| Expected shaking, from the frozen law at the public pin | **0.0108 mg** |
+| Sensor electrical noise | 0.360 mg |
+| So the expected shaking is | **33× below the sensor's own floor** |
+| Recorded RMS / peak | 0.4228 mg / 1.120 mg, i.e. 39× and **103×** the prediction |
+| Amplitude veto | passed: it tolerates up to 146× |
+| Controls reaching z = 4.02 over the previous 13 h | **5%** |
+
+For that earthquake to merely *reach* the sensor floor, the site would need an
+amplification at nearly four standard deviations of the law's scatter. Ontario, the
+confirmation that stands, sat at 2.3 and produced 1.095 mg against a 0.44 mg
+threshold.
+
+The crossing is also fragile. z = 4.02 comes from the station's real position;
+replayed from the public pin, 1.4 km off on this geometry, the same search returns
+**z = 3.29**. A kilometre shifts the arrival window by seconds, and that is enough
+to cross back under the threshold.
+
+The house was quiet at the time — median 0.378 mg, hourly peak maximum
+1.16 mg — so this is not a footstep but ordinary envelope jitter on the 5 s
+window. Its 1.120 mg peak even clears the tightened 1.2 mg ceiling, so it sits
+in the residual 1-in-54 class rather than the coarse 1-in-5 one.
+
+Read the public counter as **the number of times the criterion was crossed**,
+not the number of earthquakes recorded. The criterion is fixed, frozen since
+1 September, and wrong at a measured rate; nothing was tuned in response to
+this event.
 
 ## Noise floor: the wall is the sensor
 
@@ -341,6 +385,17 @@ The one confirmation sits at the other end of the same scatter. Ontario, on
 ambient level. The two bracket the site-to-site scatter with the station's own
 data, and place the single confirmation on its favourable tail.
 
+**The verdict was withdrawn on 9 September, and no measurement changed.** USGS
+revised the event from M3.2 to **M3.07** and relocated it slightly deeper. Both
+corrections lower the predicted amplitude, so the pessimistic bound of the
+detection probability fell from 0.57 to **0.432**, under the one-in-two line that
+defines *should have been seen*, and the station reclassified it **marginal**. Its
+audit reads zero missed again. The relocation also moved the arrival window, which
+lifts z from 2.90 to 3.54 — still under 4. The envelope still holds no trace of
+this earthquake; what moved is the verdict, because the catalog is not a fixed
+reference. Read the audit counts with their date; the mechanism is under
+[Retrospective search](#retrospective-search).
+
 Three ways of showing the miss on the public pages were tried and dropped: the
 status badge, which made a working audit and a dead sensor look identical; a
 captioned line on the front page; then all three counts defined on the data page.
@@ -356,7 +411,7 @@ timestamped, every 20 minutes.
 | Trigger rate after moving the box from a desk to a stiffer mount | 22.6 → 3.2 events / h (−86%). Noise floor 0.00087 → 0.00066 g (−24%). Coupling dominates false triggers. |
 | Power-on → dashboard answering | 4 min 24 s. A watchdog sidecar restarts the container; App Lab otherwise stops it one second after boot. |
 | Dominant frequency (after a sign bug: centered vs uncentered sample) | real taps at 2.6 / 5.0 / 10.6 Hz. The bug had printed ~25 Hz on every signal. |
-| Median envelope peak per day, 1–7 September | 0.721 – 0.784 mg, a 4% spread over seven full days. Blind triggers over the same days ran 0 to 3112, and the daily maximum 1.4 to 24 mg. The trigger count tracks whether anyone is home, not the noise floor: 4–6 September fired nothing at all. |
+| Median envelope peak per day, 1–8 September | 0.721 – 0.784 mg, a 4% spread over eight full days. Blind triggers over the same days ran 0 to 3112, and the daily maximum 1.4 to 24 mg. The trigger count tracks whether anyone is home, not the noise floor: 4–6 September fired nothing at all. |
 
 The only independent “the sensor is alive” signal is the MCU heartbeat (~10 s).
 A 200 from the web dashboard means the Linux process is up. `health.stale`
@@ -517,7 +572,7 @@ sismo-la/
       counted separately from detections.
 - [x] First confirmation (`ci41540608`, M3.2, 2 September 2026). Blind trigger
       needed ~3× the arrived amplitude. Its false-confirmation rate is now
-      measured on real recordings, not simulated noise: one in 53.
+      measured on real recordings, not simulated noise: one in 54.
 - [ ] First autonomous detection: none. Amplitude calibration 0 of 8.
 - [x] Catalog audit, which returned its first `missed` against the station on
       6 September and published it unprompted.
@@ -553,8 +608,8 @@ behind them:
 | Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
 | Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
 | The 2 September confirmation, reproduced from raw envelope data | [Confirmation](#confirmation-ci41540608) |
-| False-confirmation rate measured on 2 781 control windows: one in five on significance alone, one in 53 with the amplitude condition | [Confirmation](#confirmation-ci41540608) |
-| Six-verdict audit against the catalog, which has now returned its first miss against the station | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
+| False-confirmation rate measured on 2 781 control windows: one in five on significance alone, one in 54 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
+| Six-verdict audit against the catalog, which returned a first miss against the station and then withdrew it on a catalog revision | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
 | Four claims in this documentation that the data corrected | — |
 
 Its figures and numeric checks come from a single script that **imports this

@@ -135,6 +135,15 @@ recorded / missed*. Recorded is envelope coverage at that second, not a
 confirmation. The window is shorter, so *examined* follows the last two weeks of
 the catalog.
 
+At 2026-09-09 the snapshot reads `{n: 9, covered: 6, missed: 0}`, with verdicts
+`confirmed: 2`, `marginal: 1`, `out-of-reach: 6`. All three numbers moved inside
+three days, for three unrelated reasons: an event entered from the right, a
+catalog revision took the miss back to `marginal` (below), and the retrospective
+threshold was crossed a second time on an event that cannot have been real — see
+`retro.confirmed` and the false-confirmation rate in the READMEs. None of the
+three came from a sensor measurement, which is why every count in this file is
+dated.
+
 **Neither public page draws these three numbers.** Skimmed, `7 · 2 · 0` reads as a
 score of 2 out of 7, which inverts their meaning — the middle count says how many
 of the seven the station could check at all. They are published complete in
@@ -192,6 +201,21 @@ distance, **7.8×** its predicted amplitude, confirmed — the two events bracke
 the site-to-site scatter from both ends and place the single confirmation on the
 favourable tail. One event is not a rate; two events with opposite signs are
 still not a rate, but they are a bound.
+
+**The verdict was withdrawn on 2026-09-09, and nothing the station measured
+changed.** USGS revised the event to **M3.07** and relocated it deeper
+(`distance_km` 37.1 → 36.3, `depth_km` 12.8 → 15.8). Both corrections lower the
+predicted amplitude, so `p_retro` fell to **[0.432, 0.915]**: the pessimistic end
+is now under `P_EXPECTED` 0.5, and the verdict is `marginal`. The audit summary is
+back to `{n: 9, covered: 6, missed: 0}`. The relocation also shifted the arrival
+window, which lifts z from 2.90 to **3.54** — still under `z_min`, so the window
+sweep above holds in its conclusion.
+
+This is section 8's mechanism firing on the one count that matters, so keep the
+dates on these numbers. A `missed` count is a claim about a *prediction* fed by a
+catalog that keeps moving for days; it is not a fault report, and it can be taken
+back. What did not move: the envelope holds no trace of this earthquake, and
+`retro_state.json` still records the full scan.
 
 The write-up above is a **remote** audit: it assumes the at-rest floor
 everywhere. On the station the noise column is measured after the recording

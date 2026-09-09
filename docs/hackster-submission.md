@@ -69,7 +69,7 @@ We fill this page in as the project progresses.
      refused although the catalog had named their exact second, because the
      shaking they could deliver here was below the sensor's own noise;
    - zero autonomous detections, amplitude calibration 0 of 8, noise filter
-     0 earthquakes against 7129 noise samples. These zeros are published as
+     0 earthquakes against 10 789 noise samples. These zeros are published as
      they stand and are part of the result.
    There is **no calibration curve** to show. Do not promise one.
 10. **How we would know it is broken** — the audit: every cataloged event
@@ -81,6 +81,17 @@ We fill this page in as the project progresses.
     a factor of two. Lead with this. An instrument that reports its own failure
     unprompted is worth more than one that only ever reports successes, and it is
     the part of this build a judge cannot get from a datasheet.
+    Tell the rest of the story, because it is the same argument twice over. On
+    **9 September** USGS revised that earthquake to M3.07, which dropped the
+    predicted shaking and **withdrew the miss** — a referee you do not control can
+    take back what it gave you. The same week the retrospective channel crossed
+    its threshold on an M2.33 whose expected shaking was **33x below the sensor's
+    own noise**, i.e. a false confirmation, one day after we finished measuring
+    that such crossings happen about **once in 54** on this station's own
+    recordings. The public counter therefore reads 2 confirmed while only one is
+    real, and the page says so under the number. Nothing was retuned to hide
+    either: the thresholds have been frozen since 1 September, and being able to
+    state the error rate is the result.
 11. **Limits & next steps** — a neighborhood strong-motion node, not a
     teleseismic instrument. 96.9 % of the local catalog is out of reach of both
     channels. One station gives a ring, not a pin.

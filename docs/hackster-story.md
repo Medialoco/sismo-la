@@ -6,10 +6,17 @@ can reuse the same beats, in the same order.
 Target length: **about 3 minutes**. Language: English. The station’s coordinates
 are never on screen and never spoken.
 
-Numbers as of 6 September 2026. Before the final cut, re-check against
+Numbers as of 9 September 2026. Before the final cut, re-check against
 `web-remote/station.json`: autonomous detections still 0, amplitude calibration
-still 0 of 8, retrospective search still 4 cataloged events scanned for
-1 confirmed (`ci41540608`), audit still **1 missed** (`ci41542024`, 6 September).
+still 0 of 8, retrospective search now **6 cataloged events scanned, 2 threshold
+crossings** of which only `ci41540608` is real, and the audit back to **0 missed**.
+
+Two things moved on 9 September and shot 7 depends on both. The 6 September miss
+(`ci41542024`) was **withdrawn** when USGS revised it to M3.07 and relocated it
+deeper, which dropped the pessimistic detection probability under 0.5. And the
+retrospective threshold was crossed a second time, on an M2.33 whose expected
+shaking was 33x below the sensor's own noise: a **false confirmation**, the first
+real instance of the 1-in-54 rate. Do not narrate either as a second success.
 
 Shot 7 grew to hold that miss, which is the best material here, and the four
 seconds each came out of shots 1, 2, 3 and 6 to keep the total at three minutes.
@@ -216,11 +223,12 @@ must land before the map fills.
 ## Shot 7 — What the station still cannot do (2:22–2:42)
 
 *On screen.* The operator dashboard on the LAN, which prints calibration **0 / 8**
-and the audit counts in full. Neither public page draws them: `7 · 2 · 0` reads as
-a score of two out of seven, and a lone `1 missed` reads as a broken device, so
-they stay machine-readable in `station.json`. For the miss, shoot the **raw
-snapshot** — `station.json` open in a browser, `expected.summary` on screen — or
-the operator dashboard. Then, optional, `python audit.py` in a terminal.
+and the audit counts in full. Neither public page draws them: `9 · 6 · 0` reads as
+a score of six out of nine, and a lone `1 missed` reads as a broken device, so
+they stay machine-readable in `station.json`. The 6 September miss is **no longer
+in the live counts** — shoot it from `retro_state.json` or from the git history of
+`station.json`, and say it was withdrawn. For the false confirmation, the front
+page now carries the caveat under the count; that frame is worth holding.
 
 The voiceover carries the meaning here, because the number has no caption to lean
 on. Say what `missed` is before showing it.
@@ -251,10 +259,22 @@ on. Say what `missed` is before showing it.
 > side of a law that scatters by a factor of two either way, and this ground moved
 > less than average. The nearer earthquake was invisible and the further one was
 > found — which is what tells you the first result was luck, not skill.
+>
+> Three days later the catalog revised that earthquake down, and the flag came
+> back down with it. Nothing the station measured had changed. That is the price
+> of using a referee you do not control: it can take back what it gave you.
+>
+> And the same week, the second channel crossed its threshold on an earthquake
+> far too small and too distant to have reached this sensor at all. A false
+> alarm, the first one, and it arrived a day after we finished measuring how
+> often to expect them: about one time in fifty. The counter on the public page
+> says two confirmations. Only one of them is real, and the page says so.
 
 *This is the strongest thing in the project.* An instrument that reports its own
-failure, unprompted, in public, is the whole argument of the build. If one shot
-survives a re-cut, keep this one.
+failure, unprompted, in public, is the whole argument of the build. The withdrawal
+and the false alarm strengthen it rather than weaken it: both were found by the
+station's own published numbers, and neither was hidden. If one shot survives a
+re-cut, keep this one.
 
 ---
 
@@ -285,7 +305,7 @@ not a measurement).
 | 4 | 22 s | Live tap, logs or dashboard | to shoot last |
 | 5 | 44 s | USGS `ci41540608` + public map + `data.html` | stills ready |
 | 6 | 12 s | `calibration-timelapse.mp4` | ready; VO must say “replay” first |
-| 7 | 38 s | `station.json` / dashboard, 1 missed & 0 of 8 | to capture |
+| 7 | 38 s | `station.json` / dashboard, 0 of 8, the withdrawn miss & the false confirmation | to capture |
 | 8 | 18 s | Board + `network.png` | diagram ready |
 
 ## Recording notes

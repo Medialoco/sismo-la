@@ -169,7 +169,7 @@ peut apparaître ou disparaître. Chaque séisme du catalogue est rescanné en e
 tant que son enveloppe existe, quatorze jours. Un séisme d’abord annoncé sous M2
 puis révisé au-dessus est examiné, plutôt que compté comme manqué.
 
-## État (8 septembre 2026)
+## État (9 septembre 2026)
 
 La station est autonome : alimentation propre, WiFi, pas d’ordinateur branché,
 pas de shell requis. Elle publie un instantané JSON toutes les 20 minutes. Si
@@ -181,7 +181,12 @@ débranchement, le tableau de bord a répondu en **4 min 24 s**. Une panne de
 **Calibration d'amplitude : 0 sur 8.** **Détections autonomes de séismes : 0.**
 Un séisme catalogué a été **confirmé** dans l’enveloppe (section suivante), et un
 autre a été **signalé par la station comme un séisme qu’elle aurait dû voir et
-qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2026)).
+qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2026)) —
+un verdict qu'une révision du catalogue a depuis retiré.
+
+Le compteur de la station affiche désormais **2 confirmés**. Un seul est réel. Le
+second, le 8 septembre au soir, est une fausse confirmation mesurée
+([plus bas](#le-second-franchissement-est-une-fausse-confirmation)).
 
 ## Confirmation : `ci41540608`
 
@@ -201,17 +206,57 @@ Un événement, pas un taux, et z = 4,34 est une marge mince au-dessus de 4,0.
 **À quelle fréquence le second canal se trompe, maintenant mesuré sur
 l’enveloppe enregistrée.** Un taux de 1 sur 1 200 avait été calculé sur du
 *bruit de capteur pur*. Cette maison produit aussi des pas, donc la même
-recherche a été rejouée à 2 781 instants de **contrôle** — des heures où aucun
-séisme n’a eu lieu. Le seuil z = 4,34 y est franchi **22 % du temps, une fois
+recherche a été rejouée à 2 980 instants de **contrôle** — des heures où aucun
+séisme n’a eu lieu. Le seuil z = 4,34 y est franchi **21 % du temps, une fois
 sur cinq**. Le taux suit l’occupation : environ 3 % maison vide, 25 % avec
 quelqu’un à la maison.
 
 Ces faux succès ont un pic médian de **10 mg** (des pas). Ce séisme culminait
 à 1,095 mg, sous le seuil du déclencheur. En exigeant les deux — z ≥ 4,34
-*et* un pic aussi faible — il reste **1,87 %, une sur 53**. C’est le chiffre
+*et* un pic aussi faible — il reste **1,85 %, une sur 54**. C’est le chiffre
 qui s’applique ici. Rejouée aux heures voisines du 2 septembre, la recherche
 donne encore 29 % de témoins au moins aussi forts. Méthode et tableau par
 journée : §10.4 du rapport.
+
+### Le second franchissement est une fausse confirmation
+
+Ce taux a été mesuré le 8 septembre 2026 au matin. Le soir du même jour, le canal
+a franchi son seuil, et la station publie **2 confirmés** depuis. Le second ne peut
+pas être réel, et le montrer ne demande aucun seuil.
+
+Événement USGS M2,33, essaim de Johannesburg, 9 septembre 2026 01:46:03 UTC
+(8 septembre, 18 h 46 heure locale).
+
+| Grandeur | Valeur |
+|---|---|
+| z d'enveloppe | 4,02 pour un seuil de 4,00 — une marge de 0,02 |
+| Secousse attendue, loi gelée, au repère public | **0,0108 mg** |
+| Bruit électrique du capteur | 0,360 mg |
+| L'attendu est donc | **33 fois sous le plancher du capteur** |
+| Rms / pic enregistrés | 0,4228 mg / 1,120 mg, soit 39× et **103×** la prédiction |
+| Veto d'amplitude | passé : il tolère jusqu'à 146× |
+| Témoins atteignant z = 4,02 sur les 13 h précédentes | **5 %** |
+
+Pour que ce séisme *atteigne* seulement le plancher du capteur, il faudrait une
+amplification de site à près de quatre écarts-types de la dispersion de la loi. Ontario, la
+confirmation qui tient, était à 2,3 et a produit 1,095 mg contre un seuil de
+0,44 mg.
+
+Le franchissement est de plus fragile. Le z de 4,02 vient de la position réelle de
+la station ; rejouée depuis le repère public, à 1,4 km sur cette géométrie, la même
+recherche rend **z = 3,29**. Un kilomètre déplace la fenêtre d'arrivée de quelques
+secondes, et cela suffit à repasser sous le seuil.
+
+La maison était calme à cette heure — médiane 0,378 mg, pic horaire maximal
+1,16 mg — donc ce n'est pas un pas mais la gigue ordinaire de l'enveloppe sur la
+fenêtre de 5 s. Son pic de 1,120 mg passe même sous le plafond resserré de 1,2 mg :
+il appartient à la classe résiduelle d'une sur 54, pas à celle, grossière, d'une
+sur cinq.
+
+Le compteur public doit donc être lu comme **le nombre de fois où le critère a été
+franchi**, non comme le nombre de séismes enregistrés. Le critère est fixe, gelé
+depuis le 1er septembre, et se trompe à un taux mesuré ; rien n'a été ajusté en
+réaction à cet événement.
 
 ## Plancher de bruit : le mur, c'est le capteur
 
@@ -358,6 +403,18 @@ délivré au-dessus du niveau ambiant. Les deux encadrent la dispersion entre si
 avec les données de la station, et placent la confirmation unique sur sa queue
 favorable.
 
+**Le verdict a été retiré le 9 septembre, et aucune mesure n'a changé.** L'USGS a
+révisé l'événement de M3,2 à **M3,07** et l'a relocalisé un peu plus profondément.
+Les deux corrections abaissent l'amplitude prédite, donc la borne pessimiste de la
+probabilité de détection est tombée de 0,57 à **0,432**, sous la chance sur deux
+qui définit « aurait dû être vu », et la station l'a reclassé **marginal**. Son
+audit affiche de nouveau zéro manqué. La relocalisation a aussi déplacé la fenêtre
+d'arrivée, ce qui porte le z de 2,90 à 3,54 — toujours sous 4. L'enveloppe ne
+contient toujours aucune trace de ce séisme ; ce qui a bougé est le verdict, parce
+que le catalogue n'est pas une référence figée. Les comptes de l'audit sont à lire
+avec leur date ; le mécanisme est décrit sous
+[Recherche rétrospective](#recherche-rétrospective).
+
 Trois façons d’afficher le manqué sur les pages publiques ont été essayées puis
 abandonnées : l’indicateur d’état, qui rendait identiques un audit qui fonctionne
 et un capteur mort ; une ligne légendée sur la page d’accueil ; puis les trois
@@ -374,7 +431,7 @@ horodatés, toutes les 20 minutes.
 | Taux de déclenchement après passage d’un bureau à un support plus raide | 22,6 → 3,2 événements / h (−86 %). Plancher 0,00087 → 0,00066 g (−24 %). Le couplage domine les faux déclenchements. |
 | Mise sous tension → tableau de bord qui répond | 4 min 24 s. Un sidecar watchdog relance le conteneur ; App Lab l’arrête sinon une seconde après le boot. |
 | Fréquence dominante (après un bug de signe : échantillon centré vs non centré) | vrais taps à 2,6 / 5,0 / 10,6 Hz. Le bug imprimait ~25 Hz sur tout signal. |
-| Pic médian de l’enveloppe par jour, 1er–7 septembre | 0,721 – 0,784 mg, soit 4 % d’écart sur sept jours pleins. Sur les mêmes jours, les déclenchements aveugles vont de 0 à 3 112 et le maximum quotidien de 1,4 à 24 mg. Le nombre de déclenchements suit la présence de quelqu’un dans la maison, pas le plancher de bruit : les 4, 5 et 6 septembre n’en ont produit aucun. |
+| Pic médian de l’enveloppe par jour, 1er–8 septembre | 0,721 – 0,784 mg, soit 4 % d’écart sur huit jours pleins. Sur les mêmes jours, les déclenchements aveugles vont de 0 à 3 112 et le maximum quotidien de 1,4 à 24 mg. Le nombre de déclenchements suit la présence de quelqu’un dans la maison, pas le plancher de bruit : les 4, 5 et 6 septembre n’en ont produit aucun. |
 
 Le seul signal indépendant « le capteur est vivant » est le battement MCU
 (~10 s). Un 200 du tableau de bord web veut dire que le processus Linux tourne.
@@ -539,10 +596,11 @@ sismo-la/
 - [x] Première confirmation (`ci41540608`, M3,2, 2 septembre 2026). Le
       déclencheur aveugle demandait ~3× l’amplitude arrivée. Son taux de fausse
       confirmation est désormais mesuré sur des enregistrements réels et non sur
-      du bruit simulé : une sur 53.
+      du bruit simulé : une sur 54.
 - [ ] Première détection autonome : aucune. Calibration d’amplitude 0 sur 8.
 - [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre, puis
-      un premier manqué le 6 septembre, publié par la station contre elle-même.
+      un premier manqué le 6 septembre, publié par la station contre elle-même,
+      puis retiré le 9 par une révision du catalogue.
 - [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
 - [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
       8 septembre 2026).
@@ -577,9 +635,12 @@ chiffres qui les sous-tendent :
 - le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
 - la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
 - le taux de fausse confirmation mesuré sur 2 781 fenêtres témoins : une sur cinq
-  pour la significativité seule, une sur 53 avec la condition d'amplitude ;
+  pour la significativité seule, une sur 54 avec la condition d'amplitude — et le
+  cas réel du 8 septembre au soir, où le canal a franchi son seuil sur un séisme
+  trente-trois fois sous le plancher du capteur ;
 - l'audit contre le catalogue en six verdicts, qui a produit son premier manqué
-  contre la station le 6 septembre ;
+  contre la station le 6 septembre, puis l'a retiré le 9 sur révision du
+  catalogue ;
 - quatre affirmations de cette documentation que les données ont corrigées.
 
 Ses figures et ses vérifications numériques sont produites par un script unique

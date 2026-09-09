@@ -183,6 +183,10 @@ def matched_pairs(path: str, limit: int = 400) -> list[dict]:
             continue
         entry = {
             "t": r.get("wall_time"),
+            # The catalog id, so a page can link the pair back to the USGS event
+            # rather than asking the reader to trust the magnitude printed here.
+            # Carries no location: the id is public the moment the event is.
+            "id": m.get("event_id") or "",
             "usgs": round(usgs_mag, 2),
             "dev": round(dev, 2),
             "usgs_km": round(m["distance_km"], 1) if m.get("distance_km") else None,

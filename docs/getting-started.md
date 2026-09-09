@@ -228,7 +228,7 @@ and `serial` remain for host-side debugging.
 ## 7. Calibration & AI (over time)
 - [ ] Let it run in LA; accumulate M2+ correlations (calibration points).
 - [x] Collect noise samples (truck, door, footsteps). Automatic: every unmatched
-      trigger is one. 7129 of them so far.
+      trigger is one. 10 789 of them so far.
 - [ ] Get the other class. The filter in `python/classifier.py` trains itself on
       each new sample but stays silent until it has three earthquakes as well,
       and it has none. Swapping it for an Edge Impulse model would not help:

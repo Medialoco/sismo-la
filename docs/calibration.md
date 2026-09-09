@@ -50,7 +50,7 @@ A local shake is associated with a USGS earthquake if:
 Local triggers **without** a matching USGS earthquake are "noise" candidates →
 training set for the earthquake-vs-noise filter in `python/classifier.py`. That
 filter is an online logistic regression, not an Edge Impulse model, and it needs
-three examples of each class before it will answer. Having seen 7129 noise
+three examples of each class before it will answer. Having seen 10 789 noise
 samples and no earthquake, it abstains.
 
 ## Robustness
