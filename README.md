@@ -2,7 +2,7 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22679543-1f6feb)](https://doi.org/10.5281/zenodo.22679543)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22679542-1f6feb)](https://doi.org/10.5281/zenodo.22679542)
 [![Release](https://img.shields.io/github/v/release/Medialoco/sismo-la?label=release&color=0b7285)](https://github.com/Medialoco/sismo-la/releases/latest)
 [![License MIT](https://img.shields.io/badge/license-MIT-0b7285)](LICENSE)
 [![Public page](https://img.shields.io/badge/public_page-live-2b8a3e)](https://medialoco.github.io/sismo-la/)
@@ -52,7 +52,7 @@ second node is another row in `web-remote/stations.json` with its own snapshot
 file.
 
 A technical report on the method and the measured results is published on Zenodo,
-[10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543); see [Publication](#publication) below.
+[10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542); see [Publication](#publication) below.
 
 ![The node: Arduino UNO Q and Modulino Movement](docs/images/station.png)
 
@@ -583,7 +583,7 @@ sismo-la/
       6 September and published it unprompted.
 - [ ] Calibration curve from real recordings, held-out residuals.
 - [ ] Contest video: replay + a live tap on the box (around 8 September 2026).
-- [x] Technical report deposited on Zenodo, [10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543) (9 September 2026).
+- [x] Technical report deposited on Zenodo, [10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542) (9 September 2026).
 
 Entry in
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
@@ -600,7 +600,7 @@ reproduces every figure and every number from the station's raw envelopes.
 > Prieur, B. (2026). *Can a seismic station built on a $12 motion sensor be
 > falsifiable? Measured sensitivity, retrospective channel, and continuous
 > self-audit of a MEMS station in Los Angeles.* Zenodo.
-> <https://doi.org/10.5281/zenodo.22679543>
+> <https://doi.org/10.5281/zenodo.22679542>
 >
 > ORCID: [0000-0003-0786-0049](https://orcid.org/0000-0003-0786-0049).
 

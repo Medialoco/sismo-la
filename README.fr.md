@@ -2,7 +2,7 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22679543-1f6feb)](https://doi.org/10.5281/zenodo.22679543)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22679542-1f6feb)](https://doi.org/10.5281/zenodo.22679542)
 [![Release](https://img.shields.io/github/v/release/Medialoco/sismo-la?label=release&color=0b7285)](https://github.com/Medialoco/sismo-la/releases/latest)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-0b7285)](LICENSE)
 [![Page publique](https://img.shields.io/badge/page_publique-en_ligne-2b8a3e)](https://medialoco.github.io/sismo-la/)
@@ -54,7 +54,7 @@ publiée. Un deuxième nœud est une autre ligne dans `web-remote/stations.json`
 avec son propre fichier snapshot.
 
 Un rapport technique sur la méthode et les résultats mesurés est publié sur
-Zenodo, [10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543) ; voir
+Zenodo, [10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542) ; voir
 [Article scientifique](#article-scientifique) plus bas.
 
 ![Le nœud : Arduino UNO Q et Modulino Movement](docs/images/station.png)
@@ -609,7 +609,7 @@ sismo-la/
 - [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
 - [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
       8 septembre 2026).
-- [x] Rapport technique déposé sur Zenodo, [10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543) (9 septembre 2026).
+- [x] Rapport technique déposé sur Zenodo, [10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542) (9 septembre 2026).
 
 Candidature
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
@@ -627,7 +627,7 @@ station. Le titre du dépôt est l'anglais, le français y figure en titre alter
 > Prieur, B. (2026). *Can a seismic station built on a $12 motion sensor be
 > falsifiable? Measured sensitivity, retrospective channel, and continuous
 > self-audit of a MEMS station in Los Angeles.* Zenodo.
-> <https://doi.org/10.5281/zenodo.22679543>
+> <https://doi.org/10.5281/zenodo.22679542>
 >
 > ORCID : [0000-0003-0786-0049](https://orcid.org/0000-0003-0786-0049).
 
