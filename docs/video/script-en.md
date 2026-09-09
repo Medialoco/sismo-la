@@ -201,13 +201,42 @@ draws them, because a bare `0 missed` reads as a broken device. Say what
 
 ---
 
-## Shot 10 — close — 20 s — SHOOT, then SLIDE 13
+## Shot 10 — what the measurement makes possible — 30 s — SLIDE 13
 
-The board in the room, dashboard behind it. Last four seconds on slide 13.
+Do not let the video end on what one box cannot do. Eight weeks of measuring
+produced a number, and the number is what makes a network designable instead of
+imaginable. Every figure here is from §12 of the report; none of it is built, and
+the voice-over must say so.
 
-> It detects events that have already happened. It does not predict. One station
-> gives a distance, a ring on a map, not a pin. Three rings would cross, and
-> that has not been built.
+> One station was never the point. What eight weeks of measuring bought me is a
+> number: exactly what this hardware can and cannot hear. And that number is what
+> lets you size a network.
+>
+> Fifty of these is about four thousand dollars. Fifty also changes the physics of
+> the problem, because the thing drowning the signal is household noise, and
+> household noise is local — a footstep happens in one room, an earthquake reaches
+> every neighbour within seconds. Require two nodes to agree and most of that
+> noise disappears, which means the threshold can come down instead of up.
+>
+> Coverage changes too. One node is deaf across almost all of its own territory.
+> In a network, every point on the map gets the sensitivity of its nearest sensor
+> instead of the average one — that gain costs nothing but geometry.
+>
+> And with synchronised clocks, arrival times cross: an epicentre instead of a
+> ring, and hundreds of amplitude readings giving a map of what was actually
+> felt, which is the only thing anyone needs in the first minutes.
+
+*Say the reservation, in one line.* None of it is built, the microcontroller's
+clock drifts by eleven hundred parts per million, and at fifty sites the hardware
+stops being the expensive part.
+
+---
+
+## Shot 11 — close — 14 s — SHOOT, then SLIDE 14
+
+The board in the room, dashboard behind it. Last four seconds on slide 14.
+
+> It detects events that have already happened. It does not predict.
 >
 > A twelve-dollar sensor and an official public list. The box learns how the
 > ground feels here, it keeps that model when the network is unplugged, and it

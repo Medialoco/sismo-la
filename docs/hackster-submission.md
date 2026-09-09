@@ -46,7 +46,8 @@ We fill this page in as the project progresses.
 
 1. **The question** — ten million people on active faults, instrumentation that
    exists but is institutional, and the feasibility question that follows: can a
-   $75–90 node detect a quake and size it, unattended? (cf. MyShake, Raspberry
+   $71–86 node — about $90 delivered — detect a quake and size it, unattended?
+   (cf. MyShake, Raspberry
    Shake, whose cheapest board is $294.99.)
 2. **The key idea: USGS calibration** — why a cheap sensor becomes useful when you
    have a free ground truth.
@@ -65,7 +66,7 @@ We fill this page in as the project progresses.
 9. **Results in LA** — what there is, stated as it is:
    - one confirmation, `ci41540608`, M3.2 near Ontario, 2 September 2026,
      envelope 4.34 dispersions above the preceding minutes;
-   - the negative control: of three cataloged earthquakes examined, two were
+   - the negative control: of six cataloged earthquakes examined, four were
      refused although the catalog had named their exact second, because the
      shaking they could deliver here was below the sensor's own noise;
    - zero autonomous detections, amplitude calibration 0 of 8, noise filter
@@ -89,12 +90,37 @@ We fill this page in as the project progresses.
     own noise**, i.e. a false confirmation, one day after we finished measuring
     that such crossings happen about **once in 55** on this station's own
     recordings. The public counter therefore reads 2 confirmed while only one is
-    real, and the page says so under the number. Nothing was retuned to hide
-    either: the thresholds have been frozen since 1 September, and being able to
-    state the error rate is the result.
-11. **Limits & next steps** — a neighborhood strong-motion node, not a
-    teleseismic instrument. 96.9 % of the local catalog is out of reach of both
-    channels. One station gives a ring, not a pin.
+    real, and **since 9 September the page no longer qualifies it** — the caveat
+    was removed because a paragraph of statistics under a number does not get
+    read. So the Story has to make that distinction itself; do not write that the
+    page does. Nothing was retuned to hide either event: the thresholds have been
+    frozen since 1 September, and being able to state the error rate is the
+    result.
+11. **Limits, and what the measurement makes possible** — a neighborhood
+    strong-motion node, not a teleseismic instrument: 96.9 % of the local catalog
+    is out of reach of both channels, and one station gives a ring, not a pin.
+    Do not stop there, and do not present that as a negative result. It is the
+    first measured sensitivity for this class of hardware, and it is exactly the
+    number a network has to be sized on. Fifty nodes is about **$4,000**, and
+    fifty changes the problem rather than merely repeating it: household noise is
+    what drowns the signal and it is strictly local, where an earthquake reaches
+    every neighbour within seconds, so requiring two nodes to agree removes most
+    of that noise and lets the threshold come **down**. Coverage stops being a
+    weakness too — every point gets the sensitivity of its nearest sensor instead
+    of the average one, a gain that costs nothing but geometry. With synchronised
+    clocks the arrival times cross and give an epicentre, and many amplitude
+    readings give a map of what was actually felt, which is the only thing anyone
+    needs in the first minutes. State the reservation in the same breath: none of
+    it is built, the microcontroller's clock drifts 1 099 ppm, and at fifty sites
+    the hardware stops being the expensive part. Figures from §12 of the report.
+12. **Everything here is checkable** — close on this rather than on a promise.
+    The technical report is deposited, in English and French, with an archive that
+    reproduces every quoted number from the raw recordings:
+    **[10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543)**. The
+    code is at <https://github.com/Medialoco/sismo-la>, tagged **v1.0.0** for this
+    report, and the live page is <https://medialoco.github.io/sismo-la/>. A judge
+    can check any figure in the Story without taking our word for it, which is the
+    whole argument of the build and is worth saying plainly.
 
 ## Writing & photo tips (Wulff tutorial)
 

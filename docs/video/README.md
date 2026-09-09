@@ -5,7 +5,7 @@ Three things live here, plus the assets already produced.
 | File | What it is |
 |---|---|
 | [`script-en.md`](script-en.md) | The narration, English, shot by shot. Read it aloud. |
-| [`slides.html`](slides.html) | 13 slides to display fullscreen and film off the screen. |
+| [`slides.html`](slides.html) | 14 slides to display fullscreen and film off the screen. |
 | `calibration-timelapse.mp4` | The replay. The voice-over must say "replay" **before** the map fills. |
 | `narration.srt` | **Stale, 3 September.** Predates the miss, the withdrawal and the false alarm. Do not cut against it. |
 
@@ -46,7 +46,26 @@ the frame at 100 %, and zooming only reflows it.
 | 8 | Shot 6 — the freeze |
 | 9, 10, 11 | Shot 8 — what it cannot do, and what it admitted |
 | 12 | Shot 9 — the false alarm |
-| 13 | Shot 10 — close |
+| 13 | Shot 10 — what the measurement makes possible |
+| 14 | Shot 11 — close |
+
+## Do not end on what one box cannot do
+
+Shot 10 exists because the earlier cut finished on the station's limits, and that
+is the wrong last taste. The framing to hold throughout: measuring that 96.9 % of
+the catalog is out of reach is **not a negative result**, it is the first
+sensitivity figure for this hardware class — and it is exactly the number a
+network has to be sized on. Slide 13 turns it into fifty nodes, about $4,000, and
+three named gains from §12 of the report.
+
+That does not soften the self-incrimination in shots 8 and 9. It is the reason to
+trust the sensitivity figure at all, and the two belong together.
+
+**Time budget.** The perspectives beat costs 24 s over the old close, so the cut
+runs about 3:24. The cheapest 12 s to recover is shot 7, the replay: it shows a
+calibrated state the station has never reached, with amplitudes 38 times too
+large, and it needs a spoken disclaimer before the map fills just to be honest.
+Dropping it removes a liability as well as the seconds.
 
 ## Two things that must not slip
 

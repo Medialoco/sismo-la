@@ -328,5 +328,6 @@ not a measurement).
 
 ## Cost card (optional lower-third, shot 1 or 8)
 
-Prices 1 September 2026. Node **$75–90** delivered: UNO Q $44–59, Modulino
-$11.80, USB-C 5 V / 3 A ~$15.
+Prices 1 September 2026. Node **$71–86**, about **$90** delivered: UNO Q $44–59,
+Modulino $11.80, USB-C 5 V / 3 A ~$15. Same figures as the report's §4.1 — the
+$11.80 is the sensor alone, and the station is never the twelve dollars.
