@@ -2,7 +2,10 @@
 
 [English](README.md) · [Français](README.fr.md)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679543.svg)](https://doi.org/10.5281/zenodo.22679543)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22679543-1f6feb)](https://doi.org/10.5281/zenodo.22679543)
+[![Release](https://img.shields.io/github/v/release/Medialoco/sismo-la?label=release&color=0b7285)](https://github.com/Medialoco/sismo-la/releases/latest)
+[![License MIT](https://img.shields.io/badge/license-MIT-0b7285)](LICENSE)
+[![Public page](https://img.shields.io/badge/public_page-live-2b8a3e)](https://medialoco.github.io/sismo-la/)
 
 Sismo-LA is a small station in a house in Los Angeles County. It runs on USB-C
 and WiFi, for about $80. Its MEMS accelerometer — a chip from the same family
