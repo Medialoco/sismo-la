@@ -191,10 +191,9 @@ No arrows. No calibration counter in frame.
 >
 > The obvious objection is that if you are told which second to examine, you
 > will always find something. So watch what it does when there is nothing to
-> find. It has examined three cataloged earthquakes and confirmed one. Twice it
-> was handed the exact second and had the recording, and it returned nothing:
-> the shaking those two could deliver here was smaller than the sensor's own
-> electrical noise.
+> find. It has examined six cataloged earthquakes. Four times it was handed the
+> exact second, it had the recording, and it returned nothing: the shaking those
+> four could deliver here was smaller than the sensor's own electrical noise.
 
 *One event, one point.* Do not say “the station detected its first earthquake.”
 
@@ -227,9 +226,12 @@ and the audit counts in full. Neither public page draws them: `9 · 6 · 0` read
 a score of six out of nine, and a lone `1 missed` reads as a broken device, so
 they stay machine-readable in `station.json`. The 6 September miss is **no longer
 in the live counts** — shoot it from `retro_state.json` or from the git history of
-`station.json`, and say it was withdrawn. For the false confirmation, shoot
-`data.html`, whose note under the table states the one-in-55 rate; the front page
-shows the bare count and says nothing about it.
+`station.json`, and say it was withdrawn. For the false confirmation, shoot the
+bare count on the front page and the two rows on `data.html`: **as of 9 September
+neither page carries any caveat** — the wording was removed that morning, so
+nothing on the site marks which of the two crossings is false. The voice-over is
+now the only place the distinction is made, which is why the lines below say it
+in the first person.
 
 The voiceover carries the meaning here, because the number has no caption to lean
 on. Say what `missed` is before showing it.
@@ -268,8 +270,13 @@ on. Say what `missed` is before showing it.
 > And the same week, the second channel crossed its threshold on an earthquake
 > far too small and too distant to have reached this sensor at all. A false
 > alarm, the first one, and it arrived a day after we finished measuring how
-> often to expect them: about one time in fifty. The counter on the public page
-> says two confirmations. Only one of them is real, and the page says so.
+> often to expect them: about one time in fifty.
+>
+> So the counter on the public page says two confirmations, and only one of them
+> is real. You are hearing that from me, not from the page. I could have deleted
+> the row. I did not, because that count is what the frozen threshold actually
+> produced, and a threshold you retune every time it embarrasses you has no
+> error rate left to quote.
 
 *This is the strongest thing in the project.* An instrument that reports its own
 failure, unprompted, in public, is the whole argument of the build. The withdrawal

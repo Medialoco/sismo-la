@@ -59,6 +59,9 @@
              background: var(--dev); color: #fff; font-variant-numeric: tabular-nums; }
     .badge.show { display: inline-block; }
     header a { color: var(--muted); font-size: 13px; text-decoration: none; }
+    /* source and the release read as one pair, not as two unrelated links */
+    header .src { display: flex; gap: 5px; align-items: baseline; }
+    header .src .sep { color: var(--muted); font-size: 13px; opacity: .55; }
     header a:hover { color: var(--text); }
     .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
                background: none; border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -124,7 +127,19 @@
     <span class="sub" id="sub">Every reading the station published, and the CSV behind it.</span>
     <span id="badge" class="badge"></span>
     <a href="index.html">&larr; map</a>
-    <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
+    <span class="src">
+      <a href="https://github.com/Medialoco/sismo-la" target="_blank" rel="noopener">source</a>
+      <span class="sep">&middot;</span>
+      <!-- Same number as the Zenodo record, so the page says which code the
+           report describes while "source" keeps pointing at what is running. -->
+      <a href="https://github.com/Medialoco/sismo-la/releases/tag/v1.0.0"
+         target="_blank" rel="noopener"
+         title="The release the report describes">v1.0.0</a>
+    </span>
+    <!-- The report the numbers on this page are argued in. Zenodo record v1,
+         9 September 2026; the DOI is permanent where a repository link is not. -->
+    <a href="https://doi.org/10.5281/zenodo.22679543" target="_blank" rel="noopener"
+       title="Technical report, DOI 10.5281/zenodo.22679543">paper</a>
     <button type="button" id="theme" class="iconbtn" aria-label="Light or dark">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>

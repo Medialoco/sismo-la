@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sismo-LA — slides for the contest video</title>
+<!--
+  Deck to be filmed off the screen. Open in a browser, press f for fullscreen,
+  then walk through with the right arrow or the space bar.
+
+    f          fullscreen
+    right/space/down   next        left/up   previous
+    home/end   first / last slide
+    c          hide or show the slide counter (hide it before filming)
+
+  Every figure here is checked against web-remote/station.json and the report of
+  9 September 2026. The station's coordinates appear nowhere, by design.
+  Narration: script-en.md in this folder. Slide numbers match its shot list.
+-->
+<style>
+  :root{
+    --bg:#0a0a0c; --ink:#f4f4f6; --dim:#8c8c96;
+    --accent:#ffb02e; --alert:#ff6b5c; --good:#5cc8a8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink); overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .slide{
+    position:absolute; inset:0; display:none;
+    flex-direction:column; justify-content:center; align-items:center;
+    padding:6vh 8vw; text-align:center;
+  }
+  .slide.on{display:flex}
+
+  .kicker{
+    font-size:1.5vw; font-weight:700; letter-spacing:.32em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:3.5vh;
+  }
+  h1{font-size:4.6vw; font-weight:700; line-height:1.15; max-width:66ch}
+  h2{font-size:3.4vw; font-weight:700; line-height:1.2; max-width:60ch}
+  .sub{font-size:1.9vw; font-weight:400; color:var(--dim); margin-top:3.5vh; max-width:56ch; line-height:1.5}
+  .lede{font-size:2.4vw; font-weight:400; line-height:1.45; max-width:52ch}
+
+  /* rangee de chiffres */
+  .figs{display:flex; gap:7vw; margin-top:6vh; align-items:flex-start; justify-content:center; flex-wrap:wrap}
+  .fig{max-width:22ch}
+  .fig .n{font-size:7vw; font-weight:700; line-height:1; letter-spacing:-.02em}
+  .fig .n.sm{font-size:5vw}
+  .fig .l{font-size:1.45vw; color:var(--dim); margin-top:1.6vh; line-height:1.4}
+  .accent{color:var(--accent)} .alert{color:var(--alert)} .good{color:var(--good)}
+
+  /* fiche evenement */
+  .card{
+    border:.22vh solid #26262e; border-radius:1.2vh; padding:4vh 5vw; margin-top:5vh;
+    display:flex; gap:6vw; flex-wrap:wrap; justify-content:center;
+  }
+  .card .row{text-align:left; min-width:16ch}
+  .card .row .v{font-size:3.2vw; font-weight:700; line-height:1.1}
+  .card .row .k{font-size:1.3vw; color:var(--dim); margin-top:.8vh; letter-spacing:.04em}
+
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .links{margin-top:6vh; display:flex; flex-direction:column; gap:2.4vh}
+  .links a{color:var(--ink); font-size:2.1vw; text-decoration:none; border-bottom:.2vh solid #33333d}
+
+  figure{display:flex; flex-direction:column; align-items:center; gap:2.5vh; width:100%}
+  figure img{max-height:74vh; max-width:82vw; background:#fff; border-radius:1vh; padding:1.4vh}
+  figcaption{font-size:1.5vw; color:var(--dim)}
+
+  #counter{
+    position:fixed; right:2vw; bottom:2vh; font-size:1.1vw; color:#3a3a44;
+    font-family:ui-monospace,Menlo,monospace;
+  }
+  #counter.hidden{display:none}
+</style>
+</head>
+<body>
+
+<!-- 1 ......................................................... cold open -->
+<section class="slide on">
+  <div class="kicker">Sismo-LA &middot; Los Angeles County</div>
+  <h1>Can a seismic station built on a <span class="accent">$12 motion sensor</span> be falsifiable?</h1>
+  <p class="sub">Not: can it detect an earthquake. Can it publish enough, unattended,
+  for a stranger to prove it wrong.</p>
+</section>
+
+<!-- 2 ....................................................... the problem -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>Most earthquakes here are beyond a cheap sensor</h2>
+  <div class="figs">
+    <div class="fig"><div class="n">&asymp;2,000</div>
+      <div class="l">earthquakes of magnitude&nbsp;2 or more, within 160&nbsp;km, over five years</div></div>
+    <div class="fig"><div class="n accent">96.9%</div>
+      <div class="l">of them too small or too far to move this sensor at all</div></div>
+  </div>
+  <p class="sub">A station in perfect working order spends almost all of its time
+  reporting nothing. So silence proves nothing, either way.</p>
+</section>
+
+<!-- 3 ................................................... how it works -->
+<section class="slide">
+  <div class="kicker">How it works</div>
+  <figure>
+    <img src="../images/how-it-works.png" alt="From the sensor to the catalog and back">
+    <figcaption>The catalog is the answer key &mdash; and the station does not control it.</figcaption>
+  </figure>
+</section>
+
+<!-- 4 ........................................ the two words -->
+<section class="slide">
+  <div class="kicker">Two words that must not be mixed</div>
+  <div class="figs">
+    <div class="fig" style="max-width:26ch">
+      <div class="n sm">DETECTION</div>
+      <div class="l">The trigger fired on its own.<br>Nobody told it when to look.<br><br>
+      <span style="color:var(--alert)">So far: zero.</span></div>
+    </div>
+    <div class="fig" style="max-width:26ch">
+      <div class="n sm accent">CONFIRMATION</div>
+      <div class="l">The catalog named the second, and the recording was elevated there.<br><br>
+      Evidence the ground moved. Not a discovery.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 ......................................................... Ontario -->
+<section class="slide">
+  <div class="kicker">2 September 2026 &middot; 12:37:12 UTC</div>
+  <h2>M3.2, 6&nbsp;km SE of Ontario, California</h2>
+  <div class="card">
+    <div class="row"><div class="v accent">4.34</div><div class="k">envelope, in standard deviations<br>(threshold 4.00)</div></div>
+    <div class="row"><div class="v">1.095 mg</div><div class="k">shaking that arrived</div></div>
+    <div class="row"><div class="v good">0.44 mg</div><div class="k">needed to be found afterwards</div></div>
+    <div class="row"><div class="v alert">3.26 mg</div><div class="k">needed by the blind trigger<br>&mdash; it never fired</div></div>
+  </div>
+  <p class="sub"><span class="mono">ci41540608</span> &mdash; the station was handed the second,
+  went back through its own recording, and the ground was moving there.</p>
+</section>
+
+<!-- 6 .................................................... published map -->
+<section class="slide">
+  <div class="kicker">Published, the same day</div>
+  <figure>
+    <img src="../images/public-map-confirmed.png" alt="The public map, with the confirmed earthquake outlined">
+    <figcaption>The node is drawn as a 20&nbsp;km disc. Its position is never published.</figcaption>
+  </figure>
+</section>
+
+<!-- 7 ................................................... published rows -->
+<section class="slide">
+  <div class="kicker">Published, the same day</div>
+  <figure>
+    <img src="../images/public-data-confirmed.png" alt="The public data table row for the confirmed earthquake">
+    <figcaption>Anyone can check the row against the USGS event page.</figcaption>
+  </figure>
+</section>
+
+<!-- 8 ........................................................ the freeze -->
+<section class="slide">
+  <div class="kicker">The objection: predicting after the fact</div>
+  <h2>The law was public <span class="accent">before</span> the earthquake</h2>
+  <div class="figs">
+    <div class="fig"><div class="n sm">1 Sep, 13:56 UTC</div>
+      <div class="l">the ground-motion law committed to a public repository, <span class="mono">6601f1d</span></div></div>
+    <div class="fig"><div class="n accent">22.7 h</div>
+      <div class="l">before the Ontario earthquake &mdash; and unchanged since</div></div>
+  </div>
+  <p class="sub">The commit history timestamps the freeze independently. You do not
+  have to take my word for it.</p>
+</section>
+
+<!-- 9 ................................................. what it cannot do -->
+<section class="slide">
+  <div class="kicker">What it still cannot do</div>
+  <div class="figs">
+    <div class="fig"><div class="n alert">0</div>
+      <div class="l">earthquakes found by the station on its own, in eight weeks</div></div>
+    <div class="fig"><div class="n alert">0 / 8</div>
+      <div class="l">matched examples needed before it may print a magnitude</div></div>
+  </div>
+  <p class="sub">Confirmations are not allowed into that fit. They are selected for
+  being a large wiggle beside the noise, so their amplitude is biased high by
+  construction.</p>
+</section>
+
+<!-- 10 ........................................................ the miss -->
+<section class="slide">
+  <div class="kicker">6 September 2026 &middot; 07:13:11 UTC</div>
+  <h2>The station accused itself</h2>
+  <p class="lede">A closer M3.2, near Compton. The frozen law said the shaking should
+  have cleared the threshold. Nothing was in the recording.</p>
+  <div class="figs">
+    <div class="fig"><div class="n accent">32 min</div>
+      <div class="l">after the earthquake, it published <span class="mono">missed</span> against itself</div></div>
+    <div class="fig"><div class="n">nobody</div>
+      <div class="l">had asked it to look</div></div>
+  </div>
+</section>
+
+<!-- 11 ................................................. the withdrawal -->
+<section class="slide">
+  <div class="kicker">Three days later</div>
+  <h2>The catalog took it back</h2>
+  <div class="figs">
+    <div class="fig"><div class="n sm">M3.2 &rarr; M3.07</div>
+      <div class="l">revised down, and relocated deeper</div></div>
+    <div class="fig"><div class="n sm accent">flag withdrawn</div>
+      <div class="l">nothing the station measured had changed</div></div>
+  </div>
+  <p class="sub">That is the price of a referee you do not control: it can take back
+  what it gave you &mdash; in both directions.</p>
+</section>
+
+<!-- 12 ................................................... the false alarm
+     The 33x is expected shaking (0.0108 mg at the PUBLISHED reference point)
+     against the sensor floor (0.360 mg), exactly as the report states it. Never
+     recompute it from the station's real coordinates: the attenuation law
+     inverts, so a ratio quoted beside a catalog magnitude gives the distance to
+     the kilometre, and a second one locates the site. -->
+<section class="slide">
+  <div class="kicker">8 September 2026, evening</div>
+  <h2>The counter says two. <span class="accent">One is real.</span></h2>
+  <div class="figs">
+    <div class="fig"><div class="n alert">33&times;</div>
+      <div class="l">below the chip's own electrical noise &mdash; there was nothing to hear</div></div>
+    <div class="fig"><div class="n">1 in 55</div>
+      <div class="l">measured false-confirmation rate, over 3,585 control windows</div></div>
+  </div>
+  <p class="sub">It arrived one day after that rate was measured. The row was not
+  deleted: a threshold retuned every time it embarrasses you has no error rate
+  left to quote.</p>
+</section>
+
+<!-- 13 ........................................................... close -->
+<section class="slide">
+  <div class="kicker">Everything here is checkable</div>
+  <h2>Code, data, and the report</h2>
+  <div class="links">
+    <a href="https://github.com/Medialoco/sismo-la">github.com/Medialoco/sismo-la</a>
+    <a href="https://medialoco.github.io/sismo-la/">medialoco.github.io/sismo-la</a>
+    <a href="https://doi.org/10.5281/zenodo.22679543">doi.org/10.5281/zenodo.22679543</a>
+  </div>
+  <p class="sub">It detects events that have already happened. It does not predict.</p>
+</section>
+
+<div id="counter"></div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var counter = document.getElementById('counter');
+  var i = 0;
+
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('on', k === i); });
+    counter.textContent = (i + 1) + ' / ' + slides.length;
+  }
+
+  document.addEventListener('keydown', function(e){
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+        show(i + 1); e.preventDefault(); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+        show(i - 1); e.preventDefault(); break;
+      case 'Home': show(0); break;
+      case 'End':  show(slides.length - 1); break;
+      case 'c': case 'C': counter.classList.toggle('hidden'); break;
+      case 'f': case 'F':
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+        break;
+    }
+  });
+
+  // avancer au clic, pour filmer sans toucher le clavier
+  document.addEventListener('click', function(){ show(i + 1); });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
