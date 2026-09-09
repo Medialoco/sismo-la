@@ -87,7 +87,7 @@ We fill this page in as the project progresses.
     take back what it gave you. The same week the retrospective channel crossed
     its threshold on an M2.33 whose expected shaking was **33x below the sensor's
     own noise**, i.e. a false confirmation, one day after we finished measuring
-    that such crossings happen about **once in 54** on this station's own
+    that such crossings happen about **once in 55** on this station's own
     recordings. The public counter therefore reads 2 confirmed while only one is
     real, and the page says so under the number. Nothing was retuned to hide
     either: the thresholds have been frozen since 1 September, and being able to

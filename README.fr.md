@@ -206,14 +206,14 @@ Un événement, pas un taux, et z = 4,34 est une marge mince au-dessus de 4,0.
 **À quelle fréquence le second canal se trompe, maintenant mesuré sur
 l’enveloppe enregistrée.** Un taux de 1 sur 1 200 avait été calculé sur du
 *bruit de capteur pur*. Cette maison produit aussi des pas, donc la même
-recherche a été rejouée à 2 980 instants de **contrôle** — des heures où aucun
-séisme n’a eu lieu. Le seuil z = 4,34 y est franchi **21 % du temps, une fois
-sur cinq**. Le taux suit l’occupation : environ 3 % maison vide, 25 % avec
-quelqu’un à la maison.
+recherche a été rejouée à 3 585 instants de **contrôle** — cinq journées UTC
+complètes, des heures où aucun séisme n’a eu lieu. Le seuil z = 4,34 y est
+franchi **18 % du temps, une fois sur six**. Le taux suit l’occupation : 2 à
+3 % maison vide, 20 à 40 % avec quelqu’un à la maison.
 
 Ces faux succès ont un pic médian de **10 mg** (des pas). Ce séisme culminait
 à 1,095 mg, sous le seuil du déclencheur. En exigeant les deux — z ≥ 4,34
-*et* un pic aussi faible — il reste **1,85 %, une sur 54**. C’est le chiffre
+*et* un pic aussi faible — il reste **1,81 %, une sur 55**. C’est le chiffre
 qui s’applique ici. Rejouée aux heures voisines du 2 septembre, la recherche
 donne encore 29 % de témoins au moins aussi forts. Méthode et tableau par
 journée : §10.4 du rapport.
@@ -250,8 +250,8 @@ secondes, et cela suffit à repasser sous le seuil.
 La maison était calme à cette heure — médiane 0,378 mg, pic horaire maximal
 1,16 mg — donc ce n'est pas un pas mais la gigue ordinaire de l'enveloppe sur la
 fenêtre de 5 s. Son pic de 1,120 mg passe même sous le plafond resserré de 1,2 mg :
-il appartient à la classe résiduelle d'une sur 54, pas à celle, grossière, d'une
-sur cinq.
+il appartient à la classe résiduelle d'une sur 55, pas à celle, grossière, d'une
+sur six.
 
 Le compteur public doit donc être lu comme **le nombre de fois où le critère a été
 franchi**, non comme le nombre de séismes enregistrés. Le critère est fixe, gelé
@@ -596,7 +596,7 @@ sismo-la/
 - [x] Première confirmation (`ci41540608`, M3,2, 2 septembre 2026). Le
       déclencheur aveugle demandait ~3× l’amplitude arrivée. Son taux de fausse
       confirmation est désormais mesuré sur des enregistrements réels et non sur
-      du bruit simulé : une sur 54.
+      du bruit simulé : une sur 55.
 - [ ] Première détection autonome : aucune. Calibration d’amplitude 0 sur 8.
 - [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre, puis
       un premier manqué le 6 septembre, publié par la station contre elle-même,
@@ -634,8 +634,8 @@ chiffres qui les sous-tendent :
   magnitudes qui s'en déduisent par distance ;
 - le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
 - la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
-- le taux de fausse confirmation mesuré sur 2 980 fenêtres témoins : une sur cinq
-  pour la significativité seule, une sur 54 avec la condition d'amplitude — et le
+- le taux de fausse confirmation mesuré sur 3 585 fenêtres témoins : une sur six
+  pour la significativité seule, une sur 55 avec la condition d'amplitude — et le
   cas réel du 8 septembre au soir, où le canal a franchi son seuil sur un séisme
   trente-trois fois sous le plancher du capteur ;
 - l'audit contre le catalogue en six verdicts, qui a produit son premier manqué

@@ -197,14 +197,14 @@ One event, not a rate, and z = 4.34 is a thin margin over 4.0.
 
 **How often the second channel is fooled, now measured on the recorded
 envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
-house also produces footsteps, so the same search was replayed at 2 980
-**control** instants — times when no earthquake occurred. It reaches z = 4.34
-in **21% of them, one in five**. The rate tracks occupancy: about 3% in an
-empty house, 25% with someone home.
+house also produces footsteps, so the same search was replayed at 3 585
+**control** instants — five complete UTC days, times when no earthquake
+occurred. It reaches z = 4.34 in **18% of them, one in six**. The rate tracks
+occupancy: 2–3% in an empty house, 20–40% with someone home.
 
 Those false hits have a median peak of **10 mg** (footsteps). This earthquake
 peaked at 1.095 mg, below the trigger floor. Requiring both z ≥ 4.34 *and* a
-peak that small leaves **1.85%, one in 54**. That is the number that applies
+peak that small leaves **1.81%, one in 55**. That is the number that applies
 here. Replaying the search at neighbouring hours of 2 September still gives
 29% of controls at least as strong. Method and the per-day table: the
 report's §10.4.
@@ -241,7 +241,7 @@ to cross back under the threshold.
 The house was quiet at the time — median 0.378 mg, hourly peak maximum
 1.16 mg — so this is not a footstep but ordinary envelope jitter on the 5 s
 window. Its 1.120 mg peak even clears the tightened 1.2 mg ceiling, so it sits
-in the residual 1-in-54 class rather than the coarse 1-in-5 one.
+in the residual 1-in-55 class rather than the coarse 1-in-6 one.
 
 Read the public counter as **the number of times the criterion was crossed**,
 not the number of earthquakes recorded. The criterion is fixed, frozen since
@@ -572,7 +572,7 @@ sismo-la/
       counted separately from detections.
 - [x] First confirmation (`ci41540608`, M3.2, 2 September 2026). Blind trigger
       needed ~3× the arrived amplitude. Its false-confirmation rate is now
-      measured on real recordings, not simulated noise: one in 54.
+      measured on real recordings, not simulated noise: one in 55.
 - [ ] First autonomous detection: none. Amplitude calibration 0 of 8.
 - [x] Catalog audit, which returned its first `missed` against the station on
       6 September and published it unprompted.
@@ -608,7 +608,7 @@ behind them:
 | Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
 | Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
 | The 2 September confirmation, reproduced from raw envelope data | [Confirmation](#confirmation-ci41540608) |
-| False-confirmation rate measured on 2 980 control windows: one in five on significance alone, one in 54 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
+| False-confirmation rate measured on 3 585 control windows: one in six on significance alone, one in 55 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
 | Six-verdict audit against the catalog, which returned a first miss against the station and then withdrew it on a catalog revision | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
 | Four claims in this documentation that the data corrected | — |
 

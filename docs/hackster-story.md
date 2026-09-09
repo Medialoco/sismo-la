@@ -16,7 +16,7 @@ Two things moved on 9 September and shot 7 depends on both. The 6 September miss
 deeper, which dropped the pessimistic detection probability under 0.5. And the
 retrospective threshold was crossed a second time, on an M2.33 whose expected
 shaking was 33x below the sensor's own noise: a **false confirmation**, the first
-real instance of the 1-in-54 rate. Do not narrate either as a second success.
+real instance of the 1-in-55 rate. Do not narrate either as a second success.
 
 Shot 7 grew to hold that miss, which is the best material here, and the four
 seconds each came out of shots 1, 2, 3 and 6 to keep the total at three minutes.
