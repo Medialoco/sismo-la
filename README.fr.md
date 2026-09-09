@@ -2,6 +2,8 @@
 
 [English](README.md) · [Français](README.fr.md)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679543.svg)](https://doi.org/10.5281/zenodo.22679543)
+
 Sismo-LA est une petite station dans une maison du comté de Los Angeles. Elle
 fonctionne sur USB-C et WiFi, pour environ 80 $. Son accéléromètre MEMS — une
 puce de la même famille que le capteur d'inclinaison d'un téléphone — mesure
@@ -48,9 +50,9 @@ un **disque de 20 km sur la San Fernando Valley** ; sa position n’est pas
 publiée. Un deuxième nœud est une autre ligne dans `web-remote/stations.json`
 avec son propre fichier snapshot.
 
-Un rapport technique sur la méthode et les résultats mesurés est déposé sur
-Zenodo le 9 septembre 2026 ; voir [Article scientifique](#article-scientifique)
-plus bas.
+Un rapport technique sur la méthode et les résultats mesurés est publié sur
+Zenodo, [10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543) ; voir
+[Article scientifique](#article-scientifique) plus bas.
 
 ![Le nœud : Arduino UNO Q et Modulino Movement](docs/images/station.png)
 
@@ -604,7 +606,7 @@ sismo-la/
 - [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
 - [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
       8 septembre 2026).
-- [ ] Rapport technique déposé sur Zenodo (9 septembre 2026).
+- [x] Rapport technique déposé sur Zenodo, [10.5281/zenodo.22679543](https://doi.org/10.5281/zenodo.22679543) (9 septembre 2026).
 
 Candidature
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
@@ -613,13 +615,16 @@ Candidature
 
 ## Article scientifique
 
-Un rapport technique expose la méthode et les résultats mesurés en détail. Il est
-rédigé en français, doublé d'une version anglaise à parité complète — mêmes
-sections, mêmes figures, mêmes chiffres — et les deux sont déposés sur **Zenodo**.
+Un rapport technique expose la méthode et les résultats mesurés en détail. Le
+dépôt Zenodo contient les deux versions, anglaise et française, à parité complète
+— mêmes sections, mêmes figures, mêmes chiffres — ainsi que l'archive qui
+reproduit chaque figure et chaque chiffre depuis les enveloppes brutes de la
+station. Le titre du dépôt est l'anglais, le français y figure en titre alternatif.
 
-> Prieur, B. (2026). *Une station sismique bâtie sur un capteur de mouvement à 12 dollars peut-elle être réfutable ?
-> Sensibilité mesurée, canal rétrospectif et audit permanent d'une station MEMS
-> à Los Angeles.* Zenodo. DOI attribué au dépôt.
+> Prieur, B. (2026). *Can a seismic station built on a $12 motion sensor be
+> falsifiable? Measured sensitivity, retrospective channel, and continuous
+> self-audit of a MEMS station in Los Angeles.* Zenodo.
+> <https://doi.org/10.5281/zenodo.22679543>
 >
 > ORCID : [0000-0003-0786-0049](https://orcid.org/0000-0003-0786-0049).
 
