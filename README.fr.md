@@ -49,7 +49,7 @@ publiée. Un deuxième nœud est une autre ligne dans `web-remote/stations.json`
 avec son propre fichier snapshot.
 
 Un rapport technique sur la méthode et les résultats mesurés est déposé sur
-Zenodo le 12 septembre 2026 ; voir [Article scientifique](#article-scientifique)
+Zenodo le 9 septembre 2026 ; voir [Article scientifique](#article-scientifique)
 plus bas.
 
 ![Le nœud : Arduino UNO Q et Modulino Movement](docs/images/station.png)
@@ -604,7 +604,7 @@ sismo-la/
 - [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
 - [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
       8 septembre 2026).
-- [ ] Rapport technique déposé sur Zenodo (12 septembre 2026).
+- [ ] Rapport technique déposé sur Zenodo (9 septembre 2026).
 
 Candidature
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
@@ -614,10 +614,10 @@ Candidature
 ## Article scientifique
 
 Un rapport technique expose la méthode et les résultats mesurés en détail. Il est
-rédigé en français, une traduction anglaise suivra, et il est déposé sur
-**Zenodo le 12 septembre 2026**.
+rédigé en français, doublé d'une version anglaise à parité complète — mêmes
+sections, mêmes figures, mêmes chiffres — et les deux sont déposés sur **Zenodo**.
 
-> Prieur, B. (2026). *Un nœud sismique à 80 dollars peut-il être réfutable ?
+> Prieur, B. (2026). *Une station sismique bâtie sur un capteur de mouvement à 12 dollars peut-elle être réfutable ?
 > Sensibilité mesurée, canal rétrospectif et audit permanent d'une station MEMS
 > à Los Angeles.* Zenodo. DOI attribué au dépôt.
 >

@@ -47,7 +47,7 @@ second node is another row in `web-remote/stations.json` with its own snapshot
 file.
 
 A technical report on the method and the measured results is being deposited on
-Zenodo on 12 September 2026; see [Publication](#publication) below.
+Zenodo on 9 September 2026; see [Publication](#publication) below.
 
 ![The node: Arduino UNO Q and Modulino Movement](docs/images/station.png)
 
@@ -578,7 +578,7 @@ sismo-la/
       6 September and published it unprompted.
 - [ ] Calibration curve from real recordings, held-out residuals.
 - [ ] Contest video: replay + a live tap on the box (around 8 September 2026).
-- [ ] Technical report deposited on Zenodo (12 September 2026).
+- [ ] Technical report deposited on Zenodo (9 September 2026).
 
 Entry in
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
@@ -588,10 +588,10 @@ Entry in
 ## Publication
 
 A technical report describes the method and the measured results in full. It is
-written in French, with an English translation to follow, and is being deposited
-on **Zenodo on 12 September 2026**.
+written in French, with an English version at full parity — same sections, same
+figures, same numbers — and both are deposited on **Zenodo**.
 
-> Prieur, B. (2026). *Un nœud sismique à 80 dollars peut-il être réfutable ?
+> Prieur, B. (2026). *Une station sismique bâtie sur un capteur de mouvement à 12 dollars peut-elle être réfutable ?
 > Sensibilité mesurée, canal rétrospectif et audit permanent d'une station MEMS
 > à Los Angeles.* Zenodo. DOI to be assigned on deposit.
 >
