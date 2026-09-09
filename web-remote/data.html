@@ -184,20 +184,22 @@
         triggered on these. <b>z</b> is how far its recorded envelope stood above
         the local noise of the preceding three minutes.<span id="czmin"></span>
         Peak, rms and baseline are in g.</p>
-      <p class="note"><b>How much a row here is worth.</b> The test is simple: was
-        the recording louder than usual at the second the waves should have
-        arrived? To find out how often plain noise passes it, the same search was
-        replayed at moments when no earthquake happened at all. It passed
-        <b>about one time in six</b>. Most of those are footsteps, which are far
-        louder than any earthquake this sensor has recorded, so ruling them out by
-        amplitude brings it down to <b>one time in 55</b>.</p>
-      <p class="note">So a row with a large <b>z</b> and a small peak, on a nearby
-        earthquake, is good evidence. A row barely above z = 4 on a small, distant
-        earthquake is probably noise that happened to land in the window. The
-        threshold has not been changed since 1 September and is never adjusted
-        afterwards, so what you see is what the test returned &mdash;
-        <a href="https://github.com/Medialoco/sismo-la#confirmation-ci41540608">the
-        worked examples</a>.</p>
+      <!-- The false-confirmation rate is deliberately absent from this page, and
+           from index.html, which carried a shorter version of the same caveat
+           until 9 September. Both were removed on the author's call.
+
+           What it said, so it is not rewritten from scratch by someone who
+           reads the table and thinks something is missing: these rows are
+           crossings of a frozen threshold, and replaying the same search at
+           instants when no earthquake happened clears it about one time in six,
+           one in 55 once a small peak is also required. So one of the rows
+           below is a crossing that cannot have been ground motion.
+
+           It kept needing a paragraph to avoid misleading, which is the same
+           reason the audit triple is not drawn either. It stays published where
+           a paragraph is affordable: the paper's section 10.4, and both READMEs.
+           The threshold is not retuned to erase a row, which is what makes the
+           rate quotable at all. -->
       <div class="wrap"><table id="ctable">
         <thead><tr>
           <th class="l">When (LA)</th>

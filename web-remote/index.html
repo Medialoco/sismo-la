@@ -121,8 +121,6 @@
                        color: var(--muted); text-decoration: none;
                        white-space: nowrap; }
     #status .ev .src:hover { color: var(--dev); text-decoration: underline; }
-    #status .fine { margin: 7px 0 0 11px; font-size: 10.5px; line-height: 1.5;
-                    color: var(--muted); }
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -560,23 +558,23 @@
         (known
           ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
             `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>` +
-            rows(known) + CROSSINGS
+            rows(known)
           : '');
     }
 
-    /* Why this caveat sits on the front page. The number above counts threshold
-       crossings, and the threshold is wrong at a rate that has been measured on
-       this station's own recordings: about one in six on significance alone,
-       one in 55 once a small peak is also required. On 8 September a crossing
-       landed on an event whose expected shaking was 33x below the sensor's own
-       noise, so it cannot have been ground motion. The threshold is frozen and
-       is not retuned to erase such a row, which is the whole point -- so the
-       page has to say what the count is instead of quietly inflating it. */
-    const CROSSINGS = '<div class="fine">&ldquo;Confirmed&rdquo; means the ' +
-      'recording was louder than usual at the second the catalogue says the ' +
-      'waves arrived. That is evidence, not proof: ordinary noise passes the ' +
-      'same test about <b>1 time in 55</b>. ' +
-      '<a href="data.html">What this counts &rarr;</a></div>';
+    /* No caveat under this count, deliberately, and the reason is the same one
+       that keeps the audit triple off this page: the qualification a visitor
+       needs cannot be compressed into a line. The count is threshold crossings,
+       and the threshold is wrong at a measured rate -- about one in six on
+       significance alone, one in 55 once a small peak is also required -- so one
+       of the two rows listed above is a crossing that cannot have been ground
+       motion. Saying that properly takes a paragraph, and a paragraph of
+       statistics on a page read in ten seconds is not read at all.
+
+       It lives where there is room for it: data.html states the rate under the
+       table and says which rows to trust, and the paper's section 10.4 works the
+       false confirmation through. The threshold itself stays frozen -- it is not
+       retuned to erase a row -- which is what makes the rate quotable. */
 
     /* Under each count, the events themselves, one line apiece. Both lists are
        short by construction, unlike the trigger list this panel used to carry.

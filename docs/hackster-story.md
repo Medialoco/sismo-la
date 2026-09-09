@@ -227,8 +227,9 @@ and the audit counts in full. Neither public page draws them: `9 · 6 · 0` read
 a score of six out of nine, and a lone `1 missed` reads as a broken device, so
 they stay machine-readable in `station.json`. The 6 September miss is **no longer
 in the live counts** — shoot it from `retro_state.json` or from the git history of
-`station.json`, and say it was withdrawn. For the false confirmation, the front
-page now carries the caveat under the count; that frame is worth holding.
+`station.json`, and say it was withdrawn. For the false confirmation, shoot
+`data.html`, whose note under the table states the one-in-55 rate; the front page
+shows the bare count and says nothing about it.
 
 The voiceover carries the meaning here, because the number has no caption to lean
 on. Say what `missed` is before showing it.
