@@ -608,7 +608,7 @@ behind them:
 | Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
 | Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
 | The 2 September confirmation, reproduced from raw envelope data | [Confirmation](#confirmation-ci41540608) |
-| False-confirmation rate measured on 2 781 control windows: one in five on significance alone, one in 54 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
+| False-confirmation rate measured on 2 980 control windows: one in five on significance alone, one in 54 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
 | Six-verdict audit against the catalog, which returned a first miss against the station and then withdrew it on a catalog revision | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
 | Four claims in this documentation that the data corrected | — |
 

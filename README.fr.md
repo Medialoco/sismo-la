@@ -634,7 +634,7 @@ chiffres qui les sous-tendent :
   magnitudes qui s'en déduisent par distance ;
 - le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
 - la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
-- le taux de fausse confirmation mesuré sur 2 781 fenêtres témoins : une sur cinq
+- le taux de fausse confirmation mesuré sur 2 980 fenêtres témoins : une sur cinq
   pour la significativité seule, une sur 54 avec la condition d'amplitude — et le
   cas réel du 8 septembre au soir, où le canal a franchi son seuil sur un séisme
   trente-trois fois sous le plancher du capteur ;
