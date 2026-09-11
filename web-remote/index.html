@@ -70,15 +70,10 @@
     /* Freshness is the one thing no figure here can show, so it gets the badge. */
     .badge.bad { border-color: var(--dev); background: var(--dev); color: #fff; }
     header a { color: var(--muted); font-size: 13px; text-decoration: none; }
-    /* Badge-shaped links: a label half and a value half, like a shields.io pill.
-       Drawn in CSS, not fetched from an image service: no third-party request on
-       a page whose job is to show live data, it stays crisp at any zoom, and it
-       follows the light/dark toggle instead of being baked into a PNG.
-       Neutral except the DOI, because this palette reserves red for two
-       meanings — a recognised event, and a station that is not reporting — so a
-       decorative colour here would read as one of those. The DOI gets a blue,
-       which cannot be confused with either. */
-    header .pills { display: flex; align-items: center; gap: 7px; }
+    /* Header links as small neutral pills (no accent colour: red here means
+       a recognised event or a dead station). */
+    header .pills { display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+                    justify-content: flex-end; }
     header .pill { display: inline-flex; border: 1px solid var(--border);
                    border-radius: 4px; overflow: hidden; font-size: 11px;
                    line-height: 1; text-decoration: none; white-space: nowrap; }
@@ -86,22 +81,13 @@
     header .pill .k { background: var(--soft); color: var(--muted); }
     header .pill .v { background: var(--card); color: var(--text); }
     header .pill:hover .v { color: var(--ui-strong); }
-    header .pill.doi .v { background: #1f6feb; color: #fff; }
-    header .pill.doi:hover .v { background: #1a5fd0; color: #fff; }
-    /* This header's min-content width is ~500px, so on a 390px phone it overflowed
-       and the right-hand items fell off screen -- true before these pills existed,
-       when it was `paper` that vanished. Measured budget at 390px: logo 66, health
-       badge 105, theme 28, gaps and padding 74. That leaves ~117px, so the two git
-       pills go (they are for someone at a keyboard), the subtitle goes because it
-       had already ellipsized to "An $80 ..." which says nothing, and the DOI keeps
-       only its sigil -- still blue, still a link, the full DOI in its title. Total
-       comes to ~313px. The DOI is the one kept because it is the permanent record. */
+    header .pill.solo { padding: 4px 8px; font-weight: 600; letter-spacing: .02em;
+                        background: var(--card); color: var(--muted); }
+    header .pill.solo:hover { color: var(--ui-strong); }
     @media (max-width: 760px) {
       .logo { white-space: nowrap; }
       header .sub { display: none; }
-      header .pill.git { display: none; }
-      header .pill.doi .v { display: none; }
-      header .pill.doi .k { background: #1f6feb; color: #fff; }
+      header .pill.wide { display: none; }
     }
     header a:hover { color: var(--text); }
     .iconbtn { width: 28px; height: 28px; padding: 0; cursor: pointer; color: var(--muted);
@@ -282,24 +268,17 @@
     <span class="sub">An $80 station built on a $12 motion sensor, checking every shake it feels against the official earthquake record &mdash; so it can be proved wrong.</span>
     <span id="badge" class="badge">no device data</span>
     <span class="pills">
-      <!-- "source" stays on live main: a station page should show the code that is
-           running. "release" beside it says which code the report describes. -->
-      <a class="pill git" href="https://github.com/Medialoco/sismo-la"
-         target="_blank" rel="noopener" title="The code that is running"
-        ><span class="k">source</span><span class="v">main</span></a>
-      <a class="pill git" href="https://github.com/Medialoco/sismo-la/releases/tag/v1.0.0"
-         target="_blank" rel="noopener" title="The release the report describes"
-        ><span class="k">release</span><span class="v">v1.0.0</span></a>
-      <!-- The report every number on this page is argued in. A DOI is permanent
-           where a repository URL is not, which is why it is the one shown.
-           This is the CONCEPT DOI (…542), not a version DOI: it always resolves to
-           the newest version. Do not "correct" it to the version DOI of whichever
-           release is current (v1 was …543) -- that link would freeze on an
-           outdated text the day a new version is deposited. -->
-      <a class="pill doi" href="https://doi.org/10.5281/zenodo.22679542"
+      <a class="pill wide" href="https://github.com/Medialoco/sismo-la"
+         target="_blank" rel="noopener" title="Source code on GitHub (branch main)"
+        ><span class="k">source</span><span class="v">GitHub</span></a>
+      <!-- Concept DOI (…542): always resolves to the newest Zenodo version. -->
+      <a class="pill solo" href="https://doi.org/10.5281/zenodo.22679542"
          target="_blank" rel="noopener"
-         title="Technical report, DOI 10.5281/zenodo.22679542"
-        ><span class="k">DOI</span><span class="v">zenodo.22679542</span></a>
+         title="Technical report (EN + FR), DOI 10.5281/zenodo.22679542"
+        >preprint</a>
+      <a class="pill solo wide" href="https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685"
+         target="_blank" rel="noopener" title="Build tutorial on Hackster"
+        >Hackster</a>
     </span>
     <button type="button" id="theme" class="iconbtn" aria-label="Light or dark">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
