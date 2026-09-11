@@ -591,29 +591,7 @@ sismo-la/
 └── web-remote/                # page publique sur GitHub Pages
 ```
 
-## Liste
-
-- [x] Nœud autonome : détecter → apparier à l’USGS → apprendre → publier.
-- [x] Reprise après coupure (4 min 24 s).
-- [x] Plancher de déclenchement et taux attendus mesurés.
-- [x] Loi de mouvement du sol réajustée sur 12 324 PGA ShakeMap.
-- [x] Enveloppe continue + recherche rétrospective (facteur 7–8 en amplitude),
-      comptée à part des détections.
-- [x] Première confirmation (`ci41540608`, M3,2, 2 septembre 2026). Le
-      déclencheur aveugle demandait ~3× l’amplitude arrivée. Son taux de fausse
-      confirmation est désormais mesuré sur des enregistrements réels et non sur
-      du bruit simulé : une sur 55.
-- [ ] Première détection autonome : aucune. Calibration d’amplitude 0 sur 8.
-- [x] Audit catalogue ; 0 aurait-dû-être-vu sur les 30 jours au 2 septembre, puis
-      un premier manqué le 6 septembre, publié par la station contre elle-même,
-      puis retiré le 9 par une révision du catalogue.
-- [ ] Courbe de calibration sur vrais enregistrements, résidus tenus de côté.
-- [ ] Vidéo du concours : replay + un tap en direct sur la boîte (vers le
-      8 septembre 2026).
-- [x] Rapport technique déposé sur Zenodo, [10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542) (9 septembre 2026).
-- [x] [Page projet Hackster](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685)
-      publiée (11 septembre 2026) : Story complète, schéma de câblage, UNO Q +
-      Modulino dans **Things**, licence MIT sur la page.
+## Concours
 
 Candidature
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
@@ -621,7 +599,10 @@ Candidature
 Tutoriel :
 [Sismo-LA: The seismograph that learns from real quakes](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685)
 (titre Hackster en anglais).
-Storyboard vidéo (découpe optionnelle) : [`docs/hackster-story.md`](docs/hackster-story.md).
+La page Hackster est le guide de montage ; le
+[rapport technique sur Zenodo](https://doi.org/10.5281/zenodo.22679542) (anglais et
+français, archive de reproduction) porte la sensibilité mesurée, le canal
+rétrospectif et l’auto-audit — le bilan vérifiable derrière la démo.
 
 ## Article scientifique
 

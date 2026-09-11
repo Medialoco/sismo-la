@@ -568,33 +568,16 @@ sismo-la/
 └── web-remote/                # public page on GitHub Pages
 ```
 
-## Checklist
+## Contest entry
 
-- [x] Autonomous node: detect → match to USGS → learn → publish.
-- [x] Recovers from a power cut (4 min 24 s).
-- [x] Trigger floor and expected rates measured.
-- [x] Ground-motion law refit on 12 324 ShakeMap PGA values.
-- [x] Continuous envelope + retrospective search (factor 7–8 in amplitude),
-      counted separately from detections.
-- [x] First confirmation (`ci41540608`, M3.2, 2 September 2026). Blind trigger
-      needed ~3× the arrived amplitude. Its false-confirmation rate is now
-      measured on real recordings, not simulated noise: one in 55.
-- [ ] First autonomous detection: none. Amplitude calibration 0 of 8.
-- [x] Catalog audit, which returned its first `missed` against the station on
-      6 September and published it unprompted.
-- [ ] Calibration curve from real recordings, held-out residuals.
-- [ ] Contest video: replay + a live tap on the box (around 8 September 2026).
-- [x] Technical report deposited on Zenodo, [10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542) (9 September 2026).
-- [x] [Hackster project page](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685)
-      published (11 September 2026): full Story, wiring schematic, UNO Q + Modulino
-      in **Things**, MIT on the page.
-
-Entry in
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
 **Best Social Impact**, submissions close **13 September 2026**.
-Tutorial:
+Project tutorial:
 [Sismo-LA: The seismograph that learns from real quakes](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685).
-Video storyboard (optional cut): [`docs/hackster-story.md`](docs/hackster-story.md).
+The Hackster page is the build walkthrough; the
+[technical report on Zenodo](https://doi.org/10.5281/zenodo.22679542) (English and
+French, reproduction archive) holds the measured sensitivity, the retrospective
+channel, and the self-audit — the refutable scorecard behind the demo.
 
 ## Publication
 
