@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sismo-LA — paste into Hackster Story</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 42rem; margin: 2rem auto; line-height: 1.55; color: #222; }
+    h2 { font-family: -apple-system, sans-serif; font-size: 1.25rem; margin-top: 2rem; }
+    p { margin: 0.75rem 0; }
+    ul { margin: 0.5rem 0; }
+    .img-slot { font-family: -apple-system, sans-serif; font-size: 0.85rem; background: #fff3cd; border: 1px dashed #c9a227; padding: 0.5rem 0.75rem; margin: 1rem 0; }
+    .caption { font-family: -apple-system, sans-serif; font-size: 0.9rem; color: #555; margin: 0.35rem 0 1.25rem; }
+    .note { font-family: -apple-system, sans-serif; font-size: 0.9rem; background: #eef; padding: 1rem; margin-bottom: 2rem; }
+    a { color: #0366d6; }
+  </style>
+</head>
+<body>
+
+<p class="note"><strong>To paste into Hackster</strong> (logged in, Story editor): Select everything below this yellow box (from “The question” onward), Copy, click inside the Hackster story field, Paste. Then replace each yellow “INSERT IMAGE” box with Upload image from <code>docs/images/</code>.</p>
+
+<h2>The question</h2>
+<p>Los Angeles sits on active faults. Minutes after each earthquake, the USGS publishes magnitude, place, depth, and time in a public catalog. This station treats that list as ground truth it does not edit.</p>
+<p>The hardware is an Arduino UNO Q with a $12 MEMS accelerometer (~$80 all in). The goal is practical: record local shaking, compare it to the catalog, and publish a running score — including quiet days when nothing in the list should have been felt here.</p>
+<p class="img-slot">INSERT IMAGE: how-it-works.png</p>
+<p class="caption"><em>Figure 1 — From the Modulino sensor to the USGS catalog check and the published snapshot on GitHub Pages.</em></p>
+
+<h2>Why I built it</h2>
+<p>Phone accelerometers already feel vibration; they rarely tell you whether the ground moved at city scale. In Los Angeles we can pair a living-room sensor with USGS ComCat: real-time triggers when energy jumps, a retrospective pass when the catalog supplies an arrival time, and an on-board AI filter trained from labels the correlation loop provides (matched event vs unmatched bump). So far the filter has seen thousands of noise samples and zero earthquake labels — which is itself a result worth publishing.</p>
+<p>Built for the Invent the Future with Arduino UNO Q and App Lab contest, Best Social Impact category.</p>
+
+<h2>Hardware</h2>
+<ul>
+  <li>Arduino UNO Q (App Lab: Linux + MCU)</li>
+  <li>Arduino Modulino Movement (LSM6DSOX) on Qwiic — use Wire1 on the UNO Q</li>
+  <li>USB-C power, Wi-Fi</li>
+</ul>
+<p class="img-slot">INSERT IMAGE: station-cover-branded.jpg</p>
+<p class="caption"><em>Figure 2 — Arduino UNO Q and Modulino Movement, connected over Qwiic and powered by USB-C.</em></p>
+<p class="img-slot">INSERT IMAGE: wiring.png</p>
+<p class="caption"><em>Figure 3 — One Qwiic cable; the UNO Q uses the Wire1 bus for this port.</em></p>
+
+<h2>How it works</h2>
+<p>The STM32 side samples the IMU near 95 Hz and runs STA/LTA: short-window energy against a longer baseline. When the ratio crosses a threshold it sends peak acceleration, duration, and dominant frequency to Linux over Bridge RPC.</p>
+<p>Dragonwing handles Wi-Fi, USGS queries, blind/catalog correlation, a one-hertz envelope stored day by day, retrospective scans at catalog arrival times, GitHub Pages publishing, and a local dashboard.</p>
+<p>The AI piece is a small on-board logistic regression on those same MCU features, updated when a trigger aligns with the catalog or stays unmatched. Training stays on the board; no separate cloud ML stack.</p>
+<p class="img-slot">INSERT IMAGE: dashboard-live.png</p>
+<p class="caption"><em>Figure 4 — Operator dashboard on the board: MCU heartbeat, triggers, and station health on live data.</em></p>
+
+<h2>Two ways the record can mention an earthquake</h2>
+<p>Vocabulary matters for reading the public page.</p>
+<p><strong>Blind trigger (detection):</strong> the MCU decided something happened and Linux logged it. A desk tap shows up here; the catalog usually has no event at that second.</p>
+<p><strong>Retrospective confirmation:</strong> the catalog fixed the origin time first; the software then read the stored envelope in the arrival window. Ontario, 2 Sep 2026 (M3.2, ci41540608) appears this way: z = 4.34 with a 4.0 threshold. The real-time trigger stayed quiet because the peak was below its floor; the retrospective search only opened one short window.</p>
+<p class="img-slot">INSERT IMAGE: public-map-confirmed.png</p>
+<p class="caption"><em>Figure 5 — Public map with the 20 km reference disc; Ontario M3.2 (2 Sep 2026) under catalog-backed confirmation.</em></p>
+<p>Public page: <a href="https://medialoco.github.io/sismo-la/">https://medialoco.github.io/sismo-la/</a> — the site shows a 20 km reference disc instead of a street address.</p>
+
+<h2>First results in Los Angeles County</h2>
+<p>After the first weeks of operation:</p>
+<ul>
+  <li>Blind triggers matched to the catalog: 0</li>
+  <li>Retrospective confirmations accepted: 1 (ci41540608, Ontario, 2 Sep 2026)</li>
+  <li>Catalog events scanned retrospectively: several; most below the noise floor at this distance</li>
+  <li>Amplitude calibration points: 0 of 8 (waiting for blind matches)</li>
+  <li>AI filter training set: ~10k+ noise samples, 0 earthquake samples so far</li>
+</ul>
+<p>Against five years of M≥2 catalog within 160 km, roughly 97% of events sit below what this chip can resolve at this site — so silence is the normal output, and the station says so on the page.</p>
+<p>It also runs a self-audit against incoming catalog entries. In early September it flagged a closer M3.2 as a possible miss and posted that; three days later a USGS revision lowered magnitude and depth and the flag cleared without any change in the local waveform. The retrospective channel once crossed threshold on a distant M2.3 with shaking far below the electrical noise; the written report quotes about one such case per 55 comparable windows when amplitude is included. Model coefficients were frozen on 1 Sep 2026 so these statements stay verifiable.</p>
+<p class="img-slot">INSERT IMAGE: public-data-confirmed.png</p>
+<p class="caption"><em>Figure 6 — Data page for event ci41540608: USGS magnitude, origin time, and envelope z = 4.34.</em></p>
+
+<h2>What you can reproduce</h2>
+<ul>
+  <li>Code (MIT): <a href="https://github.com/Medialoco/sismo-la">github.com/Medialoco/sismo-la</a> — release v1.0.0</li>
+  <li>Technical report (EN + FR): <a href="https://doi.org/10.5281/zenodo.22679542">doi.org/10.5281/zenodo.22679542</a></li>
+  <li>Live snapshot: <a href="https://medialoco.github.io/sismo-la/station.json">medialoco.github.io/sismo-la/station.json</a></li>
+</ul>
+<p>Clone the repo, deploy with App Lab on UNO Q, copy config.example.yaml to config.yaml (keep site coordinates private). Steps: docs/getting-started.md in the repository.</p>
+
+<h2>Toward a small network</h2>
+<p>One node measures distance to the shaking; direction needs geometry. Draw that distance as a circle and the earthquake lies somewhere on the ring. Three nodes at different homes give three circles — their overlap narrows to an epicenter. The same ~$80 boards could vote on real events (coincidence drops footstep noise) and feed a coarse felt map while official networks finish processing.</p>
+<p>Today there is one installation. The sketch shows the layout math; the live map still carries a single disc.</p>
+<p class="img-slot">INSERT IMAGE: network.png</p>
+<p class="caption"><em>Figure 7 — One home node defines a distance ring; three nodes narrow the overlap toward an epicenter.</em></p>
+
+</body>
+</html>
