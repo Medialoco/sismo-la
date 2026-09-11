@@ -1,5 +1,9 @@
 # Hackster submission checklist (to stay within the rules)
 
+**Published project:**  
+https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685  
+(11 September 2026 — Story, schematic, Things; contest submit still due **13 Sep 2026**.)
+
 Summary of the rules to follow, based on the
 [Content Guidelines](https://www.hackster.io/guidelines) and
 [How to Create a High-Quality Project Tutorial](https://www.hackster.io/AlexWulff/how-to-create-a-high-quality-project-tutorial-e25feb).
@@ -36,7 +40,7 @@ We fill this page in as the project progresses.
       link when possible. Software/tools go in their own sections.
 - [ ] **Story**: structured in steps with headings (not a wall of text),
       clickable URLs, embedded videos, **code as snippets** (not plain text),
-      crisp images.
+      crisp images. Full paste-ready text: [`hackster-project-story.md`](hackster-project-story.md).
 - [ ] **Schematics**: section reserved for schematics (Fritzing or other).
 - [ ] **Code**: files in the Code section, correct language selected. No
       placeholders to inflate the checklist.
@@ -159,8 +163,8 @@ We fill this page in as the project progresses.
 - [x] Diagram of the principle — `docs/images/how-it-works.png` (and `.jpg`).
       Source is `how-it-works.svg`: plain text, edit it rather than the raster.
 - [x] Diagram of the network geometry — `docs/images/network.png` (and `.jpg`),
-      source `network.svg`. It says on its face that it is a geometric argument
-      and not a measurement; do not caption it as a result.
+      source `network.svg`. Caption like the README: *One station yields a ring;
+      three rings intersect* — not a live map.
 - [x] Calibration sequence — four stills cut from the timelapse,
       `timelapse-1-learning` to `timelapse-4-calibrated`, usable as a
       before/after pair in the Story. **These are replay, not measurement**:

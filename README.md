@@ -6,6 +6,7 @@
 [![Release](https://img.shields.io/github/v/release/Medialoco/sismo-la?label=release&color=0b7285)](https://github.com/Medialoco/sismo-la/releases/latest)
 [![License MIT](https://img.shields.io/badge/license-MIT-0b7285)](LICENSE)
 [![Public page](https://img.shields.io/badge/public_page-live-2b8a3e)](https://medialoco.github.io/sismo-la/)
+[![Hackster](https://img.shields.io/badge/Hackster-project-00979D)](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685)
 
 Sismo-LA is a small station in a house in Los Angeles County. It runs on USB-C
 and WiFi, for about $80. Its MEMS accelerometer — a chip from the same family
@@ -584,11 +585,16 @@ sismo-la/
 - [ ] Calibration curve from real recordings, held-out residuals.
 - [ ] Contest video: replay + a live tap on the box (around 8 September 2026).
 - [x] Technical report deposited on Zenodo, [10.5281/zenodo.22679542](https://doi.org/10.5281/zenodo.22679542) (9 September 2026).
+- [x] [Hackster project page](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685)
+      published (11 September 2026): full Story, wiring schematic, UNO Q + Modulino
+      in **Things**, MIT on the page.
 
 Entry in
 [Invent the Future with Arduino UNO Q and App Lab](https://www.hackster.io/contests/invent-the-future-with-arduino-uno-q-and-app-lab),
-**Best Social Impact**, submissions close **13 September 2026**. Video storyboard:
-[`docs/hackster-story.md`](docs/hackster-story.md).
+**Best Social Impact**, submissions close **13 September 2026**.
+Tutorial:
+[Sismo-LA: The seismograph that learns from real quakes](https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685).
+Video storyboard (optional cut): [`docs/hackster-story.md`](docs/hackster-story.md).
 
 ## Publication
 
