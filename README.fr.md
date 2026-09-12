@@ -31,11 +31,13 @@ Question testée :
 > Un nœud de ce prix peut-il détecter un séisme et estimer sa magnitude, sans
 > surveillance et sans calibration manuelle ?
 
-**Réponse courte au 8 septembre 2026 :** pas encore pour la détection autonome.
-La station n'a trouvé aucun séisme toute seule. Elle a confirmé un séisme en
-relisant son enregistrement à l'heure indiquée par l'USGS, puis elle a publié
-un premier cas où sa propre loi disait qu'elle aurait dû voir un séisme sans
-en trouver la trace. Publier cet échec est le résultat principal.
+**Réponse courte au 12 septembre 2026 :** pas encore pour la détection autonome.
+La station n'a trouvé aucun séisme toute seule. Elle a **confirmé deux**
+séismes du catalogue en relisant l'enveloppe aux heures d'arrivée fournies par
+l'USGS (Ontario, 2 sept. ; Inglewood, 12 sept.). Elle a aussi publié un cas où
+sa loi disait qu'elle aurait dû voir un séisme sans trace (retiré par une
+révision du catalogue), et mesuré un franchissement de seuil qui n'était pas une
+vraie onde ([plus bas](#le-second-franchissement-est-une-fausse-confirmation)).
 
 ### Comment lire ce projet
 
@@ -175,7 +177,7 @@ peut apparaître ou disparaître. Chaque séisme du catalogue est rescanné en e
 tant que son enveloppe existe, quatorze jours. Un séisme d’abord annoncé sous M2
 puis révisé au-dessus est examiné, plutôt que compté comme manqué.
 
-## État (9 septembre 2026)
+## État (12 septembre 2026)
 
 La station est autonome : alimentation propre, WiFi, pas d’ordinateur branché,
 pas de shell requis. Elle publie un instantané JSON toutes les 20 minutes. Si
@@ -185,16 +187,16 @@ débranchement, le tableau de bord a répondu en **4 min 24 s**. Une panne de
 5 h 43 min a montré le MCU redémarrant depuis sa propre flash.
 
 **Calibration d'amplitude : 0 sur 8.** **Détections autonomes de séismes : 0.**
-Un séisme catalogué a été **confirmé** dans l’enveloppe (section suivante), et un
-autre a été **signalé par la station comme un séisme qu’elle aurait dû voir et
-qu’elle n’a pas vu** ([le premier manqué](#le-premier-manqué-6-septembre-2026)) —
-un verdict qu'une révision du catalogue a depuis retiré.
+Deux séismes du catalogue ont été **confirmés** dans l'enveloppe (sections
+ci-dessous). La station a un temps **signalé un manqué**
+([6 septembre](#le-premier-manqué-6-septembre-2026)) ; une révision du catalogue
+l'a retiré sans changer la forme d'onde.
 
-Le compteur de la station affiche désormais **2 confirmés**. Un seul est réel. Le
-second, le 8 septembre au soir, est une fausse confirmation mesurée
-([plus bas](#le-second-franchissement-est-une-fausse-confirmation)).
+Le compteur public **Confirmé · heure connue** affiche **2** — les deux sont des
+confirmations rétrospectives horodatées par le catalogue, pas des détections
+aveugles.
 
-## Confirmation : `ci41540608`
+## Confirmation : `ci41540608` (Ontario, 2 septembre 2026)
 
 Événement USGS M3,2, Ontario, Californie, 2 septembre 2026, 12:37:12 UTC.
 
@@ -208,6 +210,23 @@ second, le 8 septembre au soir, est une fausse confirmation mesurée
 | Compteur de calibration | toujours 0 sur 8 | une confirmation n’a pas le droit de l’incrémenter |
 
 Un événement, pas un taux, et z = 4,34 est une marge mince au-dessus de 4,0.
+
+## Confirmation : `ci41545920` (Inglewood, 12 septembre 2026)
+
+Événement USGS M2,64, 4 km ESE d'Inglewood, Californie, 12 septembre 2026,
+11:32:19 UTC (04:32 locale).
+
+| Grandeur | Valeur | Lecture |
+|---|---|---|
+| z d'enveloppe | 4,21 (seuil 4,0) | deuxième confirmation cataloguée à la fenêtre S |
+| Crête / baseline | 0,000942 g / 0,0003766 g | ~2,5× le niveau calme ; sous le plancher du déclencheur aveugle |
+| Fenêtre / décalage | 20 s, 12 s après l'origine | décalage plus court qu'Ontario — bassin LA, trajet plus court |
+| STA/LTA aveugle | n'a pas tiré | même séparation qu'Ontario : confirmation ≠ détection autonome |
+| Veto d'amplitude | passé | crête cohérente avec M2,6 à la distance catalogue depuis le repère public |
+| Compteur de calibration | toujours 0 sur 8 | les confirmations n'entraînent pas le modèle d'amplitude |
+
+La référence rétro n'a utilisé que **neuf** bins de baseline sur ce scan — à
+noter en comparant z à Ontario, mais le franchissement tient aux constantes gelées.
 
 **À quelle fréquence le second canal se trompe, maintenant mesuré sur
 l’enveloppe enregistrée.** Un taux de 1 sur 1 200 avait été calculé sur du
@@ -227,8 +246,10 @@ journée : §10.4 du rapport.
 ### Le second franchissement est une fausse confirmation
 
 Ce taux a été mesuré le 8 septembre 2026 au matin. Le soir du même jour, le canal
-a franchi son seuil, et la station publie **2 confirmés** depuis. Le second ne peut
-pas être réel, et le montrer ne demande aucun seuil.
+a franchi son seuil sur un événement lointain (Johannesburg,
+[ci-dessous](#le-second-franchissement-est-une-fausse-confirmation)). Ce
+franchissement **n'est pas** l'une des deux lignes *Confirmé · heure connue*
+aujourd'hui (Ontario et Inglewood).
 
 Événement USGS M2,33, essaim de Johannesburg, 9 septembre 2026 01:46:03 UTC
 (8 septembre, 18 h 46 heure locale).
@@ -629,7 +650,7 @@ chiffres qui les sous-tendent :
 - le seuil de déclenchement à 8,55 fois le bruit ambiant instantané, et les
   magnitudes qui s'en déduisent par distance ;
 - le gain du canal rétrospectif, exactement une unité de magnitude (facteur 7,4) ;
-- la confirmation du 2 septembre, reproduite depuis l'enveloppe brute ;
+- les confirmations du 2 et du 12 septembre, reproduites depuis l'enveloppe brute ;
 - le taux de fausse confirmation mesuré sur 3 585 fenêtres témoins : une sur six
   pour la significativité seule, une sur 55 avec la condition d'amplitude — et le
   cas réel du 8 septembre au soir, où le canal a franchi son seuil sur un séisme

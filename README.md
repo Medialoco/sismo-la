@@ -29,11 +29,13 @@ Question under test:
 > Can a node at that price detect an earthquake and estimate its magnitude,
 > unattended and without manual calibration?
 
-**Short answer, 8 September 2026:** not yet for autonomous detection. The
-station has found no earthquake by itself. It has confirmed one earthquake by
-reading its stored record at the time USGS provided, and it has published a
-first case where its own model said it should have seen an earthquake but
-found no trace. Publishing that failure is the main result.
+**Short answer, 12 September 2026:** not yet for autonomous detection. The
+station has found no earthquake by itself. It has **confirmed two** catalog
+earthquakes by reading its stored envelope at the arrival times USGS provided
+(Ontario, 2 September; Inglewood, 12 September). It also published a case where
+its own model said it should have seen an earthquake and found no trace (later
+withdrawn by a catalog revision), and it measured a threshold crossing that was
+not a real wave ([below](#the-second-crossing-is-a-false-confirmation)).
 
 ### How to read this project
 
@@ -167,7 +169,7 @@ event is re-scanned in full for as long as its envelope survives, 14 days. An
 earthquake first announced under M2 and later revised above it is examined,
 rather than counted as a miss.
 
-## Status (9 September 2026)
+## Status (12 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
 required. It publishes a JSON snapshot every 20 minutes. If nothing changed, it
@@ -177,16 +179,15 @@ from a dead publisher. After a real unplug, the dashboard answered in
 own flash.
 
 **Amplitude calibration: 0 of 8.** **Autonomous detections of earthquakes: 0.**
-One cataloged earthquake has been **confirmed** in the envelope (next section),
-and one was **flagged by the station as one it should have seen and did not**
-([the first miss](#the-first-miss-6-september-2026)) — a verdict a catalog
-revision has since withdrawn.
+Two catalog earthquakes have been **confirmed** in the envelope (sections
+below). The station once **flagged a closer event as a miss**
+([6 September](#the-first-miss-6-september-2026)); a catalog revision withdrew
+that verdict without changing the waveform.
 
-The station's counter now reads **2 confirmed**. Only one is real. The second,
-on the evening of 8 September, is a measured false confirmation
-([below](#the-second-crossing-is-a-false-confirmation)).
+The public counter **Confirmed · known time** reads **2** — both are
+retrospective, catalog-timed confirmations, not blind detections.
 
-## Confirmation: `ci41540608`
+## Confirmation: `ci41540608` (Ontario, 2 September 2026)
 
 USGS event M3.2, Ontario, California, 2 September 2026, 12:37:12 UTC.
 
@@ -200,6 +201,24 @@ USGS event M3.2, Ontario, California, 2 September 2026, 12:37:12 UTC.
 | Calibration counter | still 0 of 8 | a confirmation is not allowed to increment it |
 
 One event, not a rate, and z = 4.34 is a thin margin over 4.0.
+
+## Confirmation: `ci41545920` (Inglewood, 12 September 2026)
+
+USGS event M2.64, 4 km ESE of Inglewood, California, 12 September 2026,
+11:32:19 UTC (04:32 local).
+
+| Quantity | Value | Reading |
+|---|---|---|
+| Envelope z | 4.21 (threshold 4.0) | second catalog-backed confirmation at the S-wave window |
+| Peak / baseline | 0.000942 g / 0.0003766 g | ~2.5× the quiet level; still below the blind trigger floor |
+| Window / lag | 20 s, 12 s after origin | shorter lag than Ontario — event in the LA basin, closer path |
+| Blind STA/LTA | did not fire | same separation as Ontario: confirmation ≠ autonomous detection |
+| Amplitude veto | passed | peak consistent with M2.6 at catalog distance from the public map pin |
+| Calibration counter | still 0 of 8 | confirmations do not train the amplitude model |
+
+The retrospective reference used **nine** baseline bins on this scan (short
+quiet stretch before the window) — worth noting when comparing z to Ontario's
+thicker baseline, but the crossing stands at frozen constants.
 
 **How often the second channel is fooled, now measured on the recorded
 envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
@@ -218,8 +237,9 @@ report's §10.4.
 ### The second crossing is a false confirmation
 
 That rate was measured on the morning of 8 September 2026. The same evening the
-channel crossed its threshold, and the station has published **2 confirmed**
-since. The second one cannot be real, and showing why needs no threshold at all.
+channel crossed its threshold on a distant event ([Johannesburg](#the-second-crossing-is-a-false-confirmation)). That crossing is **not** one of the two
+rows under *Confirmed · known time* today (Ontario and Inglewood). Showing why
+Johannesburg cannot be real needs no threshold tweak at all.
 
 USGS event M2.33, Johannesburg swarm, 9 September 2026 01:46:03 UTC
 (8 September, 18:46 local).
@@ -603,7 +623,7 @@ behind them:
 | Noise floor measured in two frequency bands, 4–10 % from the datasheet | [Noise floor](#noise-floor-the-wall-is-the-sensor) |
 | Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
 | Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
-| The 2 September confirmation, reproduced from raw envelope data | [Confirmation](#confirmation-ci41540608) |
+| The 2 September and 12 September confirmations, reproduced from raw envelope data | [Confirmations](#confirmation-ci41540608-ontario-2-september-2026) |
 | False-confirmation rate measured on 3 585 control windows: one in six on significance alone, one in 55 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
 | Six-verdict audit against the catalog, which returned a first miss against the station and then withdrew it on a catalog revision | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
 | Four claims in this documentation that the data corrected | — |
