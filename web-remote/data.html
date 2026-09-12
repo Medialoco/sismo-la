@@ -115,6 +115,11 @@
       transition: color .12s, border-color .12s;
     }
     button.csv:hover { color: var(--ui-strong); border-color: var(--muted); }
+    #ctable a.rowclip {
+      margin-left: 8px; font-size: 11px; color: var(--muted); text-decoration: none;
+    }
+    #ctable a.rowclip:hover { color: var(--text); text-decoration: underline; }
+
     button.csv[disabled] { color: var(--muted); cursor: default; border-color: var(--border);
                            opacity: .7; }
 
@@ -257,6 +262,7 @@
 
   </main>
 
+  <script src="sismo-common.js"></script>
   <script>
     const ROSTER_URL = 'stations.json';
     const FALLBACK = [
@@ -386,12 +392,15 @@
           '</td></tr>';
         return;
       }
-      body.innerHTML = confirmed.map((c) =>
-        '<tr>' + cell(stamp(c.t), 'l') +
-        cell(num(c.usgs, 1)) +
-        cell(num(c.z, 1), 'dev') + cell(num(c.win, 0)) + cell(num(c.lag, 0)) +
-        cell(num(c.pga, 5), 'dev') + cell(num(c.rms, 5)) + cell(num(c.base, 5)) +
-        cell(c.place || '—', c.place ? 'l' : 'l off') + '</tr>').join('');
+      body.innerHTML = confirmed.map((c) => {
+        const place = c.place || '—';
+        const clip = c.id ? SISMO.mediaAnchor(c.id, 'rowclip') : '';
+        return '<tr>' + cell(stamp(c.t), 'l') +
+          cell(num(c.usgs, 1)) +
+          cell(num(c.z, 1), 'dev') + cell(num(c.win, 0)) + cell(num(c.lag, 0)) +
+          cell(num(c.pga, 5), 'dev') + cell(num(c.rms, 5)) + cell(num(c.base, 5)) +
+          cell(place + clip, place ? 'l' : 'l off') + '</tr>';
+      }).join('');
 
       wire(document.getElementById('ccsv'), 'sismo-la-confirmed.csv',
         ['time_utc', 'event_id', 'usgs_mw', 'place', 'z', 'window_s',
@@ -473,8 +482,7 @@
       fillHistory(s.history || []);
       fillRecent(shakes(s), s.window_days || 7);
       fillConfirmed(
-        Array.isArray(s.confirmed) ? s.confirmed
-          : (s.retro && s.retro.enabled ? [] : null),
+        SISMO.confirmedOf(s) ?? (s.retro && s.retro.enabled ? [] : null),
         s.retro);
     })();
   </script>

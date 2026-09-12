@@ -140,6 +140,11 @@
                        color: var(--muted); text-decoration: none;
                        white-space: nowrap; }
     #status .ev .src:hover { color: var(--dev); text-decoration: underline; }
+    #status .ev .links { flex: none; display: flex; gap: 6px; align-items: baseline; }
+    .leaflet-popup-content a.popup-clip {
+      font-size: 11px; color: var(--muted); text-decoration: none;
+    }
+    .leaflet-popup-content a.popup-clip:hover { color: var(--text); text-decoration: underline; }
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -209,6 +214,19 @@
        narrows, so the track gives ground before they touch. */
     @media (max-width: 1000px) { .window input[type=range] { width: 130px; } }
     @media (max-width: 620px) { .window input[type=range] { width: 110px; } }
+
+    .mapfilter {
+      font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+      padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted); cursor: pointer;
+      white-space: nowrap;
+    }
+    .mapfilter:hover { color: var(--text); }
+    .mapfilter[aria-pressed="true"] {
+      color: var(--text); border-color: var(--ui); background: var(--soft);
+    }
+    .window.conly-on #days,
+    .window.conly-on label[for="days"] { opacity: .4; pointer-events: none; }
 
     /* Leaflet's own scale bar, restyled to match the boxes on this map. */
     .leaflet-control-scale { margin-left: 10px !important; margin-top: 8px !important; }
@@ -292,6 +310,8 @@
         <input type="range" id="days" min="1" max="30" step="1" value="7"
                aria-label="How many days to show" />
         <label for="days"><b id="dayslabel">last 7 days</b></label>
+        <button type="button" id="conly" class="mapfilter" aria-pressed="false"
+                title="Show only catalog-backed confirmations on the map">Confirmed</button>
       </div>
 
       <div class="float legend">
@@ -336,6 +356,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="sismo-common.js"></script>
   <script>
     const ROSTER_URL = 'stations.json';
     const WINDOW_DAYS = 7;      // rolling; the station publishes its own value
@@ -502,7 +523,9 @@
                   `<br>read ~M${mine.dev}, ${mine.dev_km} km away` : '') +
           (seen ? `<br><b style="color:${dev}">Confirmed &middot; known time</b>` +
                   `<br>z ${seen.z ?? '—'} over ${seen.win ?? '—'} s` +
-                  `<br>peak ${mg(seen.pga)} mg, noise ${mg(seen.base)} mg` : '')
+                  `<br>peak ${mg(seen.pga)} mg, noise ${mg(seen.base)} mg` +
+                  (f.id && mediaAnchor(f.id, 'popup-clip')
+                    ? `<br>${mediaAnchor(f.id, 'popup-clip')}` : '') : '')
         ).addTo(usgsLayer);
         if (f.id) markerById.set(f.id, marker);
         pts.push([lat, lon]);
@@ -568,9 +591,8 @@
                    fill-opacity=".4" stroke="${dev}" stroke-width="1.3"/>`).join('');
     }
 
-    /* Only a station running the retrospective search publishes this key, so a
-       snapshot without it shows the one channel it has. */
-    const confirmedOf = (s) => (Array.isArray(s.confirmed) ? s.confirmed : null);
+    const confirmedOf = (s) => SISMO.confirmedOf(s);
+    const mediaAnchor = (id, cls) => SISMO.mediaAnchor(id, cls);
 
     /* The panel shows the two event counts and nothing from the audit. Those
        three counts need their definitions to mean anything — `recorded` is
@@ -628,11 +650,13 @@
         const label = [mag, when].filter(Boolean).join(' &middot; ');
         const place = c.place ? `<span class="ep">${c.place}</span>` : '';
         if (!c.id) return `<span class="ev">${label}${place}</span>`;
+        const links = mediaAnchor(c.id) +
+          `<a class="src" href="https://earthquake.usgs.gov/earthquakes/eventpage/${c.id}"` +
+          ` target="_blank" rel="noopener" title="This earthquake on the USGS site">USGS &#8599;</a>`;
         return '<span class="ev">' +
           `<button type="button" class="go" data-id="${c.id}"` +
           ` title="Show on the map">${label}${place}</button>` +
-          `<a class="src" href="https://earthquake.usgs.gov/earthquakes/eventpage/${c.id}"` +
-          ` target="_blank" rel="noopener" title="This earthquake on the USGS site">USGS &#8599;</a>` +
+          (links ? `<span class="links">${links}</span>` : '') +
           '</span>';
       }).join('') + '</div>';
     }
@@ -675,7 +699,9 @@
           `${clock(known?.t || (f.properties || {}).time)}` +
           `<br><b style="color:${css('--dev') || '#c62b39'}">Confirmed &middot; known time</b>` +
           (known ? `<br>z ${known.z ?? '—'} over ${known.win ?? '—'} s` +
-                   `<br>peak ${mg(known.pga)} mg, noise ${mg(known.base)} mg` : '') +
+                   `<br>peak ${mg(known.pga)} mg, noise ${mg(known.base)} mg` +
+                   (mediaAnchor(id, 'popup-clip')
+                     ? `<br>${mediaAnchor(id, 'popup-clip')}` : '') : '') +
           '<br><i>Older than the window the slider is on.</i>'
         ).addTo(focusLayer).openPopup();
         map.flyTo([lat, lon], Math.max(map.getZoom(), 9), { duration: .6 });
@@ -744,7 +770,23 @@
     });
 
     let days = +(localStorage.getItem('sismo-days') || WINDOW_DAYS);
+    let confirmedOnly = localStorage.getItem('sismo-confirmed-only') === '1';
     let snap = null, radius = LA.radius_km, fitted = false;
+    const conlyBtn = document.getElementById('conly');
+    const windowBox = document.querySelector('.float.window');
+
+    function syncConfirmedFilterUi() {
+      conlyBtn.setAttribute('aria-pressed', confirmedOnly ? 'true' : 'false');
+      windowBox.classList.toggle('conly-on', confirmedOnly);
+    }
+    syncConfirmedFilterUi();
+    conlyBtn.addEventListener('click', () => {
+      confirmedOnly = !confirmedOnly;
+      localStorage.setItem('sismo-confirmed-only', confirmedOnly ? '1' : '0');
+      syncConfirmedFilterUi();
+      fitted = false;
+      loadUSGS();
+    });
 
     function label() {
       dayslabel.textContent = days === 1 ? 'last 24 hours' : `last ${days} days`;
@@ -765,21 +807,46 @@
 
     async function loadUSGS() {
       const felt = new Map(), known = new Map();
-      if (snap) {
-        within(shakes(snap), days).forEach((d) => { if (d.id) felt.set(d.id, d); });
-        within(confirmedOf(snap) || [], days)
-          .forEach((c) => { if (c.id) known.set(c.id, c); });
-      }
+      const allConfirmed = confirmedOf(snap) || [];
+      allConfirmed.forEach((c) => { if (c.id) known.set(c.id, c); });
+
       try {
-        const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
-        const pts = drawUSGS((await r.json()).features || [], felt, known);
+        let features = [];
+        if (confirmedOnly) {
+          await Promise.all(allConfirmed.filter((c) => c.id).map(async (c) => {
+            try {
+              const r = await fetch(
+                'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventid='
+                + encodeURIComponent(c.id), { cache: 'force-cache' });
+              if (!r.ok) return;
+              const j = await r.json();
+              if (j && j.geometry) {
+                features.push({
+                  type: 'Feature',
+                  id: c.id,
+                  geometry: j.geometry,
+                  properties: j.properties || {},
+                });
+              }
+            } catch (e) { /* USGS link on the row still works */ }
+          }));
+        } else if (snap) {
+          within(shakes(snap), days).forEach((d) => { if (d.id) felt.set(d.id, d); });
+          known.clear();
+          within(allConfirmed, days)
+            .forEach((c) => { if (c.id) known.set(c.id, c); });
+          const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
+          features = (await r.json()).features || [];
+        } else {
+          const r = await fetch(usgsUrl(radius, days), { cache: 'no-store' });
+          features = (await r.json()).features || [];
+        }
+        const pts = drawUSGS(features, felt, known);
         if (!fitted && pts.length) {
           const pins = STATIONS.map((n) => [n.lat, n.lon]);
           map.fitBounds(L.latLngBounds(pts.concat(pins)), {
             padding: [24, 24],
           });
-          // A couple of distant events would otherwise pull the view out to
-          // half of California, burying the basin the stations sit in.
           if (map.getZoom() < MIN_ZOOM) {
             map.setView([STATIONS[0].lat, STATIONS[0].lon], MIN_ZOOM);
           }
