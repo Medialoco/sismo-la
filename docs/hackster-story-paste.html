@@ -49,29 +49,29 @@
 <h2>Two ways the record can mention an earthquake</h2>
 <p>Vocabulary matters for reading the public page.</p>
 <p><strong>Blind trigger (detection):</strong> the MCU decided something happened and Linux logged it. A desk tap shows up here; the catalog usually has no event at that second.</p>
-<p><strong>Retrospective confirmation:</strong> the catalog fixed the origin time first; the software then read the stored envelope in the arrival window. Ontario, 2 Sep 2026 (M3.2, ci41540608) appears this way: z = 4.34 with a 4.0 threshold. The real-time trigger stayed quiet because the peak was below its floor; the retrospective search only opened one short window.</p>
+<p><strong>Retrospective confirmation:</strong> the catalog fixed the origin time first; the software then read the stored envelope in the arrival window. Two cases so far at frozen constants (threshold z = 4.0): Ontario, 2 Sep 2026 (M3.2, ci41540608), z = 4.34 — the real-time trigger stayed quiet because the peak was below its floor. Inglewood, 12 Sep 2026 (M2.6, ci41545920), z = 4.21 — again no blind trigger; the retrospective search only opened a short arrival window in each case.</p>
 <p class="img-slot">INSERT IMAGE: public-map-confirmed.png</p>
-<p class="caption"><em>Figure 5 — Public map with the 20 km reference disc; Ontario M3.2 (2 Sep 2026) under catalog-backed confirmation.</em></p>
+<p class="caption"><em>Figure 5 — Public map with the 20 km reference disc; Ontario (2 Sep 2026) as the first catalog-backed confirmation; Inglewood (12 Sep) appears the same way on the live page.</em></p>
 <p>Public page: <a href="https://medialoco.github.io/sismo-la/">https://medialoco.github.io/sismo-la/</a> — the site shows a 20 km reference disc instead of a street address.</p>
 
 <h2>First results in Los Angeles County</h2>
 <p>After the first weeks of operation:</p>
 <ul>
   <li>Blind triggers matched to the catalog: 0</li>
-  <li>Retrospective confirmations accepted: 1 (ci41540608, Ontario, 2 Sep 2026)</li>
-  <li>Catalog events scanned retrospectively: several; most below the noise floor at this distance</li>
+  <li>Retrospective confirmations accepted: 2 — ci41540608 Ontario (2 Sep 2026, z 4.34); ci41545920 Inglewood (12 Sep 2026, z 4.21)</li>
+  <li>Catalog events scanned retrospectively: 19; most below the noise floor at this distance</li>
   <li>Amplitude calibration points: 0 of 8 (waiting for blind matches)</li>
-  <li>AI filter training set: ~10k+ noise samples, 0 earthquake samples so far</li>
+  <li>AI filter training set: 0 earthquake labels, 10 789 noise samples so far</li>
 </ul>
 <p>Against five years of M≥2 catalog within 160 km, roughly 97% of events sit below what this chip can resolve at this site — so silence is the normal output, and the station says so on the page.</p>
 <p>It also runs a self-audit against incoming catalog entries. In early September it flagged a closer M3.2 as a possible miss and posted that; three days later a USGS revision lowered magnitude and depth and the flag cleared without any change in the local waveform. The retrospective channel once crossed threshold on a distant M2.3 with shaking far below the electrical noise; the written report quotes about one such case per 55 comparable windows when amplitude is included. Model coefficients were frozen on 1 Sep 2026 so these statements stay verifiable.</p>
 <p class="img-slot">INSERT IMAGE: public-data-confirmed.png</p>
-<p class="caption"><em>Figure 6 — Data page for event ci41540608: USGS magnitude, origin time, and envelope z = 4.34.</em></p>
+<p class="caption"><em>Figure 6 — Data page (Ontario row); the live table lists both confirmations with the same columns.</em></p>
 
 <h2>What you can reproduce</h2>
 <ul>
   <li>Code (MIT): <a href="https://github.com/Medialoco/sismo-la">github.com/Medialoco/sismo-la</a> — release v1.0.0</li>
-  <li>Technical report (EN + FR): <a href="https://doi.org/10.5281/zenodo.22679542">doi.org/10.5281/zenodo.22679542</a></li>
+  <li>Technical report v3 (EN + FR): <a href="https://doi.org/10.5281/zenodo.22679542">doi.org/10.5281/zenodo.22679542</a></li>
   <li>Live snapshot: <a href="https://medialoco.github.io/sismo-la/station.json">medialoco.github.io/sismo-la/station.json</a></li>
 </ul>
 <p>Clone the repo, deploy with App Lab on UNO Q, copy config.example.yaml to config.yaml (keep site coordinates private). Steps: docs/getting-started.md in the repository.</p>

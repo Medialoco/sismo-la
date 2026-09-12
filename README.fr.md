@@ -228,6 +228,13 @@ Un événement, pas un taux, et z = 4,34 est une marge mince au-dessus de 4,0.
 La référence rétro n'a utilisé que **neuf** bins de baseline sur ce scan — à
 noter en comparant z à Ontario, mais le franchissement tient aux constantes gelées.
 
+Courte vidéo opérateur sur
+[TikTok](https://www.tiktok.com/@medialocotube/video/7684700897254952206) —
+tournée à El Segundo le même matin ; l'événement vérifié contre le catalogue est
+celui d'Inglewood ci-dessus, pas le lieu de tournage. La
+[carte publique](https://medialoco.github.io/sismo-la/) propose le même lien
+*clip* sur la ligne Inglewood seulement.
+
 **À quelle fréquence le second canal se trompe, maintenant mesuré sur
 l’enveloppe enregistrée.** Un taux de 1 sur 1 200 avait été calculé sur du
 *bruit de capteur pur*. Cette maison produit aussi des pas, donc la même
@@ -236,10 +243,10 @@ complètes, des heures où aucun séisme n’a eu lieu. Le seuil z = 4,34 y est
 franchi **18 % du temps, une fois sur six**. Le taux suit l’occupation : 2 à
 3 % maison vide, 20 à 40 % avec quelqu’un à la maison.
 
-Ces faux succès ont un pic médian de **10 mg** (des pas). Ce séisme culminait
-à 1,095 mg, sous le seuil du déclencheur. En exigeant les deux — z ≥ 4,34
-*et* un pic aussi faible — il reste **1,81 %, une sur 55**. C’est le chiffre
-qui s’applique ici. Rejouée aux heures voisines du 2 septembre, la recherche
+Ces faux succès ont un pic médian de **10 mg** (des pas). Ontario a culminé à
+1,095 mg et Inglewood à 0,942 mg — tous deux sous le plancher du déclencheur
+aveugle. En exigeant les deux — z ≥ 4,34 *et* un pic aussi faible — il reste
+**1,81 %, une sur 55**. Rejouée aux heures voisines du 2 septembre, la recherche
 donne encore 29 % de témoins au moins aussi forts. Méthode et tableau par
 journée : §10.4 du rapport.
 

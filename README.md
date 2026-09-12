@@ -220,6 +220,13 @@ The retrospective reference used **nine** baseline bins on this scan (short
 quiet stretch before the window) — worth noting when comparing z to Ontario's
 thicker baseline, but the crossing stands at frozen constants.
 
+Short operator clip on
+[TikTok](https://www.tiktok.com/@medialocotube/video/7684700897254952206) —
+filmed in El Segundo the same morning; the event checked against the catalog is
+the Inglewood earthquake above, not the filming location. The
+[public map](https://medialoco.github.io/sismo-la/) links the same clip on the
+Inglewood row only.
+
 **How often the second channel is fooled, now measured on the recorded
 envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
 house also produces footsteps, so the same search was replayed at 3 585
@@ -227,12 +234,11 @@ house also produces footsteps, so the same search was replayed at 3 585
 occurred. It reaches z = 4.34 in **18% of them, one in six**. The rate tracks
 occupancy: 2–3% in an empty house, 20–40% with someone home.
 
-Those false hits have a median peak of **10 mg** (footsteps). This earthquake
-peaked at 1.095 mg, below the trigger floor. Requiring both z ≥ 4.34 *and* a
-peak that small leaves **1.81%, one in 55**. That is the number that applies
-here. Replaying the search at neighbouring hours of 2 September still gives
-29% of controls at least as strong. Method and the per-day table: the
-report's §10.4.
+Those false hits have a median peak of **10 mg** (footsteps). Ontario peaked at
+1.095 mg and Inglewood at 0.942 mg — both below the blind trigger floor.
+Requiring both z ≥ 4.34 *and* a peak that small leaves **1.81%, one in 55**.
+Replaying the search at neighbouring hours of 2 September still gives 29% of
+controls at least as strong. Method and the per-day table: the report's §10.4.
 
 ### The second crossing is a false confirmation
 

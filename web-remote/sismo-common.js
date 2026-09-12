@@ -6,7 +6,7 @@
   const CONFIRMED_MEDIA = {
     ci41545920: {
       href: 'https://www.tiktok.com/@medialocotube/video/7684700897254952206',
-      title: 'Short clip about this confirmation',
+      title: 'Operator clip on TikTok (filmed in El Segundo; catalog event Inglewood, 12 Sep 2026)',
     },
   };
 

@@ -68,11 +68,12 @@ We fill this page in as the project progresses.
 8. **The App Lab dashboard** — screenshots. Use the live one
    (`docs/images/dashboard-live.png`), not a replay still.
 9. **Results in LA** — what there is, stated as it is:
-   - one confirmation, `ci41540608`, M3.2 near Ontario, 2 September 2026,
-     envelope 4.34 dispersions above the preceding minutes;
-   - the negative control: of six cataloged earthquakes examined, four were
-     refused although the catalog had named their exact second, because the
-     shaking they could deliver here was below the sensor's own noise;
+   - two catalog-backed confirmations at frozen constants: `ci41540608`
+     (M3.2, Ontario, 2 September 2026, z = 4.34) and `ci41545920`
+     (M2.6, Inglewood, 12 September 2026, z = 4.21); neither fired the blind
+     trigger;
+   - of 19 catalog events scanned retrospectively, most were refused because
+     the shaking they could deliver here was below the sensor's own noise;
    - zero autonomous detections, amplitude calibration 0 of 8, noise filter
      0 earthquakes against 10 789 noise samples. These zeros are published as
      they stand and are part of the result.
@@ -93,13 +94,12 @@ We fill this page in as the project progresses.
     its threshold on an M2.33 whose expected shaking was **33x below the sensor's
     own noise**, i.e. a false confirmation, one day after we finished measuring
     that such crossings happen about **once in 55** on this station's own
-    recordings. The public counter therefore reads 2 confirmed while only one is
-    real, and **since 9 September the page no longer qualifies it** — the caveat
-    was removed because a paragraph of statistics under a number does not get
-    read. So the Story has to make that distinction itself; do not write that the
-    page does. Nothing was retuned to hide either event: the thresholds have been
-    frozen since 1 September, and being able to state the error rate is the
-    result.
+    recordings. That crossing is **not** counted with the two confirmations
+    above; the Story should say so in one sentence (the public page lists two
+    accepted confirmations — Ontario and Inglewood — and treats the distant
+    M2.3 crossing as a separate false-alarm case in the report). Nothing was
+    retuned to hide either event: the thresholds have been frozen since
+    1 September, and being able to state the error rate is the result.
 11. **Limits, and what the measurement makes possible** — a neighborhood
     strong-motion node, not a teleseismic instrument: 96.9 % of the local catalog
     is out of reach of both channels, and one station gives a ring, not a pin.

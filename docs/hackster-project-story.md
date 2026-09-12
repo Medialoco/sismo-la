@@ -16,6 +16,12 @@ Hackster n’interprète pas le Markdown comme GitHub. Travaille **dans l’édi
 
 Projet : https://www.hackster.io/thepriben/sismo-la-the-seismograph-that-learns-from-real-quakes-545685
 
+**Mise à jour 12 sep 2026 (Inglewood)** — sur Hackster, ne modifier que ce qui diffère de la page live :
+1. Section **Two ways…** → paragraphe *Retrospective confirmation* (bloc 5).
+2. Section **First results** → les 5 puces + légende figure 6 (bloc 6).
+3. Optionnel : bloc 7 → « report v3 » ; figure 5 → légende « first of two ».
+4. **Project settings** (hors Story) : raccourcir la tagline si elle promet déjà une calibration apprise.
+
 ---
 
 ## Bloc 1 — Titre : The question
@@ -73,10 +79,10 @@ Vocabulary matters for reading the public page.
 
 Blind trigger (detection): the MCU decided something happened and Linux logged it. A desk tap shows up here; the catalog usually has no event at that second.
 
-Retrospective confirmation: the catalog fixed the origin time first; the software then read the stored envelope in the arrival window. Ontario, 2 Sep 2026 (M3.2, ci41540608) appears this way: z = 4.34 with a 4.0 threshold. The real-time trigger stayed quiet because the peak was below its floor; the retrospective search only opened one short window.
+Retrospective confirmation: the catalog fixed the origin time first; the software then read the stored envelope in the arrival window. Two cases so far at frozen constants (threshold z = 4.0): Ontario, 2 Sep 2026 (M3.2, ci41540608), z = 4.34 — the real-time trigger stayed quiet because the peak was below its floor. Inglewood, 12 Sep 2026 (M2.6, ci41545920), z = 4.21 — again no blind trigger; the retrospective search only opened a short arrival window in each case.
 
 ➕ IMAGE (public-map-confirmed.png)  
-Légende : *Figure 5 — Public map with the 20 km reference disc; Ontario M3.2 (2 Sep 2026) under catalog-backed confirmation.*
+Légende : *Figure 5 — Public map with the 20 km reference disc; Ontario (2 Sep 2026) as the first catalog-backed confirmation; Inglewood (12 Sep) appears the same way on the live page.*
 
 Public page: https://medialoco.github.io/sismo-la/  
 The site shows a 20 km reference disc instead of a street address.
@@ -88,24 +94,24 @@ The site shows a 20 km reference disc instead of a street address.
 After the first weeks of operation:
 
 • Blind triggers matched to the catalog: 0  
-• Retrospective confirmations accepted: 1 (ci41540608, Ontario, 2 Sep 2026)  
-• Catalog events scanned retrospectively: several; most below the noise floor at this distance  
+• Retrospective confirmations accepted: 2 — ci41540608 Ontario (2 Sep 2026, z 4.34); ci41545920 Inglewood (12 Sep 2026, z 4.21)  
+• Catalog events scanned retrospectively: 19; most below the noise floor at this distance  
 • Amplitude calibration points: 0 of 8 (waiting for blind matches)  
-• AI filter training set: ~10k+ noise samples, 0 earthquake samples so far  
+• AI filter training set: 0 earthquake labels, 10 789 noise samples so far  
 
 Against five years of M≥2 catalog within 160 km, roughly 97% of events sit below what this chip can resolve at this site — so silence is the normal output, and the station says so on the page.
 
 It also runs a self-audit against incoming catalog entries. In early September it flagged a closer M3.2 as a possible miss and posted that; three days later a USGS revision lowered magnitude and depth and the flag cleared without any change in the local waveform. The retrospective channel once crossed threshold on a distant M2.3 with shaking far below the electrical noise; the written report quotes about one such case per 55 comparable windows when amplitude is included. Model coefficients were frozen on 1 Sep 2026 so these statements stay verifiable.
 
 ➕ IMAGE (public-data-confirmed.png)  
-Légende : *Figure 6 — Data page for event ci41540608: USGS magnitude, origin time, and envelope z = 4.34.*
+Légende : *Figure 6 — Data page (Ontario row); the live table lists both confirmations with the same columns.*
 
 ---
 
 ## Bloc 7 — Titre : What you can reproduce
 
 • Code (MIT): https://github.com/Medialoco/sismo-la — release v1.0.0  
-• Technical report (EN + FR, reproduction archive): https://doi.org/10.5281/zenodo.22679542  
+• Technical report v3 (EN + FR, reproduction archive): https://doi.org/10.5281/zenodo.22679542  
 • Live snapshot: https://medialoco.github.io/sismo-la/station.json  
 
 Clone the repo, deploy with App Lab on UNO Q, copy config.example.yaml to config.yaml (keep site coordinates private). Steps: docs/getting-started.md in the repository.
@@ -131,6 +137,6 @@ Légende : *Figure 7 — One home node defines a distance ring; three nodes narr
 | 2 | station-cover-branded.jpg | Figure 2 — Arduino UNO Q and Modulino Movement, connected over Qwiic and powered by USB-C. |
 | 3 | wiring.png | Figure 3 — One Qwiic cable; the UNO Q uses the Wire1 bus for this port. |
 | 4 | dashboard-live.png | Figure 4 — Operator dashboard on the board: MCU heartbeat, triggers, and station health on live data. |
-| 5 | public-map-confirmed.png | Figure 5 — Public map with the 20 km reference disc; Ontario M3.2 (2 Sep 2026) under catalog-backed confirmation. |
-| 6 | public-data-confirmed.png | Figure 6 — Data page for event ci41540608: USGS magnitude, origin time, and envelope z = 4.34. |
+| 5 | public-map-confirmed.png | Figure 5 — Public map; Ontario (2 Sep) shown; Inglewood (12 Sep) on the live page. |
+| 6 | public-data-confirmed.png | Figure 6 — Data page (Ontario row); live table lists both confirmations. |
 | 7 | network.png | Figure 7 — One home node defines a distance ring; three nodes narrow the overlap toward an epicenter. |
