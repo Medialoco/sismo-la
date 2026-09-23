@@ -220,13 +220,6 @@ The retrospective reference used **nine** baseline bins on this scan (short
 quiet stretch before the window) — worth noting when comparing z to Ontario's
 thicker baseline, but the crossing stands at frozen constants.
 
-Short operator clip on
-[TikTok](https://www.tiktok.com/@medialocotube/video/7684700897254952206) —
-filmed in El Segundo the same morning; the event checked against the catalog is
-the Inglewood earthquake above, not the filming location. The
-[public map](https://medialoco.github.io/sismo-la/) links the same clip on the
-Inglewood row only.
-
 **How often the second channel is fooled, now measured on the recorded
 envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
 house also produces footsteps, so the same search was replayed at 3 585
