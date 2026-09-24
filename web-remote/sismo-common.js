@@ -2,14 +2,6 @@
 (function (global) {
   'use strict';
 
-  /** Optional operator clips keyed by USGS event id — not part of the snapshot. */
-  const CONFIRMED_MEDIA = {
-    ci41545920: {
-      href: 'https://www.tiktok.com/@medialocotube/video/7684700897254952206',
-      title: 'Operator clip on TikTok (filmed in El Segundo; catalog event Inglewood, 12 Sep 2026)',
-    },
-  };
-
   /** Journal list reconciled with live retro findings (withdrawals drop off). */
   function confirmedOf(s) {
     if (!s) return null;
@@ -23,13 +15,5 @@
     return journal;
   }
 
-  function mediaAnchor(id, className) {
-    const m = CONFIRMED_MEDIA[id];
-    if (!m) return '';
-    const cls = className || 'src';
-    return `<a class="${cls}" href="${m.href}" target="_blank" rel="noopener noreferrer"` +
-      ` title="${m.title}">clip</a>`;
-  }
-
-  global.SISMO = { confirmedOf, mediaAnchor, CONFIRMED_MEDIA };
+  global.SISMO = { confirmedOf };
 })(typeof window !== 'undefined' ? window : globalThis);

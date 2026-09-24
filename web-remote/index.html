@@ -141,10 +141,13 @@
                        white-space: nowrap; }
     #status .ev .src:hover { color: var(--dev); text-decoration: underline; }
     #status .ev .links { flex: none; display: flex; gap: 6px; align-items: baseline; }
-    .leaflet-popup-content a.popup-clip {
-      font-size: 11px; color: var(--muted); text-decoration: none;
+    #status button.showconf {
+      display: block; width: 100%; margin: 0; padding: 0; border: 0;
+      background: none; font: inherit; color: inherit; text-align: left;
+      cursor: pointer;
     }
-    .leaflet-popup-content a.popup-clip:hover { color: var(--text); text-decoration: underline; }
+    #status button.showconf:hover .v,
+    #status button.showconf[aria-pressed="true"] .v { text-decoration: underline; }
     /* device magnitude against catalogue magnitude */
     /* max-width, because when the panel stacks under the map on a narrow
        screen it is full width, and a square plot would then be enormous. */
@@ -215,16 +218,6 @@
     @media (max-width: 1000px) { .window input[type=range] { width: 130px; } }
     @media (max-width: 620px) { .window input[type=range] { width: 110px; } }
 
-    .mapfilter {
-      font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .02em;
-      padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border);
-      background: var(--card); color: var(--muted); cursor: pointer;
-      white-space: nowrap;
-    }
-    .mapfilter:hover { color: var(--text); }
-    .mapfilter[aria-pressed="true"] {
-      color: var(--text); border-color: var(--ui); background: var(--soft);
-    }
     .window.conly-on #days,
     .window.conly-on label[for="days"] { opacity: .4; pointer-events: none; }
 
@@ -310,8 +303,6 @@
         <input type="range" id="days" min="1" max="30" step="1" value="7"
                aria-label="How many days to show" />
         <label for="days"><b id="dayslabel">last 7 days</b></label>
-        <button type="button" id="conly" class="mapfilter" aria-pressed="false"
-                title="Show only catalog-backed confirmations on the map">Confirmed</button>
       </div>
 
       <div class="float legend">
@@ -523,9 +514,7 @@
                   `<br>read ~M${mine.dev}, ${mine.dev_km} km away` : '') +
           (seen ? `<br><b style="color:${dev}">Confirmed &middot; known time</b>` +
                   `<br>z ${seen.z ?? '—'} over ${seen.win ?? '—'} s` +
-                  `<br>peak ${mg(seen.pga)} mg, noise ${mg(seen.base)} mg` +
-                  (f.id && mediaAnchor(f.id, 'popup-clip')
-                    ? `<br>${mediaAnchor(f.id, 'popup-clip')}` : '') : '')
+                  `<br>peak ${mg(seen.pga)} mg, noise ${mg(seen.base)} mg` : '')
         ).addTo(usgsLayer);
         if (f.id) markerById.set(f.id, marker);
         pts.push([lat, lon]);
@@ -592,7 +581,6 @@
     }
 
     const confirmedOf = (s) => SISMO.confirmedOf(s);
-    const mediaAnchor = (id, cls) => SISMO.mediaAnchor(id, cls);
 
     /* The panel shows the two event counts and nothing from the audit. Those
        three counts need their definitions to mean anything — `recorded` is
@@ -613,8 +601,11 @@
         `<span class="v"><b>${pairs.length}</b> ${quakes(pairs.length)}</span></div>` +
         rows(pairs) +
         (known
-          ? `<div class="cat known"><span class="k">Confirmed &middot; known time</span>` +
-            `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></div>` +
+          ? `<div class="cat known">` +
+            `<button type="button" class="showconf" aria-pressed="${confirmedOnly ? 'true' : 'false'}"` +
+            ` title="Show only these earthquakes on the map">` +
+            `<span class="k">Confirmed &middot; known time</span>` +
+            `<span class="v"><b>${known.length}</b> ${quakes(known.length)}</span></button></div>` +
             rows(known)
           : '');
     }
@@ -650,7 +641,7 @@
         const label = [mag, when].filter(Boolean).join(' &middot; ');
         const place = c.place ? `<span class="ep">${c.place}</span>` : '';
         if (!c.id) return `<span class="ev">${label}${place}</span>`;
-        const links = mediaAnchor(c.id) +
+        const links =
           `<a class="src" href="https://earthquake.usgs.gov/earthquakes/eventpage/${c.id}"` +
           ` target="_blank" rel="noopener" title="This earthquake on the USGS site">USGS &#8599;</a>`;
         return '<span class="ev">' +
@@ -699,9 +690,7 @@
           `${clock(known?.t || (f.properties || {}).time)}` +
           `<br><b style="color:${css('--dev') || '#c62b39'}">Confirmed &middot; known time</b>` +
           (known ? `<br>z ${known.z ?? '—'} over ${known.win ?? '—'} s` +
-                   `<br>peak ${mg(known.pga)} mg, noise ${mg(known.base)} mg` +
-                   (mediaAnchor(id, 'popup-clip')
-                     ? `<br>${mediaAnchor(id, 'popup-clip')}` : '') : '') +
+                   `<br>peak ${mg(known.pga)} mg, noise ${mg(known.base)} mg` : '') +
           '<br><i>Older than the window the slider is on.</i>'
         ).addTo(focusLayer).openPopup();
         map.flyTo([lat, lon], Math.max(map.getZoom(), 9), { duration: .6 });
@@ -710,6 +699,16 @@
 
     // Delegated, because the panel is rebuilt from scratch on every snapshot.
     document.getElementById('panel').addEventListener('click', (e) => {
+      if (e.target.closest('button.showconf')) {
+        if (!snap) return;
+        confirmedOnly = !confirmedOnly;
+        localStorage.setItem('sismo-confirmed-only', confirmedOnly ? '1' : '0');
+        syncConfirmedFilterUi();
+        fitted = false;
+        fillPanel(snap, lastPairs);
+        loadUSGS();
+        return;
+      }
       const b = e.target.closest('button.go');
       if (!b) return;
       focusEvent(b.dataset.id);
@@ -771,22 +770,13 @@
 
     let days = +(localStorage.getItem('sismo-days') || WINDOW_DAYS);
     let confirmedOnly = localStorage.getItem('sismo-confirmed-only') === '1';
-    let snap = null, radius = LA.radius_km, fitted = false;
-    const conlyBtn = document.getElementById('conly');
+    let snap = null, radius = LA.radius_km, fitted = false, lastPairs = [];
     const windowBox = document.querySelector('.float.window');
 
     function syncConfirmedFilterUi() {
-      conlyBtn.setAttribute('aria-pressed', confirmedOnly ? 'true' : 'false');
       windowBox.classList.toggle('conly-on', confirmedOnly);
     }
     syncConfirmedFilterUi();
-    conlyBtn.addEventListener('click', () => {
-      confirmedOnly = !confirmedOnly;
-      localStorage.setItem('sismo-confirmed-only', confirmedOnly ? '1' : '0');
-      syncConfirmedFilterUi();
-      fitted = false;
-      loadUSGS();
-    });
 
     function label() {
       dayslabel.textContent = days === 1 ? 'last 24 hours' : `last ${days} days`;
@@ -932,6 +922,7 @@
       // The whole row travels, not just the two magnitudes: the panel lists each
       // one with its time and its USGS link, and drawChart reads usgs/dev only.
       const pairs = history.slice();
+      lastPairs = pairs;
       fillPanel(snap, pairs);
       drawChart(pairs);
       const known = confirmedOf(snap);

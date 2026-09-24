@@ -29,10 +29,11 @@ Question under test:
 > Can a node at that price detect an earthquake and estimate its magnitude,
 > unattended and without manual calibration?
 
-**Short answer, 12 September 2026:** not yet for autonomous detection. The
-station has found no earthquake by itself. It has **confirmed two** catalog
+**Short answer, 23 September 2026:** not yet for autonomous detection. The
+station has found no earthquake by itself. It has **confirmed four** catalog
 earthquakes by reading its stored envelope at the arrival times USGS provided
-(Ontario, 2 September; Inglewood, 12 September). It also published a case where
+(Ontario, 2 September; Inglewood, 12 September; Highland, 22 September; Dana
+Point, 23 September). It also published a case where
 its own model said it should have seen an earthquake and found no trace (later
 withdrawn by a catalog revision), and it measured a threshold crossing that was
 not a real wave ([below](#the-second-crossing-is-a-false-confirmation)).
@@ -169,7 +170,7 @@ event is re-scanned in full for as long as its envelope survives, 14 days. An
 earthquake first announced under M2 and later revised above it is examined,
 rather than counted as a miss.
 
-## Status (12 September 2026)
+## Status (23 September 2026)
 
 The station is autonomous: own power, WiFi, no attached computer, no shell
 required. It publishes a JSON snapshot every 20 minutes. If nothing changed, it
@@ -179,13 +180,19 @@ from a dead publisher. After a real unplug, the dashboard answered in
 own flash.
 
 **Amplitude calibration: 0 of 8.** **Autonomous detections of earthquakes: 0.**
-Two catalog earthquakes have been **confirmed** in the envelope (sections
+Four catalog earthquakes have been **confirmed** in the envelope (sections
 below). The station once **flagged a closer event as a miss**
 ([6 September](#the-first-miss-6-september-2026)); a catalog revision withdrew
 that verdict without changing the waveform.
 
-The public counter **Confirmed · known time** reads **2** — both are
-retrospective, catalog-timed confirmations, not blind detections.
+The public counter **Confirmed · known time** reads **4** — all four are
+retrospective, catalog-timed confirmations, not blind detections. Clicking that
+heading on the public map draws only those four earthquakes.
+
+From 17 September 11:49 UTC until a full restart on 18 September 11:46 UTC the
+microcontroller sent no heartbeat, so the envelope for that interval is missing.
+The M3.1 near Compton on 17 September (`ci41334231`, 20:32 UTC) therefore has
+no retrospective measurement.
 
 ## Confirmation: `ci41540608` (Ontario, 2 September 2026)
 
@@ -220,6 +227,35 @@ The retrospective reference used **nine** baseline bins on this scan (short
 quiet stretch before the window) — worth noting when comparing z to Ontario's
 thicker baseline, but the crossing stands at frozen constants.
 
+## Confirmation: `ci41337279` (Highland, 22 September 2026)
+
+USGS event M2.05, 5 km NW of Highland, California, 22 September 2026,
+22:40:12 UTC (15:40 local).
+
+| Quantity | Value | Reading |
+|---|---|---|
+| Envelope z | 4.02 (threshold 4.0) | third retained crossing; margin 0.02 |
+| Peak / baseline | 0.000831 g / 0.0003742 g | under the blind trigger floor |
+| Window / lag | 10 s, 9 s after origin | shorter window than Ontario and Inglewood |
+| Calibration counter | still 0 of 8 | confirmations do not train the amplitude model |
+
+## Confirmation: `ci41337495` (Dana Point, 23 September 2026)
+
+USGS event M2.43, 29 km SSW of Dana Point, California, 23 September 2026,
+08:06:56 UTC (01:06 local).
+
+| Quantity | Value | Reading |
+|---|---|---|
+| Envelope z | 4.34 (threshold 4.0) | same z as Ontario, on a 5 s window |
+| Peak / baseline | 0.000883 g / 0.0003717 g | under the blind trigger floor |
+| Window / lag | 5 s, 10.6 s after origin | the shortest window among the four retained crossings |
+| Calibration counter | still 0 of 8 | confirmations do not train the amplitude model |
+
+Both later crossings were kept by the frozen rule (z and the amplitude veto).
+Highland sits 0.02 above the threshold. Neither increments the calibration
+counter. The 1-in-55 rate in the next section still applies: retaining a
+crossing is not the same as proving a wave.
+
 **How often the second channel is fooled, now measured on the recorded
 envelope.** A rate of 1 in 1 200 had been computed on *pure sensor noise*. This
 house also produces footsteps, so the same search was replayed at 3 585
@@ -236,8 +272,8 @@ controls at least as strong. Method and the per-day table: the report's §10.4.
 ### The second crossing is a false confirmation
 
 That rate was measured on the morning of 8 September 2026. The same evening the
-channel crossed its threshold on a distant event ([Johannesburg](#the-second-crossing-is-a-false-confirmation)). That crossing is **not** one of the two
-rows under *Confirmed · known time* today (Ontario and Inglewood). Showing why
+channel crossed its threshold on a distant event ([Johannesburg](#the-second-crossing-is-a-false-confirmation)). That crossing is **not** one of the four
+rows under *Confirmed · known time* today (Ontario, Inglewood, Highland, Dana Point). Showing why
 Johannesburg cannot be real needs no threshold tweak at all.
 
 USGS event M2.33, Johannesburg swarm, 9 September 2026 01:46:03 UTC
@@ -622,7 +658,7 @@ behind them:
 | Noise floor measured in two frequency bands, 4–10 % from the datasheet | [Noise floor](#noise-floor-the-wall-is-the-sensor) |
 | Trigger threshold at 8.55 × instantaneous ambient noise, and the magnitudes that follow | [How large an earthquake it can catch](#how-large-an-earthquake-it-can-catch) |
 | Retrospective channel worth exactly one magnitude unit (factor 7.4) | [Two channels](#two-channels-that-must-stay-separate) |
-| The 2 September and 12 September confirmations, reproduced from raw envelope data | [Confirmations](#confirmation-ci41540608-ontario-2-september-2026) |
+| The 2, 12, 22 and 23 September confirmations, at frozen constants | [Confirmations](#confirmation-ci41540608-ontario-2-september-2026) |
 | False-confirmation rate measured on 3 585 control windows: one in six on significance alone, one in 55 with the amplitude condition — and one occurred on 8 September | [Confirmation](#confirmation-ci41540608) |
 | Six-verdict audit against the catalog, which returned a first miss against the station and then withdrew it on a catalog revision | [Does silence mean “broken”?](#does-silence-mean-broken-or-nothing-happened) |
 | Four claims in this documentation that the data corrected | — |
