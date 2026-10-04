@@ -116,7 +116,25 @@ def _same_but_for_time(old: bytes, new: bytes) -> bool:
         a, b = json.loads(old), json.loads(new)
     except (ValueError, TypeError):
         return False
-    return all(a.get(k) == b.get(k) for k in keep)
+    # The rest of `health` moves on every heartbeat (silence counter, last
+    # detail). Only the two bits the public badge reads are news: a station
+    # that was stale and is not, or the reverse, has to reach the page.
+    # Comparing the whole object would commit every interval.
+    def alive(snap: dict) -> tuple:
+        h = snap.get("health") or {}
+        return (bool(h.get("stale")), bool(h.get("mcu_ok")))
+
+    def sensor_c(snap: dict):
+        # Tenth of a degree: the banner should move when the chip does, and
+        # a heartbeat-to-heartbeat wobble below that is not news.
+        t = (snap.get("health") or {}).get("sensor_c")
+        if not isinstance(t, (int, float)):
+            return None
+        return round(float(t), 1)
+
+    return (all(a.get(k) == b.get(k) for k in keep)
+            and alive(a) == alive(b)
+            and sensor_c(a) == sensor_c(b))
 
 
 def _age_s(old: bytes) -> float | None:

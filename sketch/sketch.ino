@@ -310,6 +310,21 @@ static bool narrowAntiAliasFilter() {
   return Wire1.read() == WANTED;
 }
 
+// Die temperature of the LSM6DSOX, the same conversion the vendor library
+// uses: raw/256 + 25. Read only on the heartbeat, so the sample loop does not
+// pay an extra I2C transaction at 100 Hz. This is the sensor, not the air.
+static bool readSensorTemp(float &degC) {
+  const uint8_t ADDR = 0x6A;
+  const uint8_t OUT_TEMP_L = 0x20;
+  Wire1.beginTransmission(ADDR);
+  Wire1.write(OUT_TEMP_L);
+  if (Wire1.endTransmission(false) != 0) return false;
+  if (Wire1.requestFrom(ADDR, (uint8_t)2) != 2) return false;
+  const int16_t raw = (int16_t)(Wire1.read() | (Wire1.read() << 8));
+  degC = ((float)raw / 256.0f) + 25.0f;
+  return true;
+}
+
 // True when enough time has passed for the next sample. Also the single place
 // the sample clock is advanced, so warm-up and steady state are timed
 // identically — otherwise the rate measured at boot would not be the rate the
@@ -562,8 +577,10 @@ void loop() {
     // against one measured last night proves nothing (the station's own
     // history is full of that trap); comparing two channels of the same
     // instant proves it outright.
+    float tempC = 0.0f;
+    const bool haveTemp = readSensorTemp(tempC);
     Bridge.notify("mcu_heartbeat", ms, ratio, r.band, ltaBand,
-                  r.wide, ltaWide, fsHz);
+                  r.wide, ltaWide, fsHz, haveTemp ? tempC : -999.0f);
     Monitor.print("{\"status\":\"alive\",\"t_ms\":");
     Monitor.print(ms);
     Monitor.print(",\"sta_lta\":");
@@ -574,6 +591,10 @@ void loop() {
     Monitor.print(ltaWide, 6);
     Monitor.print(",\"fs_hz\":");
     Monitor.print(fsHz, 1);
+    if (haveTemp) {
+      Monitor.print(",\"temp_c\":");
+      Monitor.print(tempC, 1);
+    }
     Monitor.println("}");
   }
 }

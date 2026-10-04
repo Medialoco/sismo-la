@@ -102,6 +102,23 @@ def destination(lat: float, lon: float, bearing: float, dist_km: float) -> tuple
     return math.degrees(p2), math.degrees(l2)
 
 
+def _sensor_c_from_detail(detail: str) -> float | None:
+    """Pull ``temp=23.4C`` out of a heartbeat line. Absent or out of range
+    means the sensor did not report one, not that the room is that cold."""
+    mark = "temp="
+    at = detail.rfind(mark)
+    if at < 0:
+        return None
+    raw = detail[at + len(mark):].split("C", 1)[0]
+    try:
+        temp = float(raw)
+    except ValueError:
+        return None
+    if temp < -40.0 or temp > 85.0:
+        return None
+    return temp
+
+
 class SharedState:
     """Thread-safe snapshot shared between the detection loop and HTTP handlers."""
 
@@ -130,6 +147,7 @@ class SharedState:
         self._started = datetime.now(timezone.utc)
         self._mcu_last_seen: datetime | None = None
         self._mcu_last_detail = ""
+        self._sensor_c: float | None = None
         self._mcu_notifications = 0
         self._usgs_last_ok: datetime | None = None
         self._usgs_last_error = ""
@@ -162,6 +180,9 @@ class SharedState:
             self._mcu_notifications += 1
             if detail:
                 self._mcu_last_detail = detail
+                sensor_c = _sensor_c_from_detail(detail)
+                if sensor_c is not None:
+                    self._sensor_c = sensor_c
             if kind == "heartbeat":
                 # A heartbeat is proof of life, so it counts as the state
                 # having been confirmed fresh even when nothing shook.
@@ -279,6 +300,8 @@ class SharedState:
             "mcu_silent_s": round(mcu_silent, 1),
             "mcu_notifications": self._mcu_notifications,
             "mcu_last_detail": self._mcu_last_detail,
+            "sensor_c": (round(self._sensor_c, 1)
+                         if self._sensor_c is not None else None),
             "usgs_ok": usgs_ok,
             "usgs_last_ok": (self._usgs_last_ok.isoformat()
                              if self._usgs_last_ok else None),

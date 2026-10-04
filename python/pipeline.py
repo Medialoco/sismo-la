@@ -132,7 +132,7 @@ def iter_bridge_events(on_mcu_activity=None, on_envelope=None):
         note("status", str(message))
 
     def on_mcu_heartbeat(t_ms, sta_lta, dyn_g, lta_g=None, dyn_wb_g=None,
-                         lta_wb_g=None, fs_hz=None):
+                         lta_wb_g=None, fs_hz=None, temp_c=None):
         # The noise floor is the one number that tells you the detector is
         # actually looking at a sensor rather than at a dead I2C bus.
         #
@@ -152,6 +152,12 @@ def iter_bridge_events(on_mcu_activity=None, on_envelope=None):
             detail += f" wb_lta={float(lta_wb_g):.5f}g"
         if fs_hz is not None:
             detail += f" fs={float(fs_hz):.1f}Hz"
+        # -999 is the sketch's "the read failed" sentinel. Anything outside
+        # the LSM6DSOX's operating range is the same thing: not a temperature.
+        if temp_c is not None:
+            temp = float(temp_c)
+            if -40.0 <= temp <= 85.0:
+                detail += f" temp={temp:.1f}C"
         print(f"[bridge] mcu alive t={int(t_ms)}ms {detail}", flush=True)
         note("heartbeat", detail)
 

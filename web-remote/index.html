@@ -96,6 +96,22 @@
                transition: color .12s, border-color .12s; }
     .iconbtn:hover { color: var(--text); border-color: var(--muted); }
 
+    /* One line under the title: what the node is, and the sensor's own
+       temperature. The number is the LSM6DSOX die, refreshed with the
+       snapshot, not a room thermometer. */
+    .hw {
+      display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap;
+      padding: 6px 16px; background: var(--card);
+      border-bottom: 1px solid var(--border);
+      font-size: 12.5px; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .hw .k {
+      color: var(--muted); font-size: 10.5px; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase; margin-right: 6px;
+    }
+    .hw b { font-weight: 600; }
+
     #content { display: flex; flex: 1; min-height: 0; }
     #map { flex: 1; position: relative; background: var(--soft); }
     #panel { width: 316px; flex: none; overflow-y: auto; padding: 16px;
@@ -218,9 +234,6 @@
     @media (max-width: 1000px) { .window input[type=range] { width: 130px; } }
     @media (max-width: 620px) { .window input[type=range] { width: 110px; } }
 
-    .window.conly-on #days,
-    .window.conly-on label[for="days"] { opacity: .4; pointer-events: none; }
-
     /* Leaflet's own scale bar, restyled to match the boxes on this map. */
     .leaflet-control-scale { margin-left: 10px !important; margin-top: 8px !important; }
     .leaflet-control-scale-line {
@@ -296,6 +309,11 @@
            stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
     </button>
   </header>
+  <div class="hw" id="hw">
+    <span><span class="k">Arduino</span>UNO Q</span>
+    <span><span class="k">Motion</span>Modulino Movement · LSM6DSOX</span>
+    <span><span class="k">Temperature</span><b id="hw-temp" title="Temperature reported by the LSM6DSOX">—</b></span>
+  </div>
 
   <div id="content">
     <div id="map">
@@ -769,14 +787,25 @@
     });
 
     let days = +(localStorage.getItem('sismo-days') || WINDOW_DAYS);
-    let confirmedOnly = localStorage.getItem('sismo-confirmed-only') === '1';
+    /* First visit shows the confirmed earthquakes. A stored '0' is someone
+       who turned that filter off; anything else, including no key, stays on. */
+    let confirmedOnly = localStorage.getItem('sismo-confirmed-only') !== '0';
     let snap = null, radius = LA.radius_km, fitted = false, lastPairs = [];
     const windowBox = document.querySelector('.float.window');
 
     function syncConfirmedFilterUi() {
-      windowBox.classList.toggle('conly-on', confirmedOnly);
+      label();
     }
-    syncConfirmedFilterUi();
+
+    function showSensorTemp(s) {
+      const el = document.getElementById('hw-temp');
+      const t = s && s.health ? s.health.sensor_c : null;
+      if (typeof t === 'number' && t >= -40 && t <= 85) {
+        el.textContent = t.toFixed(1) + '°C';
+      } else {
+        el.textContent = '—';
+      }
+    }
 
     function label() {
       dayslabel.textContent = days === 1 ? 'last 24 hours' : `last ${days} days`;
@@ -788,6 +817,7 @@
       const f = hi > lo ? (days - lo) / (hi - lo) : 0;
       slider.style.setProperty('--pct', (f * (w - 14) + 7).toFixed(1) + 'px');
     }
+    syncConfirmedFilterUi();
 
     /* Redraw everything that depends on the window, without touching the
        network. Dragging the slider must stay instant. */
@@ -880,6 +910,7 @@
       if (!primary) {
         snap = null;
         drawChart([]);
+        showSensorTemp(null);
         b.textContent = 'no device data';
         b.className = 'badge';
         applyWindow();
@@ -923,6 +954,7 @@
       // one with its time and its USGS link, and drawChart reads usgs/dev only.
       const pairs = history.slice();
       lastPairs = pairs;
+      showSensorTemp(primary);
       fillPanel(snap, pairs);
       drawChart(pairs);
       const known = confirmedOf(snap);
@@ -939,8 +971,26 @@
     }
 
     // Dragging fires continuously; only the release costs a USGS query.
+    // The map lives under this control. A drag that reaches the map pans it
+    // and the thumb stops where the pan started, which reads as a stuck bar.
+    slider.addEventListener('pointerdown', (e) => {
+      L.DomEvent.stopPropagation(e);
+      map.dragging.disable();
+    });
+    const releaseMap = () => { if (map.dragging) map.dragging.enable(); };
+    slider.addEventListener('pointerup', releaseMap);
+    slider.addEventListener('pointercancel', releaseMap);
+    window.addEventListener('pointerup', releaseMap);
+
     slider.addEventListener('input', () => {
       days = +slider.value;
+      // The opening view is the confirmed earthquakes. Moving the bar leaves
+      // that view, otherwise the label would change and the map would not.
+      if (confirmedOnly) {
+        confirmedOnly = false;
+        localStorage.setItem('sismo-confirmed-only', '0');
+        if (snap) fillPanel(snap, lastPairs);
+      }
       applyWindow();
     });
     slider.addEventListener('change', () => {
