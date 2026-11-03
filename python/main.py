@@ -1089,8 +1089,11 @@ def publisher_loop(pub_cfg: dict, state: SharedState,
                 # not an autonomous detection. `history` and `recent` already
                 # filter it out at source (eventlog.kind_of), so nothing here
                 # can leak into the autonomous record by omission.
+                # Not the map window. A confirmation stays in the list after
+                # it has left the month: September is still a confirmation
+                # in November. The page drops only what the live scan withdrew.
                 snapshot["confirmed"] = eventlog.confirmed_events(
-                    journal_path, days=window_days
+                    journal_path, days=None
                 )
                 snapshot["window_days"] = window_days
                 # The journal froze the preliminary magnitude; the catalog block

@@ -237,7 +237,7 @@ def recent_events(path: str, days: float = 30.0, limit: int = 300) -> list[dict]
     return out[:limit]
 
 
-def confirmed_events(path: str, days: float = 30.0, limit: int = 200) -> list[dict]:
+def confirmed_events(path: str, days: float | None = 30.0, limit: int = 200) -> list[dict]:
     """Cataloged earthquakes found at their computed arrival time, newest first.
 
     A separate list from ``recent_events`` on purpose, and it must stay separate
@@ -250,13 +250,13 @@ def confirmed_events(path: str, days: float = 30.0, limit: int = 200) -> list[di
     stood above the local noise of the preceding minutes. An entry without it
     would be an assertion instead of a measurement.
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)) if days else None
     out: list[dict] = []
     for r in read(path):
         if kind_of(r) != RETRO or not r.get("confirmed"):
             continue
         when = _parse(r.get("origin_time"))
-        if when is None or when < cutoff:
+        if when is None or (cutoff is not None and when < cutoff):
             continue
         out.append({
             "t": r.get("origin_time"),
